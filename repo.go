@@ -145,6 +145,12 @@ func Fetch(repoPath string, opts FetchRemoteOptions) error {
 	return err
 }
 
+// Rebase rebase local commits on top of remote branch.
+func Rebase(repoPath string) error {
+	_, err := NewCommand("rebase").RunInDir(repoPath)
+	return err
+}
+
 // Push pushs local commits to given remote branch.
 func Push(repoPath, remote, branch string) error {
 	_, err := NewCommand("push", remote, branch).RunInDir(repoPath)
