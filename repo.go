@@ -125,6 +125,26 @@ func Pull(repoPath string, opts PullRemoteOptions) error {
 	return err
 }
 
+type FetchRemoteOptions struct {
+	Prune   bool
+	Timeout time.Duration
+}
+
+// Fetch fetch changes from remotes.
+func Fetch(repoPath string, opts FetchRemoteOptions) error {
+	cmd := NewCommand("fetch")
+	if opts.Prune {
+		cmd.AddArguments("--prune")
+	}
+
+	if opts.Timeout <= 0 {
+		opts.Timeout = -1
+	}
+
+	_, err := cmd.RunInDirTimeout(opts.Timeout, repoPath)
+	return err
+}
+
 // Push pushs local commits to given remote branch.
 func Push(repoPath, remote, branch string) error {
 	_, err := NewCommand("push", remote, branch).RunInDir(repoPath)
