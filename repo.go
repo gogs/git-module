@@ -166,3 +166,8 @@ func ResetHEAD(repoPath string, hard bool, revision string) error {
 	_, err := cmd.AddArguments(revision).RunInDir(repoPath)
 	return err
 }
+
+func Checkout(repoPath, version string) error {
+	_, err := NewCommand("checkout", version).RunInDir(repoPath)
+	return err
+}
