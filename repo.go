@@ -151,9 +151,22 @@ func Rebase(repoPath string) error {
 	return err
 }
 
+type PushOptions struct {
+	Force bool
+}
+
 // Push pushs local commits to given remote branch.
-func Push(repoPath, remote, branch string) error {
-	_, err := NewCommand("push", remote, branch).RunInDir(repoPath)
+func Push(repoPath, remote, branch string, opts PushOptions) error {
+	cmd := NewCommand("push")
+
+	if opts.Force {
+		cmd.AddArguments("--force")
+	}
+
+	cmd.AddArguments(remote)
+	cmd.AddArguments(branch)
+
+	_, err := cmd.RunInDir(repoPath)
 	return err
 }
 
