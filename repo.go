@@ -145,9 +145,19 @@ func Fetch(repoPath string, opts FetchRemoteOptions) error {
 	return err
 }
 
+type RebaseOptions struct {
+	Branch string
+}
+
 // Rebase rebase local commits on top of remote branch.
-func Rebase(repoPath string) error {
-	_, err := NewCommand("rebase").RunInDir(repoPath)
+func Rebase(repoPath string, opts RebaseOptions) error {
+	cmd := NewCommand("rebase")
+
+	if opts.Branch != "" {
+		cmd.AddArguments(opts.Branch)
+	}
+
+	_, err := cmd.RunInDir(repoPath)
 	return err
 }
 
