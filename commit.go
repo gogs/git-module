@@ -22,6 +22,7 @@ type Commit struct {
 	Author        *Signature
 	Committer     *Signature
 	CommitMessage string
+	Verification  *Verification
 
 	parents        []sha1 // SHA1 strings
 	submoduleCache *objectCache
