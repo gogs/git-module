@@ -36,11 +36,11 @@ type Verification struct {
 // -----END PGP SIGNATURE-----
 // but without the "gpgsig " at the beginning
 //
-func newVerificationFromCommitline(line []byte) (_ *Verification, err error) {
+func newVerificationFromCommitline(data []byte, signatureStart int) (_ *Verification, err error) {
 	verif := new(Verification)
-
-	signatureEnd := bytes.LastIndex(line, []byte("-----END PGP SIGNATURE-----"))
-	verif.Signature = string(line[:signatureEnd+27])
+	verif.Payload = string(data[:signatureStart-8])
+	signatureEnd := bytes.LastIndex(data, []byte("-----END PGP SIGNATURE-----"))
+	verif.Signature = string(data[signatureStart : signatureEnd+27])
 
 	return verif, nil
 }
