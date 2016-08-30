@@ -17,7 +17,7 @@ const (
 	TARGZ
 )
 
-func (c *Commit) CreateArchive(target string, archiveType ArchiveType) error {
+func (c *Commit) CreateArchive(target string, archiveType ArchiveType, includeArchiveFullPath bool) error {
 	var format string
 	switch archiveType {
 	case ZIP:
@@ -28,6 +28,13 @@ func (c *Commit) CreateArchive(target string, archiveType ArchiveType) error {
 		return fmt.Errorf("unknown format: %v", archiveType)
 	}
 
-	_, err := NewCommand("archive", "--prefix="+path.Base(strings.TrimSuffix(c.repo.Path, ".git"))+"/", "--format="+format, "-o", target, c.ID.String()).RunInDir(c.repo.Path)
+	var prefix string
+	if includeArchiveFullPath {
+		prefix = path.Base(strings.TrimSuffix(c.repo.Path, ".git")) + "/"
+	} else {
+		prefix = ""
+	}
+
+	_, err := NewCommand("archive", "--prefix="+prefix, "--format="+format, "-o", target, c.ID.String()).RunInDir(c.repo.Path)
 	return err
 }
