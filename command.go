@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"os"
 	"os/exec"
 	"strings"
 	"time"
@@ -17,6 +18,7 @@ import (
 type Command struct {
 	name string
 	args []string
+	env  map[string]string
 }
 
 func (c *Command) String() string {
@@ -31,6 +33,7 @@ func NewCommand(args ...string) *Command {
 	return &Command{
 		name: "git",
 		args: args,
+		env: make(map[string]string),
 	}
 }
 
@@ -56,6 +59,13 @@ func (c *Command) RunInDirTimeoutPipeline(timeout time.Duration, dir string, std
 	}
 
 	cmd := exec.Command(c.name, c.args...)
+	if len(c.env) > 0 {
+		env := os.Environ()
+		for key,value := range c.env {
+			env = append(env, fmt.Sprintf("%s=%s", key,value))
+		}
+		cmd.Env = env
+	}
 	cmd.Dir = dir
 	cmd.Stdout = stdout
 	cmd.Stderr = stderr
