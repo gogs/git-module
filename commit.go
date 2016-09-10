@@ -116,7 +116,12 @@ type CommitChangesOptions struct {
 func CommitChanges(repoPath string, opts CommitChangesOptions) error {
 	cmd := NewCommand()
 	if opts.Committer != nil {
-		cmd.AddArguments("-c", "user.name="+opts.Committer.Name, "-c", "user.email="+opts.Committer.Email)
+		if version.Compare(gitVersion, "1.7.1", ">") {
+			cmd.AddArguments("-c", "user.name="+opts.Committer.Name, "-c", "user.email="+opts.Committer.Email)
+		} else {
+			cmd.env["GIT_AUTHOR_EMAIL"] = opts.Committer.Email
+			cmd.env["GIT_AUTHOR_NAME"] = opts.Committer.Name
+		}
 	}
 	cmd.AddArguments("commit")
 
