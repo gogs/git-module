@@ -70,6 +70,10 @@ func (te *TreeEntry) IsDir() bool {
 	return te.mode == ENTRY_MODE_TREE
 }
 
+func (te *TreeEntry) IsLink() bool {
+	return te.mode == ENTRY_MODE_SYMLINK
+}
+
 func (te *TreeEntry) Blob() *Blob {
 	return &Blob{
 		repo:      te.ptree.repo,
