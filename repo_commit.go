@@ -14,6 +14,8 @@ import (
 	"github.com/mcuadros/go-version"
 )
 
+const REMOTE_PREFIX = "refs/remotes/"
+
 // getRefCommitID returns the last commit ID string of given reference (branch or tag).
 func (repo *Repository) getRefCommitID(name string) (string, error) {
 	stdout, err := NewCommand("show-ref", "--verify", name).RunInDir(repo.Path)
@@ -34,6 +36,11 @@ func (repo *Repository) GetBranchCommitID(name string) (string, error) {
 // GetTagCommitID returns last commit ID string of given tag.
 func (repo *Repository) GetTagCommitID(name string) (string, error) {
 	return repo.getRefCommitID(TAG_PREFIX + name)
+}
+
+// GetRemoteBranchCommitID returns last commit ID string of given remote branch.
+func (repo *Repository) GetRemoteBranchCommitID(name string) (string, error) {
+	return repo.getRefCommitID(REMOTE_PREFIX + name)
 }
 
 // parseCommitData parses commit information from the (uncompressed) raw
@@ -142,8 +149,18 @@ func (repo *Repository) GetBranchCommit(name string) (*Commit, error) {
 	return repo.GetCommit(commitID)
 }
 
+// GetTagCommit returns the commit of given tag.
 func (repo *Repository) GetTagCommit(name string) (*Commit, error) {
 	commitID, err := repo.GetTagCommitID(name)
+	if err != nil {
+		return nil, err
+	}
+	return repo.GetCommit(commitID)
+}
+
+// GetRemoteBranchCommit returns the last commit of given remote branch.
+func (repo *Repository) GetRemoteBranchCommit(name string) (*Commit, error) {
+	commitID, err := repo.GetRemoteBranchCommitID(name)
 	if err != nil {
 		return nil, err
 	}
