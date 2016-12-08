@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"os"
 	"os/exec"
 	"strings"
 	"time"
@@ -17,6 +18,7 @@ import (
 type Command struct {
 	name string
 	args []string
+	envs []string
 }
 
 func (c *Command) String() string {
@@ -40,6 +42,12 @@ func (c *Command) AddArguments(args ...string) *Command {
 	return c
 }
 
+// AddEnvs adds new environment variables to the command.
+func (c *Command) AddEnvs(envs ...string) *Command {
+	c.envs = append(c.envs, envs...)
+	return c
+}
+
 const DEFAULT_TIMEOUT = 60 * time.Second
 
 // RunInDirTimeoutPipeline executes the command in given directory with given timeout,
@@ -56,6 +64,9 @@ func (c *Command) RunInDirTimeoutPipeline(timeout time.Duration, dir string, std
 	}
 
 	cmd := exec.Command(c.name, c.args...)
+	if c.envs != nil {
+		cmd.Env = append(os.Environ(), c.envs...)
+	}
 	cmd.Dir = dir
 	cmd.Stdout = stdout
 	cmd.Stderr = stderr

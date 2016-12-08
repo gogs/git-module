@@ -116,7 +116,7 @@ type CommitChangesOptions struct {
 func CommitChanges(repoPath string, opts CommitChangesOptions) error {
 	cmd := NewCommand()
 	if opts.Committer != nil {
-		cmd.AddArguments("-c", "user.name="+opts.Committer.Name, "-c", "user.email="+opts.Committer.Email)
+		cmd.AddEnvs("GIT_COMMITTER_NAME="+opts.Committer.Name, "GIT_COMMITTER_EMAIL="+opts.Committer.Email)
 	}
 	cmd.AddArguments("commit")
 
