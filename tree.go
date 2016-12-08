@@ -62,10 +62,7 @@ func parseTreeData(tree *Tree, data []byte) ([]*TreeEntry, error) {
 		entry.ptree = tree
 		step := 6
 		switch string(data[pos : pos+step]) {
-		case "100644":
-			entry.mode = ENTRY_MODE_BLOB
-			entry.Type = OBJECT_BLOB
-		case "100664":
+		case "100644", "100664":
 			entry.mode = ENTRY_MODE_BLOB
 			entry.Type = OBJECT_BLOB
 		case "100755":
