@@ -65,6 +65,9 @@ func parseTreeData(tree *Tree, data []byte) ([]*TreeEntry, error) {
 		case "100644":
 			entry.mode = ENTRY_MODE_BLOB
 			entry.Type = OBJECT_BLOB
+		case "100664":
+			entry.mode = ENTRY_MODE_BLOB
+			entry.Type = OBJECT_BLOB
 		case "100755":
 			entry.mode = ENTRY_MODE_EXEC
 			entry.Type = OBJECT_BLOB
