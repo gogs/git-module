@@ -113,8 +113,26 @@ func Clone(from, to string, opts CloneRepoOptions) (err error) {
 	if opts.Timeout <= 0 {
 		opts.Timeout = -1
 	}
-
 	_, err = cmd.RunTimeout(opts.Timeout)
+	return err
+}
+
+type FetchRemoteOptions struct {
+	Timeout time.Duration
+	Prune   bool
+}
+
+// Fetch fetches changes from remotes without merging.
+func Fetch(repoPath string, opts FetchRemoteOptions) error {
+	cmd := NewCommand("fetch")
+	if opts.Prune {
+		cmd.AddArguments("--prune")
+	}
+
+	if opts.Timeout <= 0 {
+		opts.Timeout = -1
+	}
+	_, err := cmd.RunInDirTimeout(opts.Timeout, repoPath)
 	return err
 }
 
@@ -142,7 +160,6 @@ func Pull(repoPath string, opts PullRemoteOptions) error {
 	if opts.Timeout <= 0 {
 		opts.Timeout = -1
 	}
-
 	_, err := cmd.RunInDirTimeout(opts.Timeout, repoPath)
 	return err
 }
@@ -166,16 +183,14 @@ func Checkout(repoPath string, opts CheckoutOptions) error {
 		cmd.AddArguments("-b")
 	}
 
-	if opts.Timeout <= 0 {
-		opts.Timeout = -1
-	}
-
 	cmd.AddArguments(opts.Branch)
 
 	if len(opts.OldBranch) > 0 {
 		cmd.AddArguments(opts.OldBranch)
 	}
-
+	if opts.Timeout <= 0 {
+		opts.Timeout = -1
+	}
 	_, err := cmd.RunInDirTimeout(opts.Timeout, repoPath)
 	return err
 }
