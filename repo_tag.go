@@ -118,3 +118,14 @@ func (repo *Repository) GetTags() ([]string, error) {
 
 	return tags, nil
 }
+
+// DeleteTag deletes a tag from the repository
+func (repo *Repository) DeleteTag(name string) error {
+    cmd := NewCommand("tag", "-d")
+
+    cmd.AddArguments(name)
+    _, err := cmd.RunInDir(repo.Path)
+
+    return err
+}
+
