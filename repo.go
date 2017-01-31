@@ -43,9 +43,18 @@ func (repo *Repository) parsePrettyFormatLogToList(logs []byte) (*list.List, err
 	return l, nil
 }
 
+type NetworkOptions struct {
+	URL     string
+	Timeout time.Duration
+}
+
 // IsRepoURLAccessible checks if given repository URL is accessible.
-func IsRepoURLAccessible(url string) bool {
-	_, err := NewCommand("ls-remote", "-q", "-h", url, "HEAD").Run()
+func IsRepoURLAccessible(opts NetworkOptions) bool {
+	cmd := NewCommand("ls-remote", "-q", "-h", opts.URL, "HEAD")
+	if opts.Timeout <= 0 {
+		opts.Timeout = -1
+	}
+	_, err := cmd.RunTimeout(opts.Timeout)
 	if err != nil {
 		return false
 	}
@@ -81,11 +90,11 @@ func OpenRepository(repoPath string) (*Repository, error) {
 }
 
 type CloneRepoOptions struct {
-	Timeout time.Duration
 	Mirror  bool
 	Bare    bool
 	Quiet   bool
 	Branch  string
+	Timeout time.Duration
 }
 
 // Clone clones original repository to target path.
@@ -118,8 +127,8 @@ func Clone(from, to string, opts CloneRepoOptions) (err error) {
 }
 
 type FetchRemoteOptions struct {
-	Timeout time.Duration
 	Prune   bool
+	Timeout time.Duration
 }
 
 // Fetch fetches changes from remotes without merging.
@@ -137,11 +146,11 @@ func Fetch(repoPath string, opts FetchRemoteOptions) error {
 }
 
 type PullRemoteOptions struct {
-	Timeout time.Duration
 	All     bool
 	Rebase  bool
 	Remote  string
 	Branch  string
+	Timeout time.Duration
 }
 
 // Pull pulls changes from remotes.
@@ -171,9 +180,9 @@ func Push(repoPath, remote, branch string) error {
 }
 
 type CheckoutOptions struct {
-	Timeout   time.Duration
 	Branch    string
 	OldBranch string
+	Timeout   time.Duration
 }
 
 // Checkout checkouts a branch
