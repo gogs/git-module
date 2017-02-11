@@ -102,7 +102,8 @@ func ListHooks(repoPath string) (_ []*Hook, err error) {
 }
 
 const (
-	HOOK_PATH_UPDATE = "hooks/update"
+	HOOK_PATH_UPDATE       = "hooks/update"
+	HOOK_PATH_POST_RECEIVE = "hooks/post-receive"
 )
 
 // SetUpdateHook writes given content to update hook of the reposiotry.
@@ -117,5 +118,13 @@ func SetUpdateHook(repoPath, content string) (err error) {
 	if err != nil {
 		return err
 	}
+	return ioutil.WriteFile(hookPath, []byte(content), 0777)
+}
+
+// SetPostReceive writes given content to the post-receive hook of the repository
+func SetPostReceiveHook(repoPath, content string) error {
+	log("Setting post-receive hook: %s", repoPath)
+	hookPath := path.Join(repoPath, HOOK_PATH_POST_RECEIVE)
+	os.MkdirAll(path.Dir(hookPath), os.ModePerm)
 	return ioutil.WriteFile(hookPath, []byte(content), 0777)
 }
