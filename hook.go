@@ -10,8 +10,6 @@ import (
 	"os"
 	"path"
 	"strings"
-
-	"github.com/Unknwon/com"
 )
 
 var (
@@ -103,23 +101,4 @@ func ListHooks(repoPath string) (_ []*Hook, err error) {
 		}
 	}
 	return hooks, nil
-}
-
-const (
-	HOOK_PATH_UPDATE = "hooks/update"
-)
-
-// SetUpdateHook writes given content to update hook of the reposiotry.
-func SetUpdateHook(repoPath, content string) (err error) {
-	log("Setting update hook: %s", repoPath)
-	hookPath := path.Join(repoPath, HOOK_PATH_UPDATE)
-	if com.IsExist(hookPath) {
-		err = os.Remove(hookPath)
-	} else {
-		err = os.MkdirAll(path.Dir(hookPath), os.ModePerm)
-	}
-	if err != nil {
-		return err
-	}
-	return ioutil.WriteFile(hookPath, []byte(content), 0777)
 }
