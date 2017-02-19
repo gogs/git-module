@@ -68,7 +68,6 @@ func GetHook(repoPath, name string) (*Hook, error) {
 
 	// Check sample file
 	samplePath := path.Join(repoPath, HookSampleDir, h.name) + ".sample"
-	println(samplePath)
 	if isFile(samplePath) {
 		data, err := ioutil.ReadFile(samplePath)
 		if err != nil {
