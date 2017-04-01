@@ -262,7 +262,7 @@ func GetRepoSize(repoPath string) (*CountObject, error) {
 		case strings.HasPrefix(line, _STAT_SIZE):
 			countObject.Size = com.StrTo(line[6:]).MustInt64() * 1024
 		case strings.HasPrefix(line, _STAT_IN_PACK):
-			countObject.InPack = com.StrTo(line[9:]).MustInt64() * 1024
+			countObject.InPack = com.StrTo(line[9:]).MustInt64()
 		case strings.HasPrefix(line, _STAT_PACKS):
 			countObject.Packs = com.StrTo(line[7:]).MustInt64()
 		case strings.HasPrefix(line, _STAT_SIZE_PACK):
