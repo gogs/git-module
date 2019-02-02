@@ -1,4 +1,4 @@
-# Git Module [![Build Status](https://travis-ci.org/gogits/git-module.svg?branch=master)](https://travis-ci.org/gogits/git-module)
+# Git Module [![Build Status](https://travis-ci.org/gogs/git-module.svg?branch=master)](https://travis-ci.org/gogs/git-module)
 
 Package git-module is a Go module for Git access through shell commands.
 
