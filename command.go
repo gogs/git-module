@@ -87,8 +87,9 @@ func (c *Command) RunInDirTimeoutPipeline(timeout time.Duration, dir string, std
 				return fmt.Errorf("fail to kill process: %v", err)
 			}
 		}
-
-		<-done
+		go func() {
+			<-done
+		}
 		return ErrExecTimeout{timeout}
 	case err = <-done:
 	}
