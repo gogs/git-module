@@ -97,7 +97,7 @@ func (c *Commit) GetCommitByPath(relpath string) (*Commit, error) {
 	return c.repo.getCommitByPathWithID(c.ID, relpath)
 }
 
-// AddAllChanges marks local changes to be ready for commit.
+// AddChanges marks local changes to be ready for commit.
 func AddChanges(repoPath string, all bool, files ...string) error {
 	cmd := NewCommand("add")
 	if all {

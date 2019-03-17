@@ -117,7 +117,7 @@ func (c *Command) RunInDirPipeline(dir string, stdout, stderr io.Writer) error {
 	return c.RunInDirTimeoutPipeline(-1, dir, stdout, stderr)
 }
 
-// RunInDir executes the command in given directory
+// RunInDirBytes executes the command in given directory
 // and returns stdout in []byte and error (combined with stderr).
 func (c *Command) RunInDirBytes(dir string) ([]byte, error) {
 	return c.RunInDirTimeout(-1, dir)
