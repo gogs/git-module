@@ -19,7 +19,7 @@ func IsErrExecTimeout(err error) bool {
 }
 
 func (err ErrExecTimeout) Error() string {
-	return fmt.Sprintf("execution is timeout [duration: %v]", err.Duration)
+	return fmt.Sprintf("execution timeout [duration: %v]", err.Duration)
 }
 
 type ErrNotExist struct {
