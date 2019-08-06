@@ -14,7 +14,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Unknwon/com"
+	"github.com/unknwon/com"
 )
 
 // Repository represents a Git repository.
