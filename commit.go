@@ -14,7 +14,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/mcuadros/go-version"
+	goversion "github.com/mcuadros/go-version"
 )
 
 // Commit represents a git commit.
@@ -141,7 +141,7 @@ func CommitChanges(repoPath string, opts CommitChangesOptions) error {
 func commitsCount(repoPath, revision, relpath string) (int64, error) {
 	var cmd *Command
 	isFallback := false
-	if version.Compare(gitVersion, "1.8.0", "<") {
+	if goversion.Compare(gitVersion, "1.8.0", "<") {
 		isFallback = true
 		cmd = NewCommand("log", "--pretty=format:''")
 	} else {

@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mcuadros/go-version"
+	goversion "github.com/mcuadros/go-version"
 )
 
 const REMOTE_PREFIX = "refs/remotes/"
@@ -257,7 +257,7 @@ func (repo *Repository) FilesCountBetween(startCommitID, endCommitID string) (in
 
 // CommitsBetween returns a list that contains commits between [last, before).
 func (repo *Repository) CommitsBetween(last *Commit, before *Commit) (*list.List, error) {
-	if version.Compare(gitVersion, "1.8.0", ">=") {
+	if goversion.Compare(gitVersion, "1.8.0", ">=") {
 		stdout, err := NewCommand("rev-list", before.ID.String()+"..."+last.ID.String()).RunInDirBytes(repo.Path)
 		if err != nil {
 			return nil, err

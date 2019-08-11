@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/mcuadros/go-version"
+	goversion "github.com/mcuadros/go-version"
 )
 
 const BRANCH_PREFIX = "refs/heads/"
@@ -54,7 +54,7 @@ func (repo *Repository) GetHEADBranch() (*Branch, error) {
 
 // SetDefaultBranch sets default branch of repository.
 func (repo *Repository) SetDefaultBranch(name string) error {
-	if version.Compare(gitVersion, "1.7.10", "<") {
+	if goversion.Compare(gitVersion, "1.7.10", "<") {
 		return ErrUnsupportedVersion{"1.7.10"}
 	}
 

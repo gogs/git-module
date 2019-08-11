@@ -11,10 +11,9 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
-
-	"github.com/unknwon/com"
 )
 
 // Repository represents a Git repository.
@@ -251,6 +250,11 @@ const (
 	_STAT_SIZE_GARBAGE   = "size-garbage: "
 )
 
+func strToInt64(s string) int64 {
+	i, _ := strconv.ParseInt(s, 10, 64)
+	return i
+}
+
 // GetRepoSize returns disk usage report of repository in given path.
 func GetRepoSize(repoPath string) (*CountObject, error) {
 	cmd := NewCommand("count-objects", "-v")
@@ -263,21 +267,21 @@ func GetRepoSize(repoPath string) (*CountObject, error) {
 	for _, line := range strings.Split(stdout, "\n") {
 		switch {
 		case strings.HasPrefix(line, _STAT_COUNT):
-			countObject.Count = com.StrTo(line[7:]).MustInt64()
+			countObject.Count = strToInt64(line[7:])
 		case strings.HasPrefix(line, _STAT_SIZE):
-			countObject.Size = com.StrTo(line[6:]).MustInt64() * 1024
+			countObject.Size = strToInt64(line[6:]) * 1024
 		case strings.HasPrefix(line, _STAT_IN_PACK):
-			countObject.InPack = com.StrTo(line[9:]).MustInt64()
+			countObject.InPack = strToInt64(line[9:])
 		case strings.HasPrefix(line, _STAT_PACKS):
-			countObject.Packs = com.StrTo(line[7:]).MustInt64()
+			countObject.Packs = strToInt64(line[7:])
 		case strings.HasPrefix(line, _STAT_SIZE_PACK):
-			countObject.SizePack = com.StrTo(line[11:]).MustInt64() * 1024
+			countObject.SizePack = strToInt64(line[11:]) * 1024
 		case strings.HasPrefix(line, _STAT_PRUNE_PACKABLE):
-			countObject.PrunePackable = com.StrTo(line[16:]).MustInt64()
+			countObject.PrunePackable = strToInt64(line[16:])
 		case strings.HasPrefix(line, _STAT_GARBAGE):
-			countObject.Garbage = com.StrTo(line[9:]).MustInt64()
+			countObject.Garbage = strToInt64(line[9:])
 		case strings.HasPrefix(line, _STAT_SIZE_GARBAGE):
-			countObject.SizeGarbage = com.StrTo(line[14:]).MustInt64() * 1024
+			countObject.SizeGarbage = strToInt64(line[14:]) * 1024
 		}
 	}
 

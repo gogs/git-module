@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/mcuadros/go-version"
+	goversion "github.com/mcuadros/go-version"
 )
 
 const TAG_PREFIX = "refs/tags/"
@@ -95,7 +95,7 @@ func (repo *Repository) GetTag(name string) (*Tag, error) {
 // GetTags returns all tags of the repository.
 func (repo *Repository) GetTags() ([]string, error) {
 	cmd := NewCommand("tag", "-l")
-	if version.Compare(gitVersion, "2.4.9", ">=") {
+	if goversion.Compare(gitVersion, "2.4.9", ">=") {
 		cmd.AddArguments("--sort=-creatordate")
 	}
 
@@ -107,8 +107,8 @@ func (repo *Repository) GetTags() ([]string, error) {
 	tags := strings.Split(stdout, "\n")
 	tags = tags[:len(tags)-1]
 
-	if version.Compare(gitVersion, "2.4.9", "<") {
-		version.Sort(tags)
+	if goversion.Compare(gitVersion, "2.4.9", "<") {
+		goversion.Sort(tags)
 
 		// Reverse order
 		for i := 0; i < len(tags)/2; i++ {
