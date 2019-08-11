@@ -13,16 +13,16 @@ import (
 type ArchiveType int
 
 const (
-	ZIP ArchiveType = iota + 1
-	TARGZ
+	ArchiveZip ArchiveType = iota + 1
+	ArchiveTarGz
 )
 
 func (c *Commit) CreateArchive(target string, archiveType ArchiveType) error {
 	var format string
 	switch archiveType {
-	case ZIP:
+	case ArchiveZip:
 		format = "zip"
-	case TARGZ:
+	case ArchiveTarGz:
 		format = "tar.gz"
 	default:
 		return fmt.Errorf("unknown format: %v", archiveType)

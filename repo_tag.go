@@ -11,11 +11,11 @@ import (
 	goversion "github.com/mcuadros/go-version"
 )
 
-const TAG_PREFIX = "refs/tags/"
+const TagPrefix = "refs/tags/"
 
 // IsTagExist returns true if given tag exists in the repository.
 func IsTagExist(repoPath, name string) bool {
-	return IsReferenceExist(repoPath, TAG_PREFIX+name)
+	return IsReferenceExist(repoPath, TagPrefix+name)
 }
 
 func (repo *Repository) IsTagExist(name string) bool {
@@ -42,11 +42,11 @@ func (repo *Repository) getTag(id sha1) (*Tag, error) {
 	tp = strings.TrimSpace(tp)
 
 	// Tag is a commit.
-	if ObjectType(tp) == OBJECT_COMMIT {
+	if ObjectType(tp) == ObjectCommit {
 		tag := &Tag{
 			ID:     id,
 			Object: id,
-			Type:   string(OBJECT_COMMIT),
+			Type:   string(ObjectCommit),
 			repo:   repo,
 		}
 

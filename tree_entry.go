@@ -19,11 +19,11 @@ type EntryMode int
 // There are only a few file modes in Git. They look like unix file modes, but they can only be
 // one of these.
 const (
-	ENTRY_MODE_BLOB    EntryMode = 0100644
-	ENTRY_MODE_EXEC    EntryMode = 0100755
-	ENTRY_MODE_SYMLINK EntryMode = 0120000
-	ENTRY_MODE_COMMIT  EntryMode = 0160000
-	ENTRY_MODE_TREE    EntryMode = 0040000
+	EntryBlob    EntryMode = 0100644
+	EntryExec    EntryMode = 0100755
+	EntrySymlink EntryMode = 0120000
+	EntryCommit  EntryMode = 0160000
+	EntryTree    EntryMode = 0040000
 )
 
 type TreeEntry struct {
@@ -63,15 +63,15 @@ func (te *TreeEntry) Size() int64 {
 }
 
 func (te *TreeEntry) IsSubModule() bool {
-	return te.mode == ENTRY_MODE_COMMIT
+	return te.mode == EntryCommit
 }
 
 func (te *TreeEntry) IsDir() bool {
-	return te.mode == ENTRY_MODE_TREE
+	return te.mode == EntryTree
 }
 
 func (te *TreeEntry) IsLink() bool {
-	return te.mode == ENTRY_MODE_SYMLINK
+	return te.mode == EntrySymlink
 }
 
 func (te *TreeEntry) Blob() *Blob {
@@ -173,7 +173,7 @@ func (tes Entries) GetCommitsInfoWithCustomConcurrency(commit *Commit, treePath 
 		// However when taskChan is full, code will block and wait any running goroutines to finish.
 		taskChan <- true
 
-		if tes[i].Type != OBJECT_COMMIT {
+		if tes[i].Type != ObjectCommit {
 			go func(i int) {
 				cinfo := commitInfo{entryName: tes[i].Name()}
 				c, err := commit.GetCommitByPath(filepath.Join(treePath, tes[i].Name()))

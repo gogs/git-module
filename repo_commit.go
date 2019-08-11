@@ -15,7 +15,7 @@ import (
 	goversion "github.com/mcuadros/go-version"
 )
 
-const REMOTE_PREFIX = "refs/remotes/"
+const RemotePrefix = "refs/remotes/"
 
 // getRefCommitID returns the last commit ID string of given reference (branch or tag).
 func (repo *Repository) getRefCommitID(name string) (string, error) {
@@ -31,17 +31,17 @@ func (repo *Repository) getRefCommitID(name string) (string, error) {
 
 // GetBranchCommitID returns last commit ID string of given branch.
 func (repo *Repository) GetBranchCommitID(name string) (string, error) {
-	return repo.getRefCommitID(BRANCH_PREFIX + name)
+	return repo.getRefCommitID(BranchPrefix + name)
 }
 
 // GetTagCommitID returns last commit ID string of given tag.
 func (repo *Repository) GetTagCommitID(name string) (string, error) {
-	return repo.getRefCommitID(TAG_PREFIX + name)
+	return repo.getRefCommitID(TagPrefix + name)
 }
 
 // GetRemoteBranchCommitID returns last commit ID string of given remote branch.
 func (repo *Repository) GetRemoteBranchCommitID(name string) (string, error) {
-	return repo.getRefCommitID(REMOTE_PREFIX + name)
+	return repo.getRefCommitID(RemotePrefix + name)
 }
 
 // parseCommitData parses commit information from the (uncompressed) raw
@@ -172,7 +172,7 @@ func (repo *Repository) getCommitByPathWithID(id sha1, relpath string) (*Commit,
 		relpath = `\` + relpath
 	}
 
-	stdout, err := NewCommand("log", "-1", _PRETTY_LOG_FORMAT, id.String(), "--", relpath).RunInDir(repo.Path)
+	stdout, err := NewCommand("log", "-1", prettyLogFormat, id.String(), "--", relpath).RunInDir(repo.Path)
 	if err != nil {
 		return nil, err
 	}
@@ -187,7 +187,7 @@ func (repo *Repository) getCommitByPathWithID(id sha1, relpath string) (*Commit,
 
 // GetCommitByPath returns the last commit of relative path.
 func (repo *Repository) GetCommitByPath(relpath string) (*Commit, error) {
-	stdout, err := NewCommand("log", "-1", _PRETTY_LOG_FORMAT, "--", relpath).RunInDirBytes(repo.Path)
+	stdout, err := NewCommand("log", "-1", prettyLogFormat, "--", relpath).RunInDirBytes(repo.Path)
 	if err != nil {
 		return nil, err
 	}
@@ -201,7 +201,7 @@ func (repo *Repository) GetCommitByPath(relpath string) (*Commit, error) {
 
 func (repo *Repository) CommitsByRangeSize(revision string, page, size int) (*list.List, error) {
 	stdout, err := NewCommand("log", revision, "--skip="+strconv.Itoa((page-1)*size),
-		"--max-count="+strconv.Itoa(size), _PRETTY_LOG_FORMAT).RunInDirBytes(repo.Path)
+		"--max-count="+strconv.Itoa(size), prettyLogFormat).RunInDirBytes(repo.Path)
 	if err != nil {
 		return nil, err
 	}
@@ -215,7 +215,7 @@ func (repo *Repository) CommitsByRange(revision string, page int) (*list.List, e
 }
 
 func (repo *Repository) searchCommits(id sha1, keyword string) (*list.List, error) {
-	stdout, err := NewCommand("log", id.String(), "-100", "-i", "--grep="+keyword, _PRETTY_LOG_FORMAT).RunInDirBytes(repo.Path)
+	stdout, err := NewCommand("log", id.String(), "-100", "-i", "--grep="+keyword, prettyLogFormat).RunInDirBytes(repo.Path)
 	if err != nil {
 		return nil, err
 	}
@@ -236,7 +236,7 @@ func (repo *Repository) FileCommitsCount(revision, file string) (int64, error) {
 
 func (repo *Repository) CommitsByFileAndRangeSize(revision, file string, page, size int) (*list.List, error) {
 	stdout, err := NewCommand("log", revision, "--skip="+strconv.Itoa((page-1)*size),
-		"--max-count="+strconv.Itoa(size), _PRETTY_LOG_FORMAT, "--", file).RunInDirBytes(repo.Path)
+		"--max-count="+strconv.Itoa(size), prettyLogFormat, "--", file).RunInDirBytes(repo.Path)
 	if err != nil {
 		return nil, err
 	}
@@ -379,7 +379,7 @@ func (repo *Repository) getCommitsBeforeLimit(id sha1, num int) (*list.List, err
 // CommitsAfterDate returns a list of commits which committed after given date.
 // The format of date should be in RFC3339.
 func (repo *Repository) CommitsAfterDate(date string) (*list.List, error) {
-	stdout, err := NewCommand("log", _PRETTY_LOG_FORMAT, "--since="+date).RunInDirBytes(repo.Path)
+	stdout, err := NewCommand("log", prettyLogFormat, "--since="+date).RunInDirBytes(repo.Path)
 	if err != nil {
 		return nil, err
 	}

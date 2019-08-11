@@ -61,22 +61,22 @@ func parseTreeData(tree *Tree, data []byte) ([]*TreeEntry, error) {
 		step := 6
 		switch string(data[pos : pos+step]) {
 		case "100644", "100664":
-			entry.mode = ENTRY_MODE_BLOB
-			entry.Type = OBJECT_BLOB
+			entry.mode = EntryBlob
+			entry.Type = ObjectBlob
 		case "100755":
-			entry.mode = ENTRY_MODE_EXEC
-			entry.Type = OBJECT_BLOB
+			entry.mode = EntryExec
+			entry.Type = ObjectBlob
 		case "120000":
-			entry.mode = ENTRY_MODE_SYMLINK
-			entry.Type = OBJECT_BLOB
+			entry.mode = EntrySymlink
+			entry.Type = ObjectBlob
 		case "160000":
-			entry.mode = ENTRY_MODE_COMMIT
-			entry.Type = OBJECT_COMMIT
+			entry.mode = EntryCommit
+			entry.Type = ObjectCommit
 
 			step = 8
 		case "040000":
-			entry.mode = ENTRY_MODE_TREE
-			entry.Type = OBJECT_TREE
+			entry.mode = EntryTree
+			entry.Type = ObjectTree
 		default:
 			return nil, fmt.Errorf("unknown type: %v", string(data[pos:pos+step]))
 		}

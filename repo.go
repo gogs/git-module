@@ -24,7 +24,7 @@ type Repository struct {
 	tagCache    *objectCache
 }
 
-const _PRETTY_LOG_FORMAT = `--pretty=format:%H`
+const prettyLogFormat = `--pretty=format:%H`
 
 func (repo *Repository) parsePrettyFormatLogToList(logs []byte) (*list.List, error) {
 	l := list.New()
@@ -240,14 +240,14 @@ type CountObject struct {
 }
 
 const (
-	_STAT_COUNT          = "count: "
-	_STAT_SIZE           = "size: "
-	_STAT_IN_PACK        = "in-pack: "
-	_STAT_PACKS          = "packs: "
-	_STAT_SIZE_PACK      = "size-pack: "
-	_STAT_PRUNE_PACKABLE = "prune-packable: "
-	_STAT_GARBAGE        = "garbage: "
-	_STAT_SIZE_GARBAGE   = "size-garbage: "
+	statCount         = "count: "
+	statSize          = "size: "
+	statInPack        = "in-pack: "
+	statPacks         = "packs: "
+	statSizePack      = "size-pack: "
+	statPrunePackable = "prune-packable: "
+	statGarbage       = "garbage: "
+	statSizeGarbage   = "size-garbage: "
 )
 
 func strToInt64(s string) int64 {
@@ -266,21 +266,21 @@ func GetRepoSize(repoPath string) (*CountObject, error) {
 	countObject := new(CountObject)
 	for _, line := range strings.Split(stdout, "\n") {
 		switch {
-		case strings.HasPrefix(line, _STAT_COUNT):
+		case strings.HasPrefix(line, statCount):
 			countObject.Count = strToInt64(line[7:])
-		case strings.HasPrefix(line, _STAT_SIZE):
+		case strings.HasPrefix(line, statSize):
 			countObject.Size = strToInt64(line[6:]) * 1024
-		case strings.HasPrefix(line, _STAT_IN_PACK):
+		case strings.HasPrefix(line, statInPack):
 			countObject.InPack = strToInt64(line[9:])
-		case strings.HasPrefix(line, _STAT_PACKS):
+		case strings.HasPrefix(line, statPacks):
 			countObject.Packs = strToInt64(line[7:])
-		case strings.HasPrefix(line, _STAT_SIZE_PACK):
+		case strings.HasPrefix(line, statSizePack):
 			countObject.SizePack = strToInt64(line[11:]) * 1024
-		case strings.HasPrefix(line, _STAT_PRUNE_PACKABLE):
+		case strings.HasPrefix(line, statPrunePackable):
 			countObject.PrunePackable = strToInt64(line[16:])
-		case strings.HasPrefix(line, _STAT_GARBAGE):
+		case strings.HasPrefix(line, statGarbage):
 			countObject.Garbage = strToInt64(line[9:])
-		case strings.HasPrefix(line, _STAT_SIZE_GARBAGE):
+		case strings.HasPrefix(line, statSizeGarbage):
 			countObject.SizeGarbage = strToInt64(line[14:]) * 1024
 		}
 	}

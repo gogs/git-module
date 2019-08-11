@@ -13,8 +13,8 @@ func (t *Tree) GetTreeEntryByPath(relpath string) (*TreeEntry, error) {
 	if len(relpath) == 0 {
 		return &TreeEntry{
 			ID:   t.ID,
-			Type: OBJECT_TREE,
-			mode: ENTRY_MODE_TREE,
+			Type: ObjectTree,
+			mode: EntryTree,
 		}, nil
 	}
 
