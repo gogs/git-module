@@ -10,12 +10,6 @@ import (
 	"time"
 )
 
-const version = "0.8.1"
-
-func Version() string {
-	return version
-}
-
 var (
 	// Debug enables verbose logging on everything.
 	// This should be false in case Gogs starts in SSH mode.
