@@ -84,6 +84,12 @@ l:
 					return nil, err
 				}
 				commit.Committer = sig
+			case "gpgsig":
+				verif, err := newVerificationFromCommitline(data, nextline+spacepos+1)
+				if err != nil {
+					return nil, err
+				}
+				commit.Verification = verif
 			}
 			nextline += eol + 1
 		case eol == 0:
