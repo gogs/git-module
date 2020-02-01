@@ -9,6 +9,6 @@ type ObjectType string
 const (
 	ObjectCommit ObjectType = "commit"
 	ObjectTree   ObjectType = "tree"
-	ObjectBlob   ObjectType = "testBlob"
+	ObjectBlob   ObjectType = "blob"
 	ObjectTag    ObjectType = "tag"
 )

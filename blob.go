@@ -15,7 +15,7 @@ type Blob struct {
 	*TreeEntry
 }
 
-// Data gets content of testBlob all at once and wrap it as io.Reader.
+// Data gets content of blob all at once and wrap it as io.Reader.
 // This can be very slow and memory consuming for huge content.
 func (b *Blob) Data() (io.Reader, error) {
 	stdout := new(bytes.Buffer)
