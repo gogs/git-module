@@ -10,8 +10,8 @@ import (
 	"strings"
 )
 
-// EmptySHA1 is an empty SHA-1 hash.
-const EmptySHA1 = "0000000000000000000000000000000000000000"
+// EmptyID is an ID with empty SHA-1 hash.
+const EmptyID = "0000000000000000000000000000000000000000"
 
 // SHA1 is the SHA-1 hash of a Git object.
 type SHA1 [20]byte
@@ -47,12 +47,12 @@ func (id SHA1) Equal(s2 interface{}) bool {
 }
 
 // String returns string (hex) representation of the Oid.
-func (s SHA1) String() string {
+func (id SHA1) String() string {
 	result := make([]byte, 0, 40)
 	hexvalues := []byte("0123456789abcdef")
 	for i := 0; i < 20; i++ {
-		result = append(result, hexvalues[s[i]>>4])
-		result = append(result, hexvalues[s[i]&0xf])
+		result = append(result, hexvalues[id[i]>>4])
+		result = append(result, hexvalues[id[i]&0xf])
 	}
 	return string(result)
 }

@@ -5,9 +5,12 @@
 package git
 
 import (
+	"bufio"
 	"bytes"
 	"container/list"
 	"errors"
+	"fmt"
+	"io"
 	"os"
 	"path"
 	"path/filepath"
@@ -283,4 +286,117 @@ func GetRepoSize(repoPath string) (*CountObject, error) {
 	}
 
 	return countObject, nil
+}
+
+// AddChanges marks local changes to be ready for commit.
+func AddChanges(repoPath string, all bool, files ...string) error {
+	cmd := NewCommand("add")
+	if all {
+		cmd.AddArgs("--all")
+	}
+	_, err := cmd.AddArgs(files...).RunInDir(repoPath)
+	return err
+}
+
+// CommitChangesOptions contains arguments to commit changes.
+type CommitChangesOptions struct {
+	// Author is the author used to authorized the changes.
+	Author *Signature
+	// Committer is the person who commits the changes.
+	Committer *Signature
+	// Message is the full commit message.
+	Message string
+}
+
+// CommitChanges commits local changes with given author, committer and message.
+// If the Author is nil, it will be the same as Committer.
+func CommitChanges(repoPath string, opts CommitChangesOptions) error {
+	cmd := NewCommand()
+	if opts.Committer != nil {
+		cmd.AddEnvs("GIT_COMMITTER_NAME="+opts.Committer.Name, "GIT_COMMITTER_EMAIL="+opts.Committer.Email)
+	}
+	cmd.AddArgs("commit")
+
+	if opts.Author == nil {
+		opts.Author = opts.Committer
+	}
+	cmd.AddArgs(fmt.Sprintf("--author='%s <%s>'", opts.Author.Name, opts.Author.Email))
+	cmd.AddArgs("-m", opts.Message)
+
+	_, err := cmd.RunInDir(repoPath)
+	// No stderr but exit status 1 means nothing to commit.
+	if err != nil && err.Error() == "exit status 1" {
+		return nil
+	}
+	return err
+}
+
+// CommitFileStatus represents status of files in a commit.
+type CommitFileStatus struct {
+	Added    []string
+	Removed  []string
+	Modified []string
+}
+
+func NewCommitFileStatus() *CommitFileStatus {
+	return &CommitFileStatus{
+		[]string{}, []string{}, []string{},
+	}
+}
+
+// GetCommitFileStatus returns file status of commit in given repository.
+func GetCommitFileStatus(repoPath, commitID string) (*CommitFileStatus, error) {
+	stdout, w := io.Pipe()
+	done := make(chan struct{})
+	fileStatus := NewCommitFileStatus()
+	go func() {
+		scanner := bufio.NewScanner(stdout)
+		for scanner.Scan() {
+			fields := strings.Fields(scanner.Text())
+			if len(fields) < 2 {
+				continue
+			}
+
+			switch fields[0][0] {
+			case 'A':
+				fileStatus.Added = append(fileStatus.Added, fields[1])
+			case 'D':
+				fileStatus.Removed = append(fileStatus.Removed, fields[1])
+			case 'M':
+				fileStatus.Modified = append(fileStatus.Modified, fields[1])
+			}
+		}
+		done <- struct{}{}
+	}()
+
+	stderr := new(bytes.Buffer)
+	err := NewCommand("show", "--name-status", "--pretty=format:''", commitID).RunInDirPipeline(repoPath, w, stderr)
+	w.Close() // Close writer to exit parsing goroutine
+	if err != nil {
+		return nil, concatenateError(err, stderr.String())
+	}
+
+	<-done
+	return fileStatus, nil
+}
+
+// FileStatus returns file status of commit.
+func (c *Commit) FileStatus() (*CommitFileStatus, error) {
+	return GetCommitFileStatus(c.repo.Path, c.id.String())
+}
+
+// GetFullCommitID returns full length (40) of commit ID by given short SHA in a repository.
+func GetFullCommitID(repoPath, shortID string) (string, error) {
+	if len(shortID) >= 40 {
+		return shortID, nil
+	}
+
+	commitID, err := NewCommand("rev-parse", shortID).RunInDir(repoPath)
+	if err != nil {
+		if strings.Contains(err.Error(), "exit status 128") {
+			return "", ErrNotExist{shortID, ""}
+		}
+		return "", err
+	}
+	return strings.TrimSpace(commitID), nil
 }

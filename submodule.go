@@ -6,7 +6,7 @@ package git
 
 import "strings"
 
-type SubModule struct {
+type Submodule struct {
 	Name string
 	URL  string
 }

@@ -174,7 +174,7 @@ func (tes Entries) GetCommitsInfoWithCustomConcurrency(commit *Commit, treePath 
 		if tes[i].Type != ObjectCommit {
 			go func(i int) {
 				cinfo := commitInfo{entryName: tes[i].Name()}
-				c, err := commit.GetCommitByPath(filepath.Join(treePath, tes[i].Name()))
+				c, err := commit.CommitByPath(filepath.Join(treePath, tes[i].Name()))
 				if err != nil {
 					cinfo.err = fmt.Errorf("GetCommitByPath (%s/%s): %v", treePath, tes[i].Name(), err)
 				} else {
@@ -189,7 +189,7 @@ func (tes Entries) GetCommitsInfoWithCustomConcurrency(commit *Commit, treePath 
 		// Handle submodule
 		go func(i int) {
 			cinfo := commitInfo{entryName: tes[i].Name()}
-			sm, err := commit.GetSubModule(path.Join(treePath, tes[i].Name()))
+			sm, err := commit.Submodule(path.Join(treePath, tes[i].Name()))
 			if err != nil && !IsErrNotExist(err) {
 				cinfo.err = fmt.Errorf("GetSubModule (%s/%s): %v", treePath, tes[i].Name(), err)
 				revChan <- cinfo
@@ -201,7 +201,7 @@ func (tes Entries) GetCommitsInfoWithCustomConcurrency(commit *Commit, treePath 
 				smURL = sm.URL
 			}
 
-			c, err := commit.GetCommitByPath(filepath.Join(treePath, tes[i].Name()))
+			c, err := commit.CommitByPath(filepath.Join(treePath, tes[i].Name()))
 			if err != nil {
 				cinfo.err = fmt.Errorf("GetCommitByPath (%s/%s): %v", treePath, tes[i].Name(), err)
 			} else {

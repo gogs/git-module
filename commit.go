@@ -6,39 +6,55 @@ package git
 
 import (
 	"bufio"
-	"bytes"
 	"container/list"
-	"fmt"
 	"io"
 	"net/http"
-	"strconv"
 	"strings"
+	"sync"
 )
 
-// Commit represents a git commit.
+// Commit contains information of a Git commit.
 type Commit struct {
-	Tree
-	ID            SHA1 // The ID of this commit object
-	Author        *Signature
-	Committer     *Signature
-	CommitMessage string
+	id        SHA1
+	parents   []SHA1
+	author    *Signature
+	committer *Signature
+	message   string
 
-	parents        []SHA1 // SHA1 strings
-	submoduleCache *objectCache
+	Tree
+
+	submodules     Submodules
+	submodulesOnce sync.Once
+	submodulesErr  error
 }
 
-// Message returns the commit message. Same as retrieving CommitMessage directly.
+// ID returns the SHA-1 hash of the commit.
+func (c *Commit) ID() SHA1 {
+	return c.id
+}
+
+// Author returns the author of the commit.
+func (c *Commit) Author() *Signature {
+	return c.author
+}
+
+// Committer returns the committer of the commit.
+func (c *Commit) Committer() *Signature {
+	return c.committer
+}
+
+// Message returns the full commit message.
 func (c *Commit) Message() string {
-	return c.CommitMessage
+	return c.message
 }
 
 // Summary returns first line of commit message.
 func (c *Commit) Summary() string {
-	return strings.Split(c.CommitMessage, "\n")[0]
+	return strings.Split(c.message, "\n")[0]
 }
 
-// ParentID returns oid of n-th parent (0-based index).
-// It returns nil if no such parent exists.
+// ParentID returns the SHA-1 hash of the n-th parent (0-based) of this commit.
+// It returns ErrNotExist if no such parent exists.
 func (c *Commit) ParentID(n int) (SHA1, error) {
 	if n >= len(c.parents) {
 		return SHA1{}, ErrNotExist{"", ""}
@@ -46,21 +62,19 @@ func (c *Commit) ParentID(n int) (SHA1, error) {
 	return c.parents[n], nil
 }
 
-// Parent returns n-th parent (0-based index) of the commit.
+// Parent returns the n-th parent commit (0-based) of this commit.
+// It returns ErrNotExist if no such parent exists.
 func (c *Commit) Parent(n int) (*Commit, error) {
 	id, err := c.ParentID(n)
 	if err != nil {
 		return nil, err
 	}
-	parent, err := c.repo.getCommit(id)
-	if err != nil {
-		return nil, err
-	}
-	return parent, nil
+
+	return c.repo.getCommit(id)
 }
 
 // ParentCount returns number of parents of the commit.
-// 0 if this is the root commit,  otherwise 1,2, etc.
+// It returns 0 if this is the root commit, otherwise returns 1, 2, etc.
 func (c *Commit) ParentCount() int {
 	return len(c.parents)
 }
@@ -73,6 +87,7 @@ func isImageFile(data []byte) (string, bool) {
 	return contentType, false
 }
 
+// IsImageFile returns true if the commit is a image blob.
 func (c *Commit) IsImageFile(name string) bool {
 	blob, err := c.GetBlobByPath(name)
 	if err != nil {
@@ -90,87 +105,36 @@ func (c *Commit) IsImageFile(name string) bool {
 	return isImage
 }
 
-// GetCommitByPath return the commit of relative path object.
-func (c *Commit) GetCommitByPath(relpath string) (*Commit, error) {
-	return c.repo.getCommitByPathWithID(c.ID, relpath)
+// CommitByPath returns the commit of relative path.
+func (c *Commit) CommitByPath(relpath string) (*Commit, error) {
+	return c.repo.getCommitByPathWithID(c.id, relpath)
 }
 
-// AddChanges marks local changes to be ready for commit.
-func AddChanges(repoPath string, all bool, files ...string) error {
-	cmd := NewCommand("add")
-	if all {
-		cmd.AddArgs("--all")
-	}
-	_, err := cmd.AddArgs(files...).RunInDir(repoPath)
-	return err
-}
-
-type CommitChangesOptions struct {
-	Committer *Signature
-	Author    *Signature
-	Message   string
-}
-
-// CommitChanges commits local changes with given committer, author and message.
-// If author is nil, it will be the same as committer.
-func CommitChanges(repoPath string, opts CommitChangesOptions) error {
-	cmd := NewCommand()
-	if opts.Committer != nil {
-		cmd.AddEnvs("GIT_COMMITTER_NAME="+opts.Committer.Name, "GIT_COMMITTER_EMAIL="+opts.Committer.Email)
-	}
-	cmd.AddArgs("commit")
-
-	if opts.Author == nil {
-		opts.Author = opts.Committer
-	}
-	if opts.Author != nil {
-		cmd.AddArgs(fmt.Sprintf("--author='%s <%s>'", opts.Author.Name, opts.Author.Email))
-	}
-	cmd.AddArgs("-m", opts.Message)
-
-	_, err := cmd.RunInDir(repoPath)
-	// No stderr but exit status 1 means nothing to commit.
-	if err != nil && err.Error() == "exit status 1" {
-		return nil
-	}
-	return err
-}
-
-func commitsCount(repoPath, revision, relpath string) (int64, error) {
-	cmd := NewCommand("rev-list", "--count").AddArgs(revision)
-	if len(relpath) > 0 {
-		cmd.AddArgs("--", relpath)
-	}
-
-	stdout, err := cmd.RunInDir(repoPath)
-	if err != nil {
-		return 0, err
-	}
-
-	return strconv.ParseInt(strings.TrimSpace(stdout), 10, 64)
-}
-
+// CommitsCount returns number of total commits up to this commit.
 func (c *Commit) CommitsCount() (int64, error) {
-	return CommitsCount(c.repo.Path, c.ID.String())
+	return c.repo.CommitsCount(c.id.String())
 }
 
-func (c *Commit) CommitsByRangeSize(page, size int) (*list.List, error) {
-	return c.repo.CommitsByRangeSize(c.ID.String(), page, size)
+// CommitsByPage returns a paginated list of commits with given page and size.
+// The pagination starts from the newest to the oldest commit.
+func (c *Commit) CommitsByPage(page, size int) (*list.List, error) {
+	return c.repo.CommitsByRangeSize(c.id.String(), page, size)
 }
 
-func (c *Commit) CommitsByRange(page int) (*list.List, error) {
-	return c.repo.CommitsByRange(c.ID.String(), page)
+// Ancestors returns a list of ancestors of this commit from the newest to the oldest.
+func (c *Commit) Ancestors() (*list.List, error) {
+	return c.repo.getCommitsBefore(c.id)
 }
 
-func (c *Commit) CommitsBefore() (*list.List, error) {
-	return c.repo.getCommitsBefore(c.ID)
+// AncestorsWithLimit returns a list of ancestors of this commit from the newest to the oldest
+// until reached limited size of the list.
+func (c *Commit) AncestorsWithLimit(limit int) (*list.List, error) {
+	return c.repo.getCommitsBeforeLimit(c.id, limit)
 }
 
-func (c *Commit) CommitsBeforeLimit(num int) (*list.List, error) {
-	return c.repo.getCommitsBeforeLimit(c.ID, num)
-}
-
-func (c *Commit) CommitsBeforeUntil(commitID string) (*list.List, error) {
+// CommitsAfter returns a list of commits after given commit ID up to this commit.
+// The returned list sorted from the newest to the oldest.
+func (c *Commit) CommitsAfter(commitID string) (*list.List, error) {
 	endCommit, err := c.repo.GetCommit(commitID)
 	if err != nil {
 		return nil, err
@@ -178,131 +142,73 @@ func (c *Commit) CommitsBeforeUntil(commitID string) (*list.List, error) {
 	return c.repo.CommitsBetween(c, endCommit)
 }
 
+// SearchCommits searches commit message with given keyword. It returns a list of matched commits
+// from the newest to the oldest
 func (c *Commit) SearchCommits(keyword string) (*list.List, error) {
-	return c.repo.searchCommits(c.ID, keyword)
+	return c.repo.searchCommits(c.id, keyword)
 }
 
-func (c *Commit) GetFilesChangedSinceCommit(pastCommit string) ([]string, error) {
-	return c.repo.getFilesChanged(pastCommit, c.ID.String())
+// FilesChangedSince returns a list of files changed since given commit ID.
+func (c *Commit) FilesChangedSince(commitID string) ([]string, error) {
+	return c.repo.getFilesChanged(commitID, c.id.String())
 }
 
-func (c *Commit) GetSubModules() (*objectCache, error) {
-	if c.submoduleCache != nil {
-		return c.submoduleCache, nil
-	}
+// Submodules contains information of submodules.
+type Submodules = *objectCache
 
-	entry, err := c.GetTreeEntryByPath(".gitmodules")
-	if err != nil {
-		return nil, err
-	}
-	rd, err := entry.Blob().Data()
-	if err != nil {
-		return nil, err
-	}
-
-	scanner := bufio.NewScanner(rd)
-	c.submoduleCache = newObjectCache()
-	var ismodule bool
-	var path string
-	for scanner.Scan() {
-		if strings.HasPrefix(scanner.Text(), "[submodule") {
-			ismodule = true
-			continue
+// Submodules returns submodules found in this commit.
+func (c *Commit) Submodules() (Submodules, error) {
+	c.submodulesOnce.Do(func() {
+		var e *TreeEntry
+		e, c.submodulesErr = c.GetTreeEntryByPath(".gitmodules")
+		if c.submodulesErr != nil {
+			return
 		}
-		if ismodule {
-			fields := strings.Split(scanner.Text(), "=")
-			k := strings.TrimSpace(fields[0])
-			if k == "path" {
-				path = strings.TrimSpace(fields[1])
-			} else if k == "url" {
-				c.submoduleCache.Set(path, &SubModule{path, strings.TrimSpace(fields[1])})
-				ismodule = false
-			}
+
+		var r io.Reader
+		r, c.submodulesErr = e.Blob().Data()
+		if c.submodulesErr != nil {
+			return
 		}
-	}
 
-	return c.submoduleCache, nil
-}
-
-func (c *Commit) GetSubModule(entryname string) (*SubModule, error) {
-	modules, err := c.GetSubModules()
-	if err != nil {
-		return nil, err
-	}
-
-	module, has := modules.Get(entryname)
-	if has {
-		return module.(*SubModule), nil
-	}
-	return nil, nil
-}
-
-// CommitFileStatus represents status of files in a commit.
-type CommitFileStatus struct {
-	Added    []string
-	Removed  []string
-	Modified []string
-}
-
-func NewCommitFileStatus() *CommitFileStatus {
-	return &CommitFileStatus{
-		[]string{}, []string{}, []string{},
-	}
-}
-
-// GetCommitFileStatus returns file status of commit in given repository.
-func GetCommitFileStatus(repoPath, commitID string) (*CommitFileStatus, error) {
-	stdout, w := io.Pipe()
-	done := make(chan struct{})
-	fileStatus := NewCommitFileStatus()
-	go func() {
-		scanner := bufio.NewScanner(stdout)
+		scanner := bufio.NewScanner(r)
+		c.submodules = newObjectCache()
+		var inSection bool
+		var path string
 		for scanner.Scan() {
-			fields := strings.Fields(scanner.Text())
-			if len(fields) < 2 {
+			if strings.HasPrefix(scanner.Text(), "[submodule") {
+				inSection = true
 				continue
 			}
-
-			switch fields[0][0] {
-			case 'A':
-				fileStatus.Added = append(fileStatus.Added, fields[1])
-			case 'D':
-				fileStatus.Removed = append(fileStatus.Removed, fields[1])
-			case 'M':
-				fileStatus.Modified = append(fileStatus.Modified, fields[1])
+			if inSection {
+				fields := strings.Split(scanner.Text(), "=")
+				k := strings.TrimSpace(fields[0])
+				if k == "path" {
+					path = strings.TrimSpace(fields[1])
+				} else if k == "url" {
+					c.submodules.Set(path, &Submodule{
+						Name: path,
+						URL:  strings.TrimSpace(fields[1])},
+					)
+					inSection = false
+				}
 			}
 		}
-		done <- struct{}{}
-	}()
+	})
 
-	stderr := new(bytes.Buffer)
-	err := NewCommand("show", "--name-status", "--pretty=format:''", commitID).RunInDirPipeline(repoPath, w, stderr)
-	w.Close() // Close writer to exit parsing goroutine
-	if err != nil {
-		return nil, concatenateError(err, stderr.String())
-	}
-
-	<-done
-	return fileStatus, nil
+	return c.submodules, c.submodulesErr
 }
 
-// FileStatus returns file status of commit.
-func (c *Commit) FileStatus() (*CommitFileStatus, error) {
-	return GetCommitFileStatus(c.repo.Path, c.ID.String())
-}
-
-// GetFullCommitID returns full length (40) of commit ID by given short SHA in a repository.
-func GetFullCommitID(repoPath, shortID string) (string, error) {
-	if len(shortID) >= 40 {
-		return shortID, nil
-	}
-
-	commitID, err := NewCommand("rev-parse", shortID).RunInDir(repoPath)
+// Submodule returns submodule by given name.
+func (c *Commit) Submodule(name string) (*Submodule, error) {
+	mods, err := c.Submodules()
 	if err != nil {
-		if strings.Contains(err.Error(), "exit status 128") {
-			return "", ErrNotExist{shortID, ""}
-		}
-		return "", err
+		return nil, err
 	}
-	return strings.TrimSpace(commitID), nil
+
+	m, has := mods.Get(name)
+	if has {
+		return m.(*Submodule), nil
+	}
+	return nil, nil
 }

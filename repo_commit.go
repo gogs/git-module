@@ -77,17 +77,17 @@ l:
 				if err != nil {
 					return nil, err
 				}
-				commit.Author = sig
+				commit.author = sig
 			case "committer":
 				sig, err := newSignatureFromCommitline(line[spacepos+1:])
 				if err != nil {
 					return nil, err
 				}
-				commit.Committer = sig
+				commit.committer = sig
 			}
 			nextline += eol + 1
 		case eol == 0:
-			commit.CommitMessage = string(data[nextline+1:])
+			commit.message = string(data[nextline+1:])
 			break l
 		default:
 			break l
@@ -116,7 +116,7 @@ func (repo *Repository) getCommit(id SHA1) (*Commit, error) {
 		return nil, err
 	}
 	commit.repo = repo
-	commit.ID = id
+	commit.id = id
 
 	repo.commitCache.Set(id.String(), commit)
 	return commit, nil
@@ -228,6 +228,30 @@ func (repo *Repository) getFilesChanged(id1 string, id2 string) ([]string, error
 	return strings.Split(string(stdout), "\n"), nil
 }
 
+func commitsCount(repoPath, revision, relpath string) (int64, error) {
+	cmd := NewCommand("rev-list", "--count").AddArgs(revision)
+	if len(relpath) > 0 {
+		cmd.AddArgs("--", relpath)
+	}
+
+	stdout, err := cmd.RunInDir(repoPath)
+	if err != nil {
+		return 0, err
+	}
+
+	return strconv.ParseInt(strings.TrimSpace(stdout), 10, 64)
+}
+
+// CommitsCount returns number of total commits up to given revision.
+func CommitsCount(repoPath, revision string) (int64, error) {
+	return commitsCount(repoPath, revision, "")
+}
+
+// CommitsCount returns number of total commits up to given revision of the repository.
+func (repo *Repository) CommitsCount(revision string) (int64, error) {
+	return CommitsCount(repo.Path, revision)
+}
+
 func (repo *Repository) FileCommitsCount(revision, file string) (int64, error) {
 	return commitsCount(repo.Path, revision, file)
 }
@@ -255,7 +279,7 @@ func (repo *Repository) FilesCountBetween(startCommitID, endCommitID string) (in
 
 // CommitsBetween returns a list that contains commits between [last, before).
 func (repo *Repository) CommitsBetween(last *Commit, before *Commit) (*list.List, error) {
-	stdout, err := NewCommand("rev-list", before.ID.String()+"..."+last.ID.String()).RunInDirBytes(repo.Path)
+	stdout, err := NewCommand("rev-list", before.id.String()+"..."+last.id.String()).RunInDirBytes(repo.Path)
 	if err != nil {
 		return nil, err
 	}
@@ -298,18 +322,18 @@ func (repo *Repository) commitsBefore(l *list.List, parent *list.Element, id SHA
 		for {
 			if in == nil {
 				break
-			} else if in.Value.(*Commit).ID.Equal(commit.ID) {
+			} else if in.Value.(*Commit).id.Equal(commit.id) {
 				return nil
 			} else if in.Next() == nil {
 				break
 			}
 
-			if in.Value.(*Commit).Committer.When.Equal(commit.Committer.When) {
+			if in.Value.(*Commit).committer.When.Equal(commit.committer.When) {
 				break
 			}
 
-			if in.Value.(*Commit).Committer.When.After(commit.Committer.When) &&
-				in.Next().Value.(*Commit).Committer.When.Before(commit.Committer.When) {
+			if in.Value.(*Commit).committer.When.After(commit.committer.When) &&
+				in.Next().Value.(*Commit).committer.When.Before(commit.committer.When) {
 				break
 			}
 
@@ -357,11 +381,6 @@ func (repo *Repository) CommitsAfterDate(date string) (*list.List, error) {
 	}
 
 	return repo.parsePrettyFormatLogToList(stdout)
-}
-
-// CommitsCount returns number of total commits of until given revision.
-func CommitsCount(repoPath, revision string) (int64, error) {
-	return commitsCount(repoPath, revision, "")
 }
 
 // GetLatestCommitDate returns the date of latest commit of repository.
