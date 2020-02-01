@@ -67,7 +67,7 @@ func MustID(b []byte) sha1 {
 // NewID creates a new sha1 from a [20]byte array.
 func NewID(b []byte) (sha1, error) {
 	if len(b) != 20 {
-		return sha1{}, fmt.Errorf("Length must be 20: %v", b)
+		return sha1{}, fmt.Errorf("length must be 20: %v", b)
 	}
 	return MustID(b), nil
 }
@@ -83,7 +83,7 @@ func NewIDFromString(s string) (sha1, error) {
 	var id sha1
 	s = strings.TrimSpace(s)
 	if len(s) != 40 {
-		return id, fmt.Errorf("Length must be 40: %s", s)
+		return id, fmt.Errorf("length must be 40: %s", s)
 	}
 	b, err := hex.DecodeString(s)
 	if err != nil {

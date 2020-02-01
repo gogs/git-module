@@ -39,8 +39,7 @@ var (
 
 // UnescapeChars reverses escaped characters.
 func UnescapeChars(in []byte) []byte {
-	// LEGACY [Go 1.7]: use more expressive bytes.ContainsAny
-	if bytes.IndexAny(in, "\\\t") == -1 {
+	if bytes.ContainsAny(in, "\\\t") {
 		return in
 	}
 
