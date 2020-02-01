@@ -96,7 +96,7 @@ func (repo *Repository) GetTag(name string) (*Tag, error) {
 func (repo *Repository) GetTags() ([]string, error) {
 	cmd := NewCommand("tag", "-l")
 	if goversion.Compare(gitVersion, "2.4.9", ">=") {
-		cmd.AddArguments("--sort=-creatordate")
+		cmd.AddArgs("--sort=-creatordate")
 	}
 
 	stdout, err := cmd.RunInDir(repo.Path)
@@ -202,7 +202,7 @@ func (repo *Repository) GetTagsAfter(after string, limit int) (*TagsResult, erro
 func (repo *Repository) DeleteTag(name string) error {
 	cmd := NewCommand("tag", "-d")
 
-	cmd.AddArguments(name)
+	cmd.AddArgs(name)
 	_, err := cmd.RunInDir(repo.Path)
 
 	return err

@@ -24,8 +24,8 @@ type AddRemoteOptions struct {
 func AddRemote(repoPath, remote, addr string, opts AddRemoteOptions) error {
 	cmd := NewCommand("remote", "add", remote)
 	if opts.Mirror {
-		cmd.AddArguments("--mirror")
+		cmd.AddArgs("--mirror")
 	}
-	_, err := cmd.AddArguments(addr).RunInDir(repoPath)
+	_, err := cmd.AddArgs(addr).RunInDir(repoPath)
 	return err
 }

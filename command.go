@@ -22,6 +22,7 @@ type Command struct {
 	envs []string
 }
 
+// String returns the string representation of the command.
 func (c *Command) String() string {
 	if len(c.args) == 0 {
 		return c.name
@@ -37,8 +38,8 @@ func NewCommand(args ...string) *Command {
 	}
 }
 
-// AddArguments appends given arguments to the command.
-func (c *Command) AddArguments(args ...string) *Command {
+// AddArgs appends given arguments to the command.
+func (c *Command) AddArgs(args ...string) *Command {
 	c.args = append(c.args, args...)
 	return c
 }

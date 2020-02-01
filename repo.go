@@ -66,7 +66,7 @@ func InitRepository(repoPath string, bare bool) error {
 
 	cmd := NewCommand("init")
 	if bare {
-		cmd.AddArguments("--bare")
+		cmd.AddArgs("--bare")
 	}
 	_, err := cmd.RunInDir(repoPath)
 	return err
@@ -105,18 +105,18 @@ func Clone(from, to string, opts CloneRepoOptions) (err error) {
 
 	cmd := NewCommand("clone")
 	if opts.Mirror {
-		cmd.AddArguments("--mirror")
+		cmd.AddArgs("--mirror")
 	}
 	if opts.Bare {
-		cmd.AddArguments("--bare")
+		cmd.AddArgs("--bare")
 	}
 	if opts.Quiet {
-		cmd.AddArguments("--quiet")
+		cmd.AddArgs("--quiet")
 	}
 	if len(opts.Branch) > 0 {
-		cmd.AddArguments("-b", opts.Branch)
+		cmd.AddArgs("-b", opts.Branch)
 	}
-	cmd.AddArguments(from, to)
+	cmd.AddArgs(from, to)
 
 	if opts.Timeout <= 0 {
 		opts.Timeout = -1
@@ -134,7 +134,7 @@ type FetchRemoteOptions struct {
 func Fetch(repoPath string, opts FetchRemoteOptions) error {
 	cmd := NewCommand("fetch")
 	if opts.Prune {
-		cmd.AddArguments("--prune")
+		cmd.AddArgs("--prune")
 	}
 
 	if opts.Timeout <= 0 {
@@ -156,13 +156,13 @@ type PullRemoteOptions struct {
 func Pull(repoPath string, opts PullRemoteOptions) error {
 	cmd := NewCommand("pull")
 	if opts.Rebase {
-		cmd.AddArguments("--rebase")
+		cmd.AddArgs("--rebase")
 	}
 	if opts.All {
-		cmd.AddArguments("--all")
+		cmd.AddArgs("--all")
 	} else {
-		cmd.AddArguments(opts.Remote)
-		cmd.AddArguments(opts.Branch)
+		cmd.AddArgs(opts.Remote)
+		cmd.AddArgs(opts.Branch)
 	}
 
 	if opts.Timeout <= 0 {
@@ -193,13 +193,13 @@ type CheckoutOptions struct {
 func Checkout(repoPath string, opts CheckoutOptions) error {
 	cmd := NewCommand("checkout")
 	if len(opts.OldBranch) > 0 {
-		cmd.AddArguments("-b")
+		cmd.AddArgs("-b")
 	}
 
-	cmd.AddArguments(opts.Branch)
+	cmd.AddArgs(opts.Branch)
 
 	if len(opts.OldBranch) > 0 {
-		cmd.AddArguments(opts.OldBranch)
+		cmd.AddArgs(opts.OldBranch)
 	}
 	if opts.Timeout <= 0 {
 		opts.Timeout = -1
@@ -212,15 +212,15 @@ func Checkout(repoPath string, opts CheckoutOptions) error {
 func ResetHEAD(repoPath string, hard bool, revision string) error {
 	cmd := NewCommand("reset")
 	if hard {
-		cmd.AddArguments("--hard")
+		cmd.AddArgs("--hard")
 	}
-	_, err := cmd.AddArguments(revision).RunInDir(repoPath)
+	_, err := cmd.AddArgs(revision).RunInDir(repoPath)
 	return err
 }
 
 // MoveFile moves a file to another file or directory.
 func MoveFile(repoPath, oldTreeName, newTreeName string) error {
-	_, err := NewCommand("mv").AddArguments(oldTreeName, newTreeName).RunInDir(repoPath)
+	_, err := NewCommand("mv").AddArgs(oldTreeName, newTreeName).RunInDir(repoPath)
 	return err
 }
 

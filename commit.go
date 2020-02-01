@@ -99,9 +99,9 @@ func (c *Commit) GetCommitByPath(relpath string) (*Commit, error) {
 func AddChanges(repoPath string, all bool, files ...string) error {
 	cmd := NewCommand("add")
 	if all {
-		cmd.AddArguments("--all")
+		cmd.AddArgs("--all")
 	}
-	_, err := cmd.AddArguments(files...).RunInDir(repoPath)
+	_, err := cmd.AddArgs(files...).RunInDir(repoPath)
 	return err
 }
 
@@ -118,15 +118,15 @@ func CommitChanges(repoPath string, opts CommitChangesOptions) error {
 	if opts.Committer != nil {
 		cmd.AddEnvs("GIT_COMMITTER_NAME="+opts.Committer.Name, "GIT_COMMITTER_EMAIL="+opts.Committer.Email)
 	}
-	cmd.AddArguments("commit")
+	cmd.AddArgs("commit")
 
 	if opts.Author == nil {
 		opts.Author = opts.Committer
 	}
 	if opts.Author != nil {
-		cmd.AddArguments(fmt.Sprintf("--author='%s <%s>'", opts.Author.Name, opts.Author.Email))
+		cmd.AddArgs(fmt.Sprintf("--author='%s <%s>'", opts.Author.Name, opts.Author.Email))
 	}
-	cmd.AddArguments("-m", opts.Message)
+	cmd.AddArgs("-m", opts.Message)
 
 	_, err := cmd.RunInDir(repoPath)
 	// No stderr but exit status 1 means nothing to commit.
@@ -137,9 +137,9 @@ func CommitChanges(repoPath string, opts CommitChangesOptions) error {
 }
 
 func commitsCount(repoPath, revision, relpath string) (int64, error) {
-	cmd := NewCommand("rev-list", "--count").AddArguments(revision)
+	cmd := NewCommand("rev-list", "--count").AddArgs(revision)
 	if len(relpath) > 0 {
-		cmd.AddArguments("--", relpath)
+		cmd.AddArgs("--", relpath)
 	}
 
 	stdout, err := cmd.RunInDir(repoPath)

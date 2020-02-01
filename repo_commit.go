@@ -369,7 +369,7 @@ func CommitsCount(repoPath, revision string) (int64, error) {
 func GetLatestCommitDate(repoPath, branch string) (time.Time, error) {
 	cmd := NewCommand("for-each-ref", "--count=1", "--sort=-committerdate", "--format=%(committerdate:iso8601)")
 	if len(branch) > 0 {
-		cmd.AddArguments("refs/heads/" + branch)
+		cmd.AddArgs("refs/heads/" + branch)
 	}
 	stdout, err := cmd.RunInDir(repoPath)
 	if err != nil {

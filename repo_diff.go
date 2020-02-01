@@ -320,13 +320,13 @@ func GetDiffRange(repoPath, beforeCommitID, afterCommitID string, maxLines, maxL
 	if len(beforeCommitID) == 0 {
 		// First commit of repository
 		if commit.ParentCount() == 0 {
-			cmd.AddArguments("show", "--full-index", afterCommitID)
+			cmd.AddArgs("show", "--full-index", afterCommitID)
 		} else {
 			c, _ := commit.Parent(0)
-			cmd.AddArguments("diff", "--full-index", "-M", c.ID.String(), afterCommitID)
+			cmd.AddArgs("diff", "--full-index", "-M", c.ID.String(), afterCommitID)
 		}
 	} else {
-		cmd.AddArguments("diff", "--full-index", "-M", beforeCommitID, afterCommitID)
+		cmd.AddArgs("diff", "--full-index", "-M", beforeCommitID, afterCommitID)
 	}
 
 	stdout, w := io.Pipe()
@@ -370,18 +370,18 @@ func GetRawDiff(repoPath, commitID string, diffType RawDiffType, writer io.Write
 	switch diffType {
 	case RawDiffNormal:
 		if commit.ParentCount() == 0 {
-			cmd.AddArguments("show", commitID)
+			cmd.AddArgs("show", commitID)
 		} else {
 			c, _ := commit.Parent(0)
-			cmd.AddArguments("diff", "-M", c.ID.String(), commitID)
+			cmd.AddArgs("diff", "-M", c.ID.String(), commitID)
 		}
 	case RawDiffPatch:
 		if commit.ParentCount() == 0 {
-			cmd.AddArguments("format-patch", "--no-signature", "--stdout", "--root", commitID)
+			cmd.AddArgs("format-patch", "--no-signature", "--stdout", "--root", commitID)
 		} else {
 			c, _ := commit.Parent(0)
 			query := fmt.Sprintf("%s...%s", commitID, c.ID.String())
-			cmd.AddArguments("format-patch", "--no-signature", "--stdout", query)
+			cmd.AddArgs("format-patch", "--no-signature", "--stdout", query)
 		}
 	default:
 		return fmt.Errorf("invalid diffType: %s", diffType)

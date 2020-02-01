@@ -85,12 +85,12 @@ func DeleteBranch(repoPath, name string, opts DeleteBranchOptions) error {
 	cmd := NewCommand("branch")
 
 	if opts.Force {
-		cmd.AddArguments("-D")
+		cmd.AddArgs("-D")
 	} else {
-		cmd.AddArguments("-d")
+		cmd.AddArgs("-d")
 	}
 
-	cmd.AddArguments(name)
+	cmd.AddArgs(name)
 	_, err := cmd.RunInDir(repoPath)
 
 	return err
@@ -105,9 +105,9 @@ func (repo *Repository) DeleteBranch(name string, opts DeleteBranchOptions) erro
 func (repo *Repository) AddRemote(name, url string, fetch bool) error {
 	cmd := NewCommand("remote", "add")
 	if fetch {
-		cmd.AddArguments("-f")
+		cmd.AddArgs("-f")
 	}
-	cmd.AddArguments(name, url)
+	cmd.AddArgs(name, url)
 
 	_, err := cmd.RunInDir(repo.Path)
 	return err
