@@ -10,13 +10,15 @@ import (
 	"strings"
 )
 
-const EmptySHA = "0000000000000000000000000000000000000000"
+// EmptySHA1 is an empty SHA-1 hash.
+const EmptySHA1 = "0000000000000000000000000000000000000000"
 
-type sha1 [20]byte
+// SHA1 is the SHA-1 hash of a Git object.
+type SHA1 [20]byte
 
-// Equal returns true if s has the same sha1 as caller.
-// Support 40-length-string, []byte, sha1.
-func (id sha1) Equal(s2 interface{}) bool {
+// Equal returns true if s has the same SHA1 as caller.
+// Support 40-length-string, []byte, SHA1.
+func (id SHA1) Equal(s2 interface{}) bool {
 	switch v := s2.(type) {
 	case string:
 		if len(v) != 40 {
@@ -32,7 +34,7 @@ func (id sha1) Equal(s2 interface{}) bool {
 				return false
 			}
 		}
-	case sha1:
+	case SHA1:
 		for i, v := range v {
 			if id[i] != v {
 				return false
@@ -45,7 +47,7 @@ func (id sha1) Equal(s2 interface{}) bool {
 }
 
 // String returns string (hex) representation of the Oid.
-func (s sha1) String() string {
+func (s SHA1) String() string {
 	result := make([]byte, 0, 40)
 	hexvalues := []byte("0123456789abcdef")
 	for i := 0; i < 20; i++ {
@@ -55,32 +57,32 @@ func (s sha1) String() string {
 	return string(result)
 }
 
-// MustID always creates a new sha1 from a [20]byte array with no validation of input.
-func MustID(b []byte) sha1 {
-	var id sha1
+// MustID always creates a new SHA1 from a [20]byte array with no validation of input.
+func MustID(b []byte) SHA1 {
+	var id SHA1
 	for i := 0; i < 20; i++ {
 		id[i] = b[i]
 	}
 	return id
 }
 
-// NewID creates a new sha1 from a [20]byte array.
-func NewID(b []byte) (sha1, error) {
+// NewID creates a new SHA1 from a [20]byte array.
+func NewID(b []byte) (SHA1, error) {
 	if len(b) != 20 {
-		return sha1{}, fmt.Errorf("length must be 20: %v", b)
+		return SHA1{}, fmt.Errorf("length must be 20: %v", b)
 	}
 	return MustID(b), nil
 }
 
 // MustIDFromString always creates a new sha from a ID with no validation of input.
-func MustIDFromString(s string) sha1 {
+func MustIDFromString(s string) SHA1 {
 	b, _ := hex.DecodeString(s)
 	return MustID(b)
 }
 
-// NewIDFromString creates a new sha1 from a ID string of length 40.
-func NewIDFromString(s string) (sha1, error) {
-	var id sha1
+// NewIDFromString creates a new SHA1 from a ID string of length 40.
+func NewIDFromString(s string) (SHA1, error) {
+	var id SHA1
 	s = strings.TrimSpace(s)
 	if len(s) != 40 {
 		return id, fmt.Errorf("length must be 40: %s", s)

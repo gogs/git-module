@@ -27,7 +27,7 @@ const (
 )
 
 type TreeEntry struct {
-	ID   sha1
+	ID   SHA1
 	Type ObjectType
 
 	mode EntryMode
