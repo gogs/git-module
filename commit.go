@@ -92,12 +92,12 @@ func (c *Commit) IsImageFile(name string) bool {
 		return false
 	}
 
-	dataRc, err := blob.Data()
+	r, err := blob.Reader()
 	if err != nil {
 		return false
 	}
 	buf := make([]byte, 1024)
-	n, _ := dataRc.Read(buf)
+	n, _ := r.Read(buf)
 	buf = buf[:n]
 	_, isImage := isImageFile(buf)
 	return isImage

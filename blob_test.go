@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestBlob_Data(t *testing.T) {
+func TestBlob_Reader(t *testing.T) {
 	expOutput := `Copyright (c) 2015 All Gogs Contributors
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -44,7 +44,7 @@ THE SOFTWARE.`
 	}
 
 	t.Run("get data all at once", func(t *testing.T) {
-		r, err := blob.Data()
+		r, err := blob.Reader()
 		assert.Nil(t, err)
 		assert.NotNil(t, r)
 
@@ -55,7 +55,7 @@ THE SOFTWARE.`
 
 	t.Run("get data with pipeline", func(t *testing.T) {
 		stdout := new(bytes.Buffer)
-		err := blob.DataPipeline(stdout, nil)
+		err := blob.Pipeline(stdout, nil)
 		assert.Nil(t, err)
 		assert.Equal(t, expOutput, stdout.String())
 	})

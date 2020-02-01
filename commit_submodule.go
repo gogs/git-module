@@ -19,7 +19,7 @@ func (c *Commit) Submodules() (Submodules, error) {
 		}
 
 		var r io.Reader
-		r, c.submodulesErr = e.Blob().Data()
+		r, c.submodulesErr = e.Blob().Reader()
 		if c.submodulesErr != nil {
 			return
 		}
