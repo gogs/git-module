@@ -205,7 +205,14 @@ func (tes Entries) GetCommitsInfoWithCustomConcurrency(commit *Commit, treePath 
 			if err != nil {
 				cinfo.err = fmt.Errorf("GetCommitByPath (%s/%s): %v", treePath, tes[i].Name(), err)
 			} else {
-				cinfo.infos = []interface{}{tes[i], NewSubModuleFile(c, smURL, tes[i].ID.String())}
+				cinfo.infos = []interface{}{
+					tes[i],
+					&SubmoduleFile{
+						Commit: c,
+						refURL: smURL,
+						refID:  tes[i].ID.String(),
+					},
+				}
 			}
 			revChan <- cinfo
 			<-taskChan

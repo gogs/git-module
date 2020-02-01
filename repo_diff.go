@@ -319,7 +319,7 @@ func GetDiffRange(repoPath, beforeCommitID, afterCommitID string, maxLines, maxL
 	cmd := NewCommand()
 	if len(beforeCommitID) == 0 {
 		// First commit of repository
-		if commit.ParentCount() == 0 {
+		if commit.ParentsCount() == 0 {
 			cmd.AddArgs("show", "--full-index", afterCommitID)
 		} else {
 			c, _ := commit.Parent(0)
@@ -369,14 +369,14 @@ func GetRawDiff(repoPath, commitID string, diffType RawDiffType, writer io.Write
 	cmd := NewCommand()
 	switch diffType {
 	case RawDiffNormal:
-		if commit.ParentCount() == 0 {
+		if commit.ParentsCount() == 0 {
 			cmd.AddArgs("show", commitID)
 		} else {
 			c, _ := commit.Parent(0)
 			cmd.AddArgs("diff", "-M", c.id.String(), commitID)
 		}
 	case RawDiffPatch:
-		if commit.ParentCount() == 0 {
+		if commit.ParentsCount() == 0 {
 			cmd.AddArgs("format-patch", "--no-signature", "--stdout", "--root", commitID)
 		} else {
 			c, _ := commit.Parent(0)

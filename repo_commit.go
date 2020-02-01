@@ -344,11 +344,11 @@ func (repo *Repository) commitsBefore(l *list.List, parent *list.Element, id SHA
 	}
 
 	pr := parent
-	if commit.ParentCount() > 1 {
+	if commit.ParentsCount() > 1 {
 		pr = e
 	}
 
-	for i := 0; i < commit.ParentCount(); i++ {
+	for i := 0; i < commit.ParentsCount(); i++ {
 		id, err := commit.ParentID(i)
 		if err != nil {
 			return err

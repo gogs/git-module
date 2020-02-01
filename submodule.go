@@ -11,24 +11,16 @@ type Submodule struct {
 	URL  string
 }
 
-// SubModuleFile represents a file with submodule type.
-type SubModuleFile struct {
+// SubmoduleFile is a file with submodule type.
+type SubmoduleFile struct {
 	*Commit
 
 	refURL string
 	refID  string
 }
 
-func NewSubModuleFile(c *Commit, refURL, refID string) *SubModuleFile {
-	return &SubModuleFile{
-		Commit: c,
-		refURL: refURL,
-		refID:  refID,
-	}
-}
-
 // RefURL guesses and returns reference URL.
-func (sf *SubModuleFile) RefURL(urlPrefix string, parentPath string) string {
+func (sf *SubmoduleFile) RefURL(urlPrefix string, parentPath string) string {
 	if sf.refURL == "" {
 		return ""
 	}
@@ -73,6 +65,6 @@ func (sf *SubModuleFile) RefURL(urlPrefix string, parentPath string) string {
 }
 
 // RefID returns reference ID.
-func (sf *SubModuleFile) RefID() string {
+func (sf *SubmoduleFile) RefID() string {
 	return sf.refID
 }
