@@ -57,10 +57,7 @@ func IsRepoURLAccessible(opts NetworkOptions) bool {
 		opts.Timeout = -1
 	}
 	_, err := cmd.RunTimeout(opts.Timeout)
-	if err != nil {
-		return false
-	}
-	return true
+	return err == nil
 }
 
 // InitRepository initializes a new Git repository.
