@@ -56,7 +56,7 @@ func IsRepoURLAccessible(opts NetworkOptions) bool {
 	if opts.Timeout <= 0 {
 		opts.Timeout = -1
 	}
-	_, err := cmd.RunTimeout(opts.Timeout)
+	_, err := cmd.RunWithTimeout(opts.Timeout)
 	return err == nil
 }
 
@@ -121,7 +121,7 @@ func Clone(from, to string, opts CloneRepoOptions) (err error) {
 	if opts.Timeout <= 0 {
 		opts.Timeout = -1
 	}
-	_, err = cmd.RunTimeout(opts.Timeout)
+	_, err = cmd.RunWithTimeout(opts.Timeout)
 	return err
 }
 
@@ -140,7 +140,7 @@ func Fetch(repoPath string, opts FetchRemoteOptions) error {
 	if opts.Timeout <= 0 {
 		opts.Timeout = -1
 	}
-	_, err := cmd.RunInDirTimeout(opts.Timeout, repoPath)
+	_, err := cmd.RunInDirWithTimeout(opts.Timeout, repoPath)
 	return err
 }
 
@@ -168,7 +168,7 @@ func Pull(repoPath string, opts PullRemoteOptions) error {
 	if opts.Timeout <= 0 {
 		opts.Timeout = -1
 	}
-	_, err := cmd.RunInDirTimeout(opts.Timeout, repoPath)
+	_, err := cmd.RunInDirWithTimeout(opts.Timeout, repoPath)
 	return err
 }
 
@@ -204,7 +204,7 @@ func Checkout(repoPath string, opts CheckoutOptions) error {
 	if opts.Timeout <= 0 {
 		opts.Timeout = -1
 	}
-	_, err := cmd.RunInDirTimeout(opts.Timeout, repoPath)
+	_, err := cmd.RunInDirWithTimeout(opts.Timeout, repoPath)
 	return err
 }
 

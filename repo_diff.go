@@ -337,7 +337,7 @@ func GetDiffRange(repoPath, beforeCommitID, afterCommitID string, maxLines, maxL
 	}()
 
 	stderr := new(bytes.Buffer)
-	err = cmd.RunInDirTimeoutPipeline(2*time.Minute, repoPath, w, stderr)
+	err = cmd.RunInDirPipelineWithTimeout(2*time.Minute, w, stderr, repoPath)
 	w.Close() // Close writer to exit parsing goroutine
 	if err != nil {
 		return nil, concatenateError(err, stderr.String())

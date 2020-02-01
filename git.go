@@ -74,8 +74,9 @@ func BinVersion() (string, error) {
 	return gitVersion, gitVersionErr
 }
 
-// Fsck verifies the connectivity and validity of the objects in the database.
-func Fsck(repoPath string, timeout time.Duration, args ...string) error {
-	_, err := NewCommand("fsck").AddArguments(args...).RunInDirTimeout(timeout, repoPath)
+// FsckWithTimeout verifies the connectivity and validity of the objects in the database
+// with given timeout duration.
+func FsckWithTimeout(timeout time.Duration, repoPath string, args ...string) error {
+	_, err := NewCommand("fsck").AddArguments(args...).RunInDirWithTimeout(timeout, repoPath)
 	return err
 }
