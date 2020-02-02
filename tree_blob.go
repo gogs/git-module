@@ -40,7 +40,7 @@ func (t *Tree) GetTreeEntryByPath(relpath string) (*TreeEntry, error) {
 			}
 		}
 	}
-	return nil, ErrNotExist{"", relpath}
+	return nil, ErrRevisionNotExist{"", relpath}
 }
 
 func (t *Tree) GetBlobByPath(relpath string) (*Blob, error) {
@@ -53,5 +53,5 @@ func (t *Tree) GetBlobByPath(relpath string) (*Blob, error) {
 		return entry.Blob(), nil
 	}
 
-	return nil, ErrNotExist{"", relpath}
+	return nil, ErrRevisionNotExist{"", relpath}
 }

@@ -6,7 +6,6 @@ package git
 
 import (
 	"bytes"
-	"container/list"
 	"fmt"
 	"strconv"
 	"strings"
@@ -16,7 +15,7 @@ import (
 // PullRequestInfo represents needed information for a pull request.
 type PullRequestInfo struct {
 	MergeBase string
-	Commits   *list.List
+	Commits   []*Commit
 	NumFiles  int
 }
 
@@ -32,9 +31,19 @@ func (r *Repository) GetMergeBase(base, head string) (string, error) {
 	return strings.TrimSpace(string(stdout)), nil
 }
 
+type PullRequestInfoOptions struct {
+	// The timeout duration before giving up. The default timeout duration will be used when not supplied.
+	Timeout time.Duration
+}
+
 // GetPullRequestInfo generates and returns pull request information
 // between base and head branches of repositories.
-func (r *Repository) GetPullRequestInfo(basePath, baseBranch, headBranch string) (_ *PullRequestInfo, err error) {
+func (r *Repository) GetPullRequestInfo(basePath, baseBranch, headBranch string, opts ...PullRequestInfoOptions) (_ *PullRequestInfo, err error) {
+	var opt PullRequestInfoOptions
+	if len(opts) > 0 {
+		opt = opts[0]
+	}
+
 	var remoteBranch string
 
 	// We don't need a temporary remote for same repository.
@@ -44,7 +53,9 @@ func (r *Repository) GetPullRequestInfo(basePath, baseBranch, headBranch string)
 		if err = r.AddRemote(tmpRemote, basePath, true); err != nil {
 			return nil, fmt.Errorf("AddRemote: %v", err)
 		}
-		defer r.RemoveRemote(tmpRemote)
+		defer func() {
+			_ = r.RemoveRemote(tmpRemote)
+		}()
 
 		remoteBranch = "remotes/" + tmpRemote + "/" + baseBranch
 	} else {
@@ -57,11 +68,11 @@ func (r *Repository) GetPullRequestInfo(basePath, baseBranch, headBranch string)
 		return nil, err
 	}
 
-	logs, err := NewCommand("log", prInfo.MergeBase+"..."+headBranch, prettyLogFormat).RunInDir(r.path)
+	logs, err := NewCommand("log", prInfo.MergeBase+"..."+headBranch, LogFormatHashOnly).RunInDir(r.path)
 	if err != nil {
 		return nil, err
 	}
-	prInfo.Commits, err = r.parsePrettyFormatLogToList(logs)
+	prInfo.Commits, err = r.parsePrettyFormatLogToList(opt.Timeout, logs)
 	if err != nil {
 		return nil, fmt.Errorf("parsePrettyFormatLogToList: %v", err)
 	}

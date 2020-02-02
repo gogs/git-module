@@ -5,7 +5,7 @@ import (
 )
 
 // IsURLAccessible returns true if given remote URL is accessible via Git.
-func IsURLAccessible(url string, timeout time.Duration) bool {
+func IsURLAccessible(timeout time.Duration, url string) bool {
 	_, err := LsRemote(LsRemoteOptions{
 		URL:     url,
 		Timeout: timeout,

@@ -8,17 +8,17 @@ import "bytes"
 
 // Tag represents a Git tag.
 type Tag struct {
-	Name    string
-	ID      SHA1
-	repo    *Repository
-	Object  SHA1 // The id of this commit object
-	Type    string
-	Tagger  *Signature
-	Message string
+	Name     string
+	ID       SHA1
+	repo     *Repository
+	CommitID SHA1 // The id of this commit object
+	Type     string
+	Tagger   *Signature
+	Message  string
 }
 
-func (tag *Tag) Commit() (*Commit, error) {
-	return tag.repo.getCommit(tag.Object)
+func (tag *Tag) Commit(opts ...CatFileCommitOptions) (*Commit, error) {
+	return tag.repo.CatFileCommit(tag.CommitID.String(), opts...)
 }
 
 // Parse commit information from the (uncompressed) raw
@@ -42,7 +42,7 @@ l:
 				if err != nil {
 					return nil, err
 				}
-				tag.Object = id
+				tag.CommitID = id
 			case "type":
 				// A commit can have one or more parents
 				tag.Type = string(line[spacepos+1:])

@@ -7,7 +7,6 @@ package git
 import (
 	"bufio"
 	"bytes"
-	"container/list"
 	"fmt"
 	"io"
 	"os"
@@ -22,8 +21,8 @@ import (
 type Repository struct {
 	path string
 
-	commitCache *objectCache
-	tagCache    *objectCache
+	cachedCommits *objectCache
+	cachedTags    *objectCache
 }
 
 // Path returns the path of the repository.
@@ -31,25 +30,25 @@ func (r *Repository) Path() string {
 	return r.path
 }
 
-const prettyLogFormat = `--pretty=format:%H`
+const LogFormatHashOnly = `format:%H`
 
 // parsePrettyFormatLogToList returns a list of commits parsed from given logs that are
-// formatted in prettyLogFormat.
-func (r *Repository) parsePrettyFormatLogToList(logs []byte) (*list.List, error) {
-	l := list.New()
+// formatted in LogFormatHashOnly.
+func (r *Repository) parsePrettyFormatLogToList(timeout time.Duration, logs []byte) ([]*Commit, error) {
 	if len(logs) == 0 {
-		return l, nil
+		return []*Commit{}, nil
 	}
 
+	var err error
 	ids := bytes.Split(logs, []byte{'\n'})
-	for _, id := range ids {
-		c, err := r.CommitByID(string(id))
+	commits := make([]*Commit, len(ids))
+	for i, id := range ids {
+		commits[i], err = r.CatFileCommit(string(id), CatFileCommitOptions{Timeout: timeout})
 		if err != nil {
 			return nil, err
 		}
-		l.PushBack(c)
 	}
-	return l, nil
+	return commits, nil
 }
 
 // InitOptions contains optional arguments for initializing a repository.
@@ -89,9 +88,9 @@ func Open(path string) (*Repository, error) {
 	}
 
 	return &Repository{
-		path:        path,
-		commitCache: newObjectCache(),
-		tagCache:    newObjectCache(),
+		path:          path,
+		cachedCommits: newObjectCache(),
+		cachedTags:    newObjectCache(),
 	}, nil
 }
 
@@ -431,7 +430,7 @@ func (r *Repository) RevParse(rev string, opts ...RevParseOptions) (string, erro
 	commitID, err := NewCommand("rev-parse", rev).RunInDirWithTimeout(opt.Timeout, r.path)
 	if err != nil {
 		if strings.Contains(err.Error(), "exit status 128") {
-			return "", ErrNotExist{rev, ""}
+			return "", ErrRevisionNotExist{rev, ""}
 		}
 		return "", err
 	}

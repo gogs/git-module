@@ -7,11 +7,11 @@ package git
 import (
 	"fmt"
 	"path"
-	"path/filepath"
 	"runtime"
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type EntryMode int
@@ -122,15 +122,15 @@ type commitInfo struct {
 // GetCommitsInfo takes advantages of concurrency to speed up getting information
 // of all commits that are corresponding to these entries. This method will automatically
 // choose the right number of goroutine (concurrency) to use related of the host CPU.
-func (tes Entries) GetCommitsInfo(commit *Commit, treePath string) ([][]interface{}, error) {
-	return tes.GetCommitsInfoWithCustomConcurrency(commit, treePath, 0)
+func (tes Entries) GetCommitsInfo(timeout time.Duration, commit *Commit, treePath string) ([][]interface{}, error) {
+	return tes.GetCommitsInfoWithCustomConcurrency(timeout, commit, treePath, 0)
 }
 
 // GetCommitsInfoWithCustomConcurrency takes advantages of concurrency to speed up getting information
 // of all commits that are corresponding to these entries. If the given maxConcurrency is negative or
-// equal to zero:  the right number of goroutine (concurrency) to use will be choosen related of the
+// equal to zero: the right number of goroutine (concurrency) to use will be choosen related of the
 // host CPU.
-func (tes Entries) GetCommitsInfoWithCustomConcurrency(commit *Commit, treePath string, maxConcurrency int) ([][]interface{}, error) {
+func (tes Entries) GetCommitsInfoWithCustomConcurrency(timeout time.Duration, commit *Commit, treePath string, maxConcurrency int) ([][]interface{}, error) {
 	if len(tes) == 0 {
 		return nil, nil
 	}
@@ -174,9 +174,12 @@ func (tes Entries) GetCommitsInfoWithCustomConcurrency(commit *Commit, treePath 
 		if tes[i].Type != ObjectCommit {
 			go func(i int) {
 				cinfo := commitInfo{entryName: tes[i].Name()}
-				c, err := commit.CommitByPath(filepath.Join(treePath, tes[i].Name()))
+				c, err := commit.CommitByPath(CommitByRevisionOptions{
+					Path:    path.Join(treePath, tes[i].Name()),
+					Timeout: timeout,
+				})
 				if err != nil {
-					cinfo.err = fmt.Errorf("GetCommitByPath (%s/%s): %v", treePath, tes[i].Name(), err)
+					cinfo.err = fmt.Errorf("CommitByPath (%s/%s): %v", treePath, tes[i].Name(), err)
 				} else {
 					cinfo.infos = []interface{}{tes[i], c}
 				}
@@ -190,7 +193,7 @@ func (tes Entries) GetCommitsInfoWithCustomConcurrency(commit *Commit, treePath 
 		go func(i int) {
 			cinfo := commitInfo{entryName: tes[i].Name()}
 			sm, err := commit.Submodule(path.Join(treePath, tes[i].Name()))
-			if err != nil && !IsErrNotExist(err) {
+			if err != nil && !IsErrRevesionNotExist(err) {
 				cinfo.err = fmt.Errorf("GetSubModule (%s/%s): %v", treePath, tes[i].Name(), err)
 				revChan <- cinfo
 				return
@@ -201,9 +204,12 @@ func (tes Entries) GetCommitsInfoWithCustomConcurrency(commit *Commit, treePath 
 				smURL = sm.URL
 			}
 
-			c, err := commit.CommitByPath(filepath.Join(treePath, tes[i].Name()))
+			c, err := commit.CommitByPath(CommitByRevisionOptions{
+				Path:    path.Join(treePath, tes[i].Name()),
+				Timeout: timeout,
+			})
 			if err != nil {
-				cinfo.err = fmt.Errorf("GetCommitByPath (%s/%s): %v", treePath, tes[i].Name(), err)
+				cinfo.err = fmt.Errorf("CommitByPath (%s/%s): %v", treePath, tes[i].Name(), err)
 			} else {
 				cinfo.infos = []interface{}{
 					tes[i],

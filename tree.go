@@ -15,8 +15,7 @@ type Tree struct {
 	ID   SHA1
 	repo *Repository
 
-	// parent tree
-	ptree *Tree
+	parent *Tree
 
 	entries       Entries
 	entriesParsed bool
@@ -126,7 +125,7 @@ func (t *Tree) SubTree(rpath string) (*Tree, error) {
 		if err != nil {
 			return nil, err
 		}
-		g.ptree = p
+		g.parent = p
 		p = g
 	}
 	return g, nil

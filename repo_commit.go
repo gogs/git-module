@@ -6,51 +6,20 @@ package git
 
 import (
 	"bytes"
-	"container/list"
-	"fmt"
+	"errors"
 	"strconv"
 	"strings"
 	"time"
 )
 
-const RemotePrefix = "refs/remotes/"
-
-// getRefCommitID returns the last commit ID string of given reference (branch or tag).
-func (r *Repository) getRefCommitID(name string) (string, error) {
-	stdout, err := NewCommand("show-ref", "--verify", name).RunInDir(r.path)
-	if err != nil {
-		if strings.Contains(err.Error(), "not a valid ref") {
-			return "", ErrNotExist{name, ""}
-		}
-		return "", err
-	}
-	return strings.Split(string(stdout), " ")[0], nil
-}
-
-// GetBranchCommitID returns last commit ID string of given branch.
-func (r *Repository) GetBranchCommitID(name string) (string, error) {
-	return r.getRefCommitID(BranchPrefix + name)
-}
-
-// GetTagCommitID returns last commit ID string of given tag.
-func (r *Repository) GetTagCommitID(name string) (string, error) {
-	return r.getRefCommitID(TagPrefix + name)
-}
-
-// GetRemoteBranchCommitID returns last commit ID string of given remote branch.
-func (r *Repository) GetRemoteBranchCommitID(name string) (string, error) {
-	return r.getRefCommitID(RemotePrefix + name)
-}
-
-// parseCommitData parses commit information from the (uncompressed) raw
-// data from the commit object.
-// \n\n separate headers from message
-func parseCommitData(data []byte) (*Commit, error) {
+// parseCommit parses commit information from the (uncompressed) raw data from the commit object.
+// It assumes "\n\n" separates the header from the rest of the message.
+func parseCommit(data []byte) (*Commit, error) {
 	commit := new(Commit)
 	commit.parents = make([]SHA1, 0, 1)
-	// we now have the contents of the commit object. Let's investigate...
+	// we now have the contents of the commit object. Let's investigate.
 	nextline := 0
-l:
+loop:
 	for {
 		eol := bytes.IndexByte(data[nextline:], '\n')
 		switch {
@@ -88,153 +57,290 @@ l:
 			nextline += eol + 1
 		case eol == 0:
 			commit.message = string(data[nextline+1:])
-			break l
+			break loop
 		default:
-			break l
+			break loop
 		}
 	}
 	return commit, nil
 }
 
-func (r *Repository) getCommit(id SHA1) (*Commit, error) {
-	c, ok := r.commitCache.Get(id.String())
+// CatFileCommitOptions contains optional arguments for verifying the objects.
+// Docs: https://git-scm.com/docs/git-cat-file#Documentation/git-cat-file.txt-lttypegt
+type CatFileCommitOptions struct {
+	// The timeout duration before giving up. The default timeout duration will be used when not supplied.
+	Timeout time.Duration
+}
+
+// CatFileCommit returns the commit corresponding to the given revision. The revision could be
+// a commit ID or refspec.
+func (r *Repository) CatFileCommit(rev string, opts ...CatFileCommitOptions) (*Commit, error) {
+	var opt CatFileCommitOptions
+	if len(opts) > 0 {
+		opt = opts[0]
+	}
+
+	commitID, err := r.RevParse(rev, RevParseOptions{Timeout: opt.Timeout})
+	if err != nil {
+		return nil, err
+	}
+
+	cache, ok := r.cachedCommits.Get(commitID)
 	if ok {
-		log("Hit cache: %s", id)
-		return c.(*Commit), nil
+		log("Cached commit hit: %s", commitID)
+		return cache.(*Commit), nil
 	}
 
-	data, err := NewCommand("cat-file", "commit", id.String()).RunInDir(r.path)
-	if err != nil {
-		if strings.Contains(err.Error(), "exit status 128") {
-			return nil, ErrNotExist{id.String(), ""}
-		}
-		return nil, err
-	}
-
-	commit, err := parseCommitData(data)
+	stdout, err := NewCommand("cat-file", "commit", commitID).RunInDirWithTimeout(opt.Timeout, r.path)
 	if err != nil {
 		return nil, err
 	}
-	commit.repo = r
-	commit.id = id
 
-	r.commitCache.Set(id.String(), commit)
-	return commit, nil
+	c, err := parseCommit(stdout)
+	if err != nil {
+		return nil, err
+	}
+	c.repo = r
+	c.id = MustIDFromString(commitID)
+
+	r.cachedCommits.Set(commitID, c)
+	return c, nil
 }
 
-// CommitByID returns commit object of by ID string.
-func (r *Repository) CommitByID(commitID string) (*Commit, error) {
-	var err error
-	commitID, err = r.RevParse(commitID)
-	if err != nil {
-		return nil, err
-	}
-	id, err := NewIDFromString(commitID)
-	if err != nil {
-		return nil, err
-	}
-
-	return r.getCommit(id)
+// LogOptions contains optional arguments for listing commits.
+// Docs: https://git-scm.com/docs/git-log
+type LogOptions struct {
+	// The maximum number of commits to output.
+	MaxCount int
+	// The number commits skipped before starting to show the commit output.
+	Skip int
+	// To only show commits since the time.
+	Since time.Time
+	// The regular expression to filter commits by their messages.
+	GrepPattern string
+	// Indicates whether to ignore letter case when match the regular expression.
+	RegexpIgnoreCase bool
+	// The relative path of the repository.
+	Path string
+	// The timeout duration before giving up. The default timeout duration will be used when not supplied.
+	Timeout time.Duration
 }
 
-// GetBranchCommit returns the last commit of given branch.
-func (r *Repository) GetBranchCommit(name string) (*Commit, error) {
-	commitID, err := r.GetBranchCommitID(name)
-	if err != nil {
-		return nil, err
+func escapePath(path string) string {
+	if len(path) == 0 {
+		return path
 	}
-	return r.CommitByID(commitID)
+
+	// Path starts with ':' must be escaped.
+	if path[0] == ':' {
+		path = `\` + path
+	}
+	return path
 }
 
-// GetTagCommit returns the commit of given tag.
-func (r *Repository) GetTagCommit(name string) (*Commit, error) {
-	commitID, err := r.GetTagCommitID(name)
+// Log returns a list of commits in the state of given revision. The returned list is in reverse
+// chronological order.
+func (r *Repository) Log(rev string, opts ...LogOptions) ([]*Commit, error) {
+	var opt LogOptions
+	if len(opts) > 0 {
+		opt = opts[0]
+	}
+
+	cmd := NewCommand("log", "--pretty="+LogFormatHashOnly, rev)
+	if opt.MaxCount > 0 {
+		cmd.AddArgs("--max-count=" + strconv.Itoa(opt.MaxCount))
+	}
+	if opt.Skip > 0 {
+		cmd.AddArgs("--skip=" + strconv.Itoa(opt.Skip))
+	}
+	if !opt.Since.IsZero() {
+		cmd.AddArgs("--since=" + opt.Since.Format(time.RFC3339))
+	}
+	if opt.GrepPattern != "" {
+		cmd.AddArgs("--grep=" + opt.GrepPattern)
+	}
+	if opt.RegexpIgnoreCase {
+		cmd.AddArgs("--regexp-ignore-case")
+	}
+	if opt.Path != "" {
+		cmd.AddArgs("--", escapePath(opt.Path))
+	}
+
+	stdout, err := cmd.RunInDirWithTimeout(opt.Timeout, r.path)
 	if err != nil {
 		return nil, err
 	}
-	return r.CommitByID(commitID)
+	return r.parsePrettyFormatLogToList(opt.Timeout, stdout)
 }
 
-// GetRemoteBranchCommit returns the last commit of given remote branch.
-func (r *Repository) GetRemoteBranchCommit(name string) (*Commit, error) {
-	commitID, err := r.GetRemoteBranchCommitID(name)
-	if err != nil {
-		return nil, err
-	}
-	return r.CommitByID(commitID)
+// CommitByRevisionOptions contains optional arguments for getting a commit.
+// Docs: https://git-scm.com/docs/git-log
+type CommitByRevisionOptions struct {
+	// The relative path of the repository.
+	Path string
+	// The timeout duration before giving up. The default timeout duration will be used when not supplied.
+	Timeout time.Duration
 }
 
-func (r *Repository) getCommitByPathWithID(id SHA1, relpath string) (*Commit, error) {
-	// File name starts with ':' must be escaped.
-	if relpath[0] == ':' {
-		relpath = `\` + relpath
+// CommitByRevisionOptions returns a commit by given revision.
+func (r *Repository) CommitByRevision(rev string, opts ...CommitByRevisionOptions) (*Commit, error) {
+	var opt CommitByRevisionOptions
+	if len(opts) > 0 {
+		opt = opts[0]
 	}
 
-	stdout, err := NewCommand("log", "-1", prettyLogFormat, id.String(), "--", relpath).RunInDir(r.path)
+	commits, err := r.Log(rev, LogOptions{
+		MaxCount: 1,
+		Path:     opt.Path,
+		Timeout:  opt.Timeout,
+	})
 	if err != nil {
 		return nil, err
+	} else if len(commits) == 0 {
+		return nil, ErrRevisionNotExist{}
 	}
-
-	id, err = NewIDFromString(string(stdout))
-	if err != nil {
-		return nil, err
-	}
-
-	return r.getCommit(id)
+	return commits[0], nil
 }
 
-// GetCommitByPath returns the last commit of relative path.
-func (r *Repository) GetCommitByPath(relpath string) (*Commit, error) {
-	stdout, err := NewCommand("log", "-1", prettyLogFormat, "--", relpath).RunInDir(r.path)
-	if err != nil {
-		return nil, err
-	}
-
-	commits, err := r.parsePrettyFormatLogToList(stdout)
-	if err != nil {
-		return nil, err
-	}
-	return commits.Front().Value.(*Commit), nil
+// CommitsByPageOptions contains optional arguments for getting paginated commits.
+// Docs: https://git-scm.com/docs/git-log
+type CommitsByPageOptions struct {
+	// The relative path of the repository.
+	Path string
+	// The timeout duration before giving up. The default timeout duration will be used when not supplied.
+	Timeout time.Duration
 }
 
-func (r *Repository) CommitsByRangeSize(revision string, page, size int) (*list.List, error) {
-	stdout, err := NewCommand("log", revision, "--skip="+strconv.Itoa((page-1)*size),
-		"--max-count="+strconv.Itoa(size), prettyLogFormat).RunInDir(r.path)
-	if err != nil {
-		return nil, err
+// CommitsByPage returns a paginated list of commits in the state of given revision.
+// The pagination starts from the newest to the oldest commit.
+func (r *Repository) CommitsByPage(rev string, page, size int, opts ...CommitsByPageOptions) ([]*Commit, error) {
+	var opt CommitsByPageOptions
+	if len(opts) > 0 {
+		opt = opts[0]
 	}
-	return r.parsePrettyFormatLogToList(stdout)
+
+	return r.Log(rev, LogOptions{
+		MaxCount: size,
+		Skip:     (page - 1) * size,
+		Path:     opt.Path,
+		Timeout:  opt.Timeout,
+	})
 }
 
-var DefaultCommitsPageSize = 30
-
-func (r *Repository) CommitsByRange(revision string, page int) (*list.List, error) {
-	return r.CommitsByRangeSize(revision, page, DefaultCommitsPageSize)
+// SearchCommitsOptions contains optional arguments for searching commits.
+// Docs: https://git-scm.com/docs/git-log
+type SearchCommitsOptions struct {
+	// The maximum number of commits to output.
+	MaxCount int
+	// The relative path of the repository.
+	Path string
+	// The timeout duration before giving up. The default timeout duration will be used when not supplied.
+	Timeout time.Duration
 }
 
-func (r *Repository) searchCommits(id SHA1, keyword string) (*list.List, error) {
-	stdout, err := NewCommand("log", id.String(), "-100", "-i", "--grep="+keyword, prettyLogFormat).RunInDir(r.path)
-	if err != nil {
-		return nil, err
+// SearchCommits searches commit message with given pattern in the state of given revision.
+// The returned list is in reverse chronological order.
+func (r *Repository) SearchCommits(rev, pattern string, opts ...SearchCommitsOptions) ([]*Commit, error) {
+	var opt SearchCommitsOptions
+	if len(opts) > 0 {
+		opt = opts[0]
 	}
-	return r.parsePrettyFormatLogToList(stdout)
+
+	return r.Log(rev, LogOptions{
+		MaxCount:         opt.MaxCount,
+		GrepPattern:      pattern,
+		RegexpIgnoreCase: true,
+		Path:             opt.Path,
+		Timeout:          opt.Timeout,
+	})
 }
 
-func (r *Repository) getFilesChanged(id1 string, id2 string) ([]string, error) {
-	stdout, err := NewCommand("diff", "--name-only", id1, id2).RunInDir(r.path)
+// CommitsSinceOptions contains optional arguments for listing commits since a time.
+// Docs: https://git-scm.com/docs/git-log
+type CommitsSinceOptions struct {
+	// The relative path of the repository.
+	Path string
+	// The timeout duration before giving up. The default timeout duration will be used when not supplied.
+	Timeout time.Duration
+}
+
+// CommitsSince returns a list of commits since given time. The returned list is in reverse
+// chronological order.
+func (r *Repository) CommitsSince(rev string, since time.Time, opts ...CommitsSinceOptions) ([]*Commit, error) {
+	var opt CommitsSinceOptions
+	if len(opts) > 0 {
+		opt = opts[0]
+	}
+
+	return r.Log(rev, LogOptions{
+		Since:   since,
+		Path:    opt.Path,
+		Timeout: opt.Timeout,
+	})
+}
+
+// DiffNameOnlyOptions contains optional arguments for listing changed files.
+// Docs: https://git-scm.com/docs/git-diff#Documentation/git-diff.txt---name-only
+type DiffNameOnlyOptions struct {
+	// Indicates whether two commits should have a merge base.
+	NeedsMergeBase bool
+	// The relative path of the repository.
+	Path string
+	// The timeout duration before giving up. The default timeout duration will be used when not supplied.
+	Timeout time.Duration
+}
+
+// DiffNameOnly returns a list of changed files between two commits of the repository.
+func (r *Repository) DiffNameOnly(since, until string, opts ...DiffNameOnlyOptions) ([]string, error) {
+	var opt DiffNameOnlyOptions
+	if len(opts) > 0 {
+		opt = opts[0]
+	}
+
+	cmd := NewCommand("diff", "--name-only")
+	if opt.NeedsMergeBase {
+		cmd.AddArgs(since + "..." + until)
+	} else {
+		cmd.AddArgs(since, until)
+	}
+	if opt.Path != "" {
+		cmd.AddArgs("--", escapePath(opt.Path))
+	}
+
+	stdout, err := cmd.RunInDirWithTimeout(opt.Timeout, r.path)
 	if err != nil {
 		return nil, err
 	}
 	return strings.Split(string(stdout), "\n"), nil
 }
 
-func commitsCount(repoPath, revision, relpath string) (int64, error) {
-	cmd := NewCommand("rev-list", "--count").AddArgs(revision)
-	if len(relpath) > 0 {
-		cmd.AddArgs("--", relpath)
+// RevListCountOptions contains optional arguments for counting commits.
+// Docs: https://git-scm.com/docs/git-rev-list#Documentation/git-rev-list.txt---count
+type RevListCountOptions struct {
+	// The relative path of the repository.
+	Path string
+	// The timeout duration before giving up. The default timeout duration will be used when not supplied.
+	Timeout time.Duration
+}
+
+// RevListCount returns number of total commits up to given revision of the repository.
+func (r *Repository) RevListCount(refspecs []string, opts ...RevListCountOptions) (int64, error) {
+	var opt RevListCountOptions
+	if len(opts) > 0 {
+		opt = opts[0]
 	}
 
-	stdout, err := cmd.RunInDir(repoPath)
+	if len(refspecs) == 0 {
+		return 0, errors.New("must have at least one refspec")
+	}
+
+	cmd := NewCommand("rev-list", "--count")
+	cmd.AddArgs(refspecs...)
+	if opt.Path != "" {
+		cmd.AddArgs("--", escapePath(opt.Path))
+	}
+
+	stdout, err := cmd.RunInDirWithTimeout(opt.Timeout, r.path)
 	if err != nil {
 		return 0, err
 	}
@@ -242,158 +348,66 @@ func commitsCount(repoPath, revision, relpath string) (int64, error) {
 	return strconv.ParseInt(strings.TrimSpace(string(stdout)), 10, 64)
 }
 
-// CommitsCount returns number of total commits up to given revision.
-func CommitsCount(repoPath, revision string) (int64, error) {
-	return commitsCount(repoPath, revision, "")
+// RevListOptions contains optional arguments for listing commits.
+// Docs: https://git-scm.com/docs/git-cat-file#Documentation/git-cat-file.txt-lttypegt
+type RevListOptions struct {
+	// The relative path of the repository.
+	Path string
+	// The timeout duration before giving up. The default timeout duration will be used when not supplied.
+	Timeout time.Duration
 }
 
-// CommitsCount returns number of total commits up to given revision of the repository.
-func (r *Repository) CommitsCount(revision string) (int64, error) {
-	return CommitsCount(r.path, revision)
-}
+// RevList returns a list of commits based on given refspecs in reverse chronological order.
+func (r *Repository) RevList(refspecs []string, opts ...RevListOptions) ([]*Commit, error) {
+	var opt RevListOptions
+	if len(opts) > 0 {
+		opt = opts[0]
+	}
 
-func (r *Repository) FileCommitsCount(revision, file string) (int64, error) {
-	return commitsCount(r.path, revision, file)
-}
+	if len(refspecs) == 0 {
+		return nil, errors.New("must have at least one refspec")
+	}
 
-func (r *Repository) CommitsByFileAndRangeSize(revision, file string, page, size int) (*list.List, error) {
-	stdout, err := NewCommand("log", revision, "--skip="+strconv.Itoa((page-1)*size),
-		"--max-count="+strconv.Itoa(size), prettyLogFormat, "--", file).RunInDir(r.path)
+	cmd := NewCommand("rev-list")
+	cmd.AddArgs(refspecs...)
+	if opt.Path != "" {
+		cmd.AddArgs("--", escapePath(opt.Path))
+	}
+
+	stdout, err := cmd.RunInDirWithTimeout(opt.Timeout, r.path)
 	if err != nil {
 		return nil, err
 	}
-	return r.parsePrettyFormatLogToList(stdout)
+	return r.parsePrettyFormatLogToList(opt.Timeout, bytes.TrimSpace(stdout))
 }
 
-func (r *Repository) CommitsByFileAndRange(revision, file string, page int) (*list.List, error) {
-	return r.CommitsByFileAndRangeSize(revision, file, page, DefaultCommitsPageSize)
+// LatestCommitTimeOptions contains optional arguments for getting the latest commit time.
+type LatestCommitTimeOptions struct {
+	// To get the latest commit time of the branch. When not set, it checks all branches.
+	Branch string
+	// The timeout duration before giving up. The default timeout duration will be used when not supplied.
+	Timeout time.Duration
 }
 
-func (r *Repository) FilesCountBetween(startCommitID, endCommitID string) (int, error) {
-	stdout, err := NewCommand("diff", "--name-only", startCommitID+"..."+endCommitID).RunInDir(r.path)
-	if err != nil {
-		return 0, err
-	}
-	return len(strings.Split(string(stdout), "\n")) - 1, nil
-}
-
-// CommitsBetween returns a list that contains commits between [last, before).
-func (r *Repository) CommitsBetween(last *Commit, before *Commit) (*list.List, error) {
-	stdout, err := NewCommand("rev-list", before.id.String()+"..."+last.id.String()).RunInDir(r.path)
-	if err != nil {
-		return nil, err
-	}
-	return r.parsePrettyFormatLogToList(bytes.TrimSpace(stdout))
-}
-
-func (r *Repository) CommitsBetweenIDs(last, before string) (*list.List, error) {
-	lastCommit, err := r.CommitByID(last)
-	if err != nil {
-		return nil, err
-	}
-	beforeCommit, err := r.CommitByID(before)
-	if err != nil {
-		return nil, err
-	}
-	return r.CommitsBetween(lastCommit, beforeCommit)
-}
-
-func (r *Repository) CommitsCountBetween(start, end string) (int64, error) {
-	return commitsCount(r.path, start+"..."+end, "")
-}
-
-// The limit is depth, not total number of returned commits.
-func (r *Repository) commitsBefore(l *list.List, parent *list.Element, id SHA1, current, limit int) error {
-	// Reach the limit
-	if limit > 0 && current > limit {
-		return nil
+// LatestCommitTime returns the time of latest commit of the repository.
+func (r *Repository) LatestCommitTime(opts ...LatestCommitTimeOptions) (time.Time, error) {
+	var opt LatestCommitTimeOptions
+	if len(opts) > 0 {
+		opt = opts[0]
 	}
 
-	commit, err := r.getCommit(id)
-	if err != nil {
-		return fmt.Errorf("getCommit: %v", err)
+	cmd := NewCommand("for-each-ref",
+		"--count=1",
+		"--sort=-committerdate",
+		"--format=%(committerdate:iso8601)",
+	)
+	if opt.Branch != "" {
+		cmd.AddArgs(RefsHeads + opt.Branch)
 	}
 
-	var e *list.Element
-	if parent == nil {
-		e = l.PushBack(commit)
-	} else {
-		var in = parent
-		for {
-			if in == nil {
-				break
-			} else if in.Value.(*Commit).id.Equal(commit.id) {
-				return nil
-			} else if in.Next() == nil {
-				break
-			}
-
-			if in.Value.(*Commit).committer.When.Equal(commit.committer.When) {
-				break
-			}
-
-			if in.Value.(*Commit).committer.When.After(commit.committer.When) &&
-				in.Next().Value.(*Commit).committer.When.Before(commit.committer.When) {
-				break
-			}
-
-			in = in.Next()
-		}
-
-		e = l.InsertAfter(commit, in)
-	}
-
-	pr := parent
-	if commit.ParentsCount() > 1 {
-		pr = e
-	}
-
-	for i := 0; i < commit.ParentsCount(); i++ {
-		id, err := commit.ParentID(i)
-		if err != nil {
-			return err
-		}
-		err = r.commitsBefore(l, pr, id, current+1, limit)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func (r *Repository) getCommitsBefore(id SHA1) (*list.List, error) {
-	l := list.New()
-	return l, r.commitsBefore(l, nil, id, 1, 0)
-}
-
-func (r *Repository) getCommitsBeforeLimit(id SHA1, num int) (*list.List, error) {
-	l := list.New()
-	return l, r.commitsBefore(l, nil, id, 1, num)
-}
-
-// CommitsAfterDate returns a list of commits which committed after given date.
-// The format of date should be in RFC3339.
-func (r *Repository) CommitsAfterDate(date string) (*list.List, error) {
-	stdout, err := NewCommand("log", prettyLogFormat, "--since="+date).RunInDir(r.path)
-	if err != nil {
-		return nil, err
-	}
-
-	return r.parsePrettyFormatLogToList(stdout)
-}
-
-// GetLatestCommitDate returns the date of latest commit of repository.
-// If branch is empty, it returns the latest commit across all branches.
-func GetLatestCommitDate(repoPath, branch string) (time.Time, error) {
-	cmd := NewCommand("for-each-ref", "--count=1", "--sort=-committerdate", "--format=%(committerdate:iso8601)")
-	if len(branch) > 0 {
-		cmd.AddArgs("refs/heads/" + branch)
-	}
-	stdout, err := cmd.RunInDir(repoPath)
+	stdout, err := cmd.RunInDirWithTimeout(opt.Timeout, r.path)
 	if err != nil {
 		return time.Time{}, err
 	}
-
 	return time.Parse("2006-01-02 15:04:05 -0700", strings.TrimSpace(string(stdout)))
 }

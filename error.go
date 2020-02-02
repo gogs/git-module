@@ -19,21 +19,21 @@ func IsErrExecTimeout(err error) bool {
 }
 
 func (err ErrExecTimeout) Error() string {
-	return fmt.Sprintf("execution timeout [duration: %v]", err.Duration)
+	return fmt.Sprintf("execution timed out [duration: %v]", err.Duration)
 }
 
-type ErrNotExist struct {
-	ID      string
-	RelPath string
+type ErrRevisionNotExist struct {
+	Rev  string
+	Path string
 }
 
-func IsErrNotExist(err error) bool {
-	_, ok := err.(ErrNotExist)
+func IsErrRevesionNotExist(err error) bool {
+	_, ok := err.(ErrRevisionNotExist)
 	return ok
 }
 
-func (err ErrNotExist) Error() string {
-	return fmt.Sprintf("object does not exist [id: %s, rel_path: %s]", err.ID, err.RelPath)
+func (err ErrRevisionNotExist) Error() string {
+	return fmt.Sprintf("revision does not exist [rev: %s, path: %s]", err.Rev, err.Path)
 }
 
 type ErrNoMergeBase struct{}

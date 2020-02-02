@@ -304,14 +304,24 @@ func ParsePatch(done chan<- error, maxLines, maxLineCharacteres, maxFiles int, r
 	return diff
 }
 
+type DiffRangeOptions struct {
+	// The timeout duration before giving up. The default timeout duration will be used when not supplied.
+	Timeout time.Duration
+}
+
 // GetDiffRange returns a parsed diff object between given commits.
-func GetDiffRange(repoPath, beforeCommitID, afterCommitID string, maxLines, maxLineCharacteres, maxFiles int) (*Diff, error) {
+func GetDiffRange(repoPath, beforeCommitID, afterCommitID string, maxLines, maxLineCharacteres, maxFiles int, opts ...DiffRangeOptions) (*Diff, error) {
+	var opt DiffRangeOptions
+	if len(opts) > 0 {
+		opt = opts[0]
+	}
+
 	repo, err := Open(repoPath)
 	if err != nil {
 		return nil, err
 	}
 
-	commit, err := repo.CommitByID(afterCommitID)
+	commit, err := repo.CatFileCommit(afterCommitID, CatFileCommitOptions{Timeout: opt.Timeout})
 	if err != nil {
 		return nil, err
 	}
@@ -354,14 +364,24 @@ const (
 	RawDiffPatch  RawDiffType = "patch"
 )
 
+type RawDiffOptions struct {
+	// The timeout duration before giving up. The default timeout duration will be used when not supplied.
+	Timeout time.Duration
+}
+
 // GetRawDiff dumps diff results of repository in given commit ID to io.Writer.
-func GetRawDiff(repoPath, commitID string, diffType RawDiffType, writer io.Writer) error {
+func GetRawDiff(repoPath, commitID string, diffType RawDiffType, writer io.Writer, opts ...RawDiffOptions) error {
+	var opt RawDiffOptions
+	if len(opts) > 0 {
+		opt = opts[0]
+	}
+
 	repo, err := Open(repoPath)
 	if err != nil {
 		return fmt.Errorf("OpenRepository: %v", err)
 	}
 
-	commit, err := repo.CommitByID(commitID)
+	commit, err := repo.CatFileCommit(commitID, CatFileCommitOptions{Timeout: opt.Timeout})
 	if err != nil {
 		return err
 	}

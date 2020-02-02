@@ -9,7 +9,7 @@ func (r *Repository) getTree(id SHA1) (*Tree, error) {
 	if isFile(treePath) {
 		_, err := NewCommand("ls-tree", id.String()).RunInDir(r.path)
 		if err != nil {
-			return nil, ErrNotExist{id.String(), ""}
+			return nil, ErrRevisionNotExist{id.String(), ""}
 		}
 	}
 

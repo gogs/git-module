@@ -5,7 +5,6 @@
 package git
 
 import (
-	"container/list"
 	"net/http"
 	"strings"
 	"sync"
@@ -52,29 +51,72 @@ func (c *Commit) Summary() string {
 }
 
 // ParentID returns the SHA-1 hash of the n-th parent (0-based) of this commit.
-// It returns ErrNotExist if no such parent exists.
+// It returns ErrRevisionNotExist if no such parent exists.
 func (c *Commit) ParentID(n int) (SHA1, error) {
 	if n >= len(c.parents) {
-		return SHA1{}, ErrNotExist{"", ""}
+		return SHA1{}, ErrRevisionNotExist{"", ""}
 	}
 	return c.parents[n], nil
 }
 
 // Parent returns the n-th parent commit (0-based) of this commit.
-// It returns ErrNotExist if no such parent exists.
-func (c *Commit) Parent(n int) (*Commit, error) {
+// It returns ErrRevisionNotExist if no such parent exists.
+func (c *Commit) Parent(n int, opts ...CatFileCommitOptions) (*Commit, error) {
 	id, err := c.ParentID(n)
 	if err != nil {
 		return nil, err
 	}
 
-	return c.repo.getCommit(id)
+	return c.repo.CatFileCommit(id.String(), opts...)
 }
 
 // ParentsCount returns number of parents of the commit.
 // It returns 0 if this is the root commit, otherwise returns 1, 2, etc.
 func (c *Commit) ParentsCount() int {
 	return len(c.parents)
+}
+
+// CommitByPath returns the commit of the path in the state of this commit.
+func (c *Commit) CommitByPath(opts ...CommitByRevisionOptions) (*Commit, error) {
+	return c.repo.CommitByRevision(c.id.String(), opts...)
+}
+
+// CommitsByPage returns a paginated list of commits in the state of this commit.
+// The returned list is in reverse chronological order.
+func (c *Commit) CommitsByPage(page, size int, opts ...CommitsByPageOptions) ([]*Commit, error) {
+	return c.repo.CommitsByPage(c.id.String(), page, size, opts...)
+}
+
+// SearchCommits searches commit message with given pattern. The returned list is in reverse
+// chronological order.
+func (c *Commit) SearchCommits(pattern string, opts ...SearchCommitsOptions) ([]*Commit, error) {
+	return c.repo.SearchCommits(c.id.String(), pattern, opts...)
+}
+
+// ShowNameStatus returns name status of the commit.
+func (c *Commit) ShowNameStatus(opts ...ShowNameStatusOptions) (*NameStatus, error) {
+	return c.repo.ShowNameStatus(c.id.String(), opts...)
+}
+
+// CommitsCount returns number of total commits up to this commit.
+func (c *Commit) CommitsCount(opts ...RevListCountOptions) (int64, error) {
+	return c.repo.RevListCount([]string{c.id.String()}, opts...)
+}
+
+// FilesChangedSince returns a list of files changed since given commit ID.
+func (c *Commit) FilesChangedSince(commitID string, opts ...DiffNameOnlyOptions) ([]string, error) {
+	return c.repo.DiffNameOnly(commitID, c.id.String(), opts...)
+}
+
+// CommitsAfter returns a list of commits after given commit ID up to this commit. The returned
+// list is in reverse chronological order.
+func (c *Commit) CommitsAfter(after string, opts ...RevListOptions) ([]*Commit, error) {
+	return c.repo.RevList([]string{after + "..." + c.id.String()}, opts...)
+}
+
+// Ancestors returns a list of ancestors of this commit in reverse chronological order.
+func (c *Commit) Ancestors(opts ...LogOptions) ([]*Commit, error) {
+	return c.repo.Log(c.id.String(), opts...)
 }
 
 func isImageFile(data []byte) (string, bool) {
@@ -98,57 +140,4 @@ func (c *Commit) IsImageFile(name string) bool {
 	}
 	_, isImage := isImageFile(p)
 	return isImage
-}
-
-// CommitByPath returns the commit of relative path.
-func (c *Commit) CommitByPath(relpath string) (*Commit, error) {
-	return c.repo.getCommitByPathWithID(c.id, relpath)
-}
-
-// CommitsCount returns number of total commits up to this commit.
-func (c *Commit) CommitsCount() (int64, error) {
-	return c.repo.CommitsCount(c.id.String())
-}
-
-// CommitsByPage returns a paginated list of commits with given page and size.
-// The pagination starts from the newest to the oldest commit.
-func (c *Commit) CommitsByPage(page, size int) (*list.List, error) {
-	return c.repo.CommitsByRangeSize(c.id.String(), page, size)
-}
-
-// Ancestors returns a list of ancestors of this commit from the newest to the oldest.
-func (c *Commit) Ancestors() (*list.List, error) {
-	return c.repo.getCommitsBefore(c.id)
-}
-
-// AncestorsWithLimit returns a list of ancestors of this commit from the newest to the oldest
-// until reached limited size of the list.
-func (c *Commit) AncestorsWithLimit(limit int) (*list.List, error) {
-	return c.repo.getCommitsBeforeLimit(c.id, limit)
-}
-
-// CommitsAfter returns a list of commits after given commit ID up to this commit.
-// The returned list sorted from the newest to the oldest.
-func (c *Commit) CommitsAfter(commitID string) (*list.List, error) {
-	endCommit, err := c.repo.CommitByID(commitID)
-	if err != nil {
-		return nil, err
-	}
-	return c.repo.CommitsBetween(c, endCommit)
-}
-
-// SearchCommits searches commit message with given keyword. It returns a list of matched commits
-// from the newest to the oldest
-func (c *Commit) SearchCommits(keyword string) (*list.List, error) {
-	return c.repo.searchCommits(c.id, keyword)
-}
-
-// FilesChangedSince returns a list of files changed since given commit ID.
-func (c *Commit) FilesChangedSince(commitID string) ([]string, error) {
-	return c.repo.getFilesChanged(commitID, c.id.String())
-}
-
-// FileStatus returns file status of the commit.
-func (c *Commit) FileStatus() (*NameStatus, error) {
-	return c.repo.ShowNameStatus(c.id.String())
 }
