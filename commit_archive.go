@@ -9,17 +9,17 @@ import (
 	"strings"
 )
 
-// Archive is the format of the archive.
-type Archive string
+// ArchiveFormat is the format of an archive.
+type ArchiveFormat string
 
 // A list of formats can be created by Git for an archive.
 const (
-	ArchiveZip   Archive = "zip"
-	ArchiveTarGz Archive = "tar.gz"
+	ArchiveZip   ArchiveFormat = "zip"
+	ArchiveTarGz ArchiveFormat = "tar.gz"
 )
 
 // CreateArchive creates given format of archive to the destination.
-func (c *Commit) CreateArchive(format Archive, dst string) error {
+func (c *Commit) CreateArchive(format ArchiveFormat, dst string) error {
 	prefix := filepath.Base(strings.TrimSuffix(c.repo.path, ".git")) + "/"
 	_, err := NewCommand("archive",
 		"--prefix="+prefix,
