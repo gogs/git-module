@@ -1,6 +1,7 @@
 package git
 
 import (
+	"strings"
 	"time"
 )
 
@@ -11,4 +12,17 @@ func IsURLAccessible(timeout time.Duration, url string) bool {
 		Timeout: timeout,
 	})
 	return err == nil
+}
+
+// RefEndName returns short name of heads or tags. Other references will retrun original string.
+func RefEndName(ref string) string {
+	if strings.HasPrefix(ref, RefsHeads) {
+		return ref[len(RefsHeads):]
+	}
+
+	if strings.HasPrefix(ref, RefsTags) {
+		return ref[len(RefsTags):]
+	}
+
+	return ref
 }

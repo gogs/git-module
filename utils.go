@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 	"sync"
 )
 
@@ -78,16 +77,4 @@ func concatenateError(err error, stderr string) error {
 // It does not test if the file exists.
 func filepathFromSHA1(rootdir, sha1 string) string {
 	return filepath.Join(rootdir, "objects", sha1[:2], sha1[2:])
-}
-
-func RefEndName(refStr string) string {
-	if strings.HasPrefix(refStr, RefsHeads) {
-		return refStr[len(RefsHeads):]
-	}
-
-	if strings.HasPrefix(refStr, RefsTags) {
-		return refStr[len(RefsTags):]
-	}
-
-	return refStr
 }

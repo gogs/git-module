@@ -11,9 +11,8 @@ import (
 )
 
 const (
-	RefsHeads   = "refs/heads/"
-	RefsTags    = "refs/tags/"
-	RefsRemotes = "refs/remotes/"
+	RefsHeads = "refs/heads/"
+	RefsTags  = "refs/tags/"
 )
 
 // Reference contains information of a Git reference.
