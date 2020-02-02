@@ -20,7 +20,7 @@ func (r *Repository) CreateTag(name, revision string) error {
 func (r *Repository) getTag(id *SHA1) (*Tag, error) {
 	t, ok := r.cachedTags.Get(id.String())
 	if ok {
-		log("Hit cache: %s", id)
+		log("Cached tag hit: %s", id)
 		return t.(*Tag), nil
 	}
 

@@ -78,8 +78,8 @@ type RawDiffOptions struct {
 	Timeout time.Duration
 }
 
-// GetRawDiff dumps diff of repository in given revision directly to given io.Writer.
-func (r *Repository) GetRawDiff(rev string, diffType RawDiffFormat, w io.Writer, opts ...RawDiffOptions) error {
+// RawDiff dumps diff of repository in given revision directly to given io.Writer.
+func (r *Repository) RawDiff(rev string, diffType RawDiffFormat, w io.Writer, opts ...RawDiffOptions) error {
 	var opt RawDiffOptions
 	if len(opts) > 0 {
 		opt = opts[0]
@@ -104,16 +104,31 @@ func (r *Repository) GetRawDiff(rev string, diffType RawDiffFormat, w io.Writer,
 			cmd.AddArgs("format-patch", "--no-signature", "--stdout", "--root", rev)
 		} else {
 			c, _ := commit.Parent(0)
-			query := fmt.Sprintf("%s...%s", rev, c.id.String())
-			cmd.AddArgs("format-patch", "--no-signature", "--stdout", query)
+			cmd.AddArgs("format-patch", "--no-signature", "--stdout", rev+"..."+c.id.String())
 		}
 	default:
 		return fmt.Errorf("invalid diffType: %s", diffType)
 	}
 
 	stderr := new(bytes.Buffer)
-	if err = cmd.RunInDirPipeline(r.path, w, stderr); err != nil {
+	if err = cmd.RunInDirPipelineWithTimeout(opt.Timeout, w, stderr, r.path); err != nil {
 		return concatenateError(err, stderr.String())
 	}
 	return nil
+}
+
+// DiffBinaryOptions contains optional arguments for producing binary patch.
+type DiffBinaryOptions struct {
+	// The timeout duration before giving up. The default timeout duration will be used when not supplied.
+	Timeout time.Duration
+}
+
+// DiffBinary returns binary patch between base and head revisions that could be used for git-apply.
+func (r *Repository) DiffBinary(base, head string, opts ...DiffBinaryOptions) ([]byte, error) {
+	var opt DiffBinaryOptions
+	if len(opts) > 0 {
+		opt = opts[0]
+	}
+
+	return NewCommand("diff", "--binary", base, head).RunInDirWithTimeout(opt.Timeout, r.path)
 }

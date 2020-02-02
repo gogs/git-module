@@ -340,7 +340,7 @@ func SteamParsePatch(r io.Reader, done chan<- error, maxLines, maxLineChars, max
 		// Get new file.
 		const diffHead = "diff --git "
 		if strings.HasPrefix(line, diffHead) {
-			middle := -1
+			var middle int
 
 			// Note: In case file name is surrounded by double quotes (it happens only in git-shell).
 			// e.g. diff --git "a/xxx" "b/xxx"

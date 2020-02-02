@@ -103,7 +103,7 @@ func (c *Command) RunInDirPipelineWithTimeout(timeout time.Duration, stdout, std
 
 // RunInDirPipeline executes the command in given directory and default timeout duration.
 // It pipes stdout and stderr to supplied io.Writer.
-func (c *Command) RunInDirPipeline(dir string, stdout, stderr io.Writer) error {
+func (c *Command) RunInDirPipeline(stdout, stderr io.Writer, dir string) error {
 	return c.RunInDirPipelineWithTimeout(DefaultTimeout, stdout, stderr, dir)
 }
 

@@ -289,8 +289,8 @@ type DiffNameOnlyOptions struct {
 	Timeout time.Duration
 }
 
-// DiffNameOnly returns a list of changed files between two commits of the repository.
-func (r *Repository) DiffNameOnly(since, until string, opts ...DiffNameOnlyOptions) ([]string, error) {
+// DiffNameOnly returns a list of changed files between base and head revisions of the repository.
+func (r *Repository) DiffNameOnly(base, head string, opts ...DiffNameOnlyOptions) ([]string, error) {
 	var opt DiffNameOnlyOptions
 	if len(opts) > 0 {
 		opt = opts[0]
@@ -298,9 +298,9 @@ func (r *Repository) DiffNameOnly(since, until string, opts ...DiffNameOnlyOptio
 
 	cmd := NewCommand("diff", "--name-only")
 	if opt.NeedsMergeBase {
-		cmd.AddArgs(since + "..." + until)
+		cmd.AddArgs(base + "..." + head)
 	} else {
-		cmd.AddArgs(since, until)
+		cmd.AddArgs(base, head)
 	}
 	if opt.Path != "" {
 		cmd.AddArgs("--", escapePath(opt.Path))
@@ -322,7 +322,7 @@ type RevListCountOptions struct {
 	Timeout time.Duration
 }
 
-// RevListCount returns number of total commits up to given revision of the repository.
+// RevListCount returns number of total commits up to given refspec of the repository.
 func (r *Repository) RevListCount(refspecs []string, opts ...RevListCountOptions) (int64, error) {
 	var opt RevListCountOptions
 	if len(opts) > 0 {

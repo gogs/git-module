@@ -32,44 +32,6 @@ type Hook struct {
 	content  string // The content of the hook.
 }
 
-// DefaultHooksDir is the default directory for Git hooks.
-const DefaultHooksDir = "hooks"
-
-// GetHook returns a Git hook by given name in the repository. It returns an os.ErrNotExist
-// if both active and sample hook do not exist.
-func GetHook(repoPath string, name HookName) (*Hook, error) {
-	// 1. Check if there is an active hook.
-	fpath := path.Join(repoPath, DefaultHooksDir)
-	if isFile(fpath) {
-		p, err := ioutil.ReadFile(fpath)
-		if err != nil {
-			return nil, err
-		}
-		return &Hook{
-			name:    name,
-			path:    fpath,
-			content: string(p),
-		}, nil
-	}
-
-	// 2. Check if a sample file exists.
-	fpath = path.Join(repoPath, DefaultHooksDir, string(name)) + ".sample"
-	if isFile(fpath) {
-		p, err := ioutil.ReadFile(fpath)
-		if err != nil {
-			return nil, err
-		}
-		return &Hook{
-			name:     name,
-			path:     fpath,
-			isSample: true,
-			content:  string(p),
-		}, nil
-	}
-
-	return nil, os.ErrNotExist
-}
-
 // Name returns the name of the Git hook.
 func (h *Hook) Name() HookName {
 	return h.name

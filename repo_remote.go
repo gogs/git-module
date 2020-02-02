@@ -10,8 +10,6 @@ import (
 	"time"
 )
 
-const RefsRemotes = "refs/remotes/"
-
 // LsRemoteOptions contains arguments for listing references in a remote repository.
 // Docs: https://git-scm.com/docs/git-ls-remote
 type LsRemoteOptions struct {
@@ -69,44 +67,52 @@ func LsRemote(opts ...LsRemoteOptions) ([]*Reference, error) {
 	return refs, nil
 }
 
-// RemoveRemote removes a remote from given repository path if exists.
-func RemoveRemote(repoPath, remote string) error {
-	_, err := NewCommand("remote", "rm", remote).RunInDir(repoPath)
+// AddRemoteOptions contains options to add a remote address.
+type AddRemoteOptions struct {
+	// Indicates whether to execute git fetch after the remote information is set up.
+	Fetch bool
+	// Indicates whether to add remote as mirror with --mirror=fetch.
+	MirrorFetch bool
+	// The timeout duration before giving up. The default timeout duration will be used when not supplied.
+	Timeout time.Duration
+}
+
+// AddRemote adds a new remote to the repository.
+func (r *Repository) AddRemote(name, url string, opts ...AddRemoteOptions) error {
+	var opt AddRemoteOptions
+	if len(opts) > 1 {
+		opt = opts[0]
+	}
+
+	cmd := NewCommand("remote", "add")
+	if opt.Fetch {
+		cmd.AddArgs("-f")
+	}
+	if opt.MirrorFetch {
+		cmd.AddArgs("--mirror=fetch")
+	}
+
+	_, err := cmd.AddArgs(name, url).RunInDirWithTimeout(opt.Timeout, r.path)
+	return err
+}
+
+// RemoveRemoteOptions contains arguments for removing a remote from the repository.
+// Docs: https://git-scm.com/docs/git-remote#Documentation/git-remote.txt-emremoveem
+type RemoveRemoteOptions struct {
+	// The timeout duration before giving up. The default timeout duration will be used when not supplied.
+	Timeout time.Duration
+}
+
+// RemoveRemote removes a remote from the repository.
+func (r *Repository) RemoveRemote(name string, opts ...RemoveRemoteOptions) error {
+	var opt RemoveRemoteOptions
+	if len(opts) > 1 {
+		opt = opts[0]
+	}
+
+	_, err := NewCommand("remote", "remove", name).RunInDirWithTimeout(opt.Timeout, r.path)
 	if err != nil && !strings.Contains(err.Error(), "fatal: No such remote") {
 		return err
 	}
 	return nil
-}
-
-// AddRemoteOptions contains options to add a remote address.
-type AddRemoteOptions struct {
-	Mirror bool
-}
-
-// AddRemote adds a new remote
-func AddRemote(repoPath, remote, addr string, opts AddRemoteOptions) error {
-	cmd := NewCommand("remote", "add", remote)
-	if opts.Mirror {
-		cmd.AddArgs("--mirror")
-	}
-	_, err := cmd.AddArgs(addr).RunInDir(repoPath)
-	return err
-}
-
-// AddRemote adds a new remote to repository.
-func (r *Repository) AddRemote(name, url string, fetch bool) error {
-	cmd := NewCommand("remote", "add")
-	if fetch {
-		cmd.AddArgs("-f")
-	}
-	cmd.AddArgs(name, url)
-
-	_, err := cmd.RunInDir(r.path)
-	return err
-}
-
-// RemoveRemote removes a remote from repository.
-func (r *Repository) RemoveRemote(name string) error {
-	_, err := NewCommand("remote", "remove", name).RunInDir(r.path)
-	return err
 }

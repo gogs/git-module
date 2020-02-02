@@ -6,14 +6,14 @@ package git
 
 import (
 	"errors"
-	"fmt"
 	"strings"
 	"time"
 )
 
 const (
-	RefsHeads = "refs/heads/"
-	RefsTags  = "refs/tags/"
+	RefsHeads   = "refs/heads/"
+	RefsTags    = "refs/tags/"
+	RefsRemotes = "refs/remotes/"
 )
 
 // Reference contains information of a Git reference.
@@ -49,82 +49,105 @@ func (r *Repository) ShowRefVerify(ref string, opts ...ShowRefVerifyOptions) (st
 }
 
 // HasBranch returns true if given branch exists in the repository.
-func (r *Repository) HasReference(ref string) bool {
-	_, err := r.ShowRefVerify(ref)
+func (r *Repository) HasReference(ref string, opts ...ShowRefVerifyOptions) bool {
+	_, err := r.ShowRefVerify(ref, opts...)
 	return err == nil
 }
 
-// Branch contains information of a Git branch.
-type Branch struct {
+// SymbolicRefOptions contains optional arguments for get and set symbolic ref.
+type SymbolicRefOptions struct {
+	// The name of the symbolic ref. When not set, default ref "HEAD" is used.
 	Name string
-	Path string
+	// The name of the reference. When set, it will be used to update the symbolic ref.
+	Ref string
+	// The timeout duration before giving up. The default timeout duration will be used when not supplied.
+	Timeout time.Duration
 }
 
-// SymbolicRef returns the current branch of HEAD.
-func (r *Repository) SymbolicRef() (*Branch, error) {
-	stdout, err := NewCommand("symbolic-ref", "HEAD").RunInDir(r.path)
+// SymbolicRef returns the reference name pointed by the symbolic ref. It returns an empty string
+// and nil error when doing set operation.
+func (r *Repository) SymbolicRef(opts ...SymbolicRefOptions) (string, error) {
+	var opt SymbolicRefOptions
+	if len(opts) > 0 {
+		opt = opts[0]
+	}
+
+	cmd := NewCommand("symbolic-ref")
+	if opt.Name == "" {
+		opt.Name = "HEAD"
+	}
+	cmd.AddArgs(opt.Name)
+	if opt.Ref != "" {
+		cmd.AddArgs(opt.Ref)
+	}
+
+	stdout, err := cmd.RunInDirWithTimeout(opt.Timeout, r.path)
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimSpace(string(stdout)), nil
+}
+
+// ShowRefOptions contains optional arguments for listing references.
+// Docs: https://git-scm.com/docs/git-show-ref
+type ShowRefOptions struct {
+	// Indicates whether to only show heads.
+	Heads bool
+	// The timeout duration before giving up. The default timeout duration will be used when not supplied.
+	Timeout time.Duration
+}
+
+// ShowRef returns a list of references in the repository.
+func (r *Repository) ShowRef(opts ...ShowRefOptions) ([]string, error) {
+	var opt ShowRefOptions
+	if len(opts) > 0 {
+		opt = opts[0]
+	}
+
+	cmd := NewCommand("show-ref")
+	if opt.Heads {
+		cmd.AddArgs("--heads")
+	}
+
+	stdout, err := cmd.RunInDirWithTimeout(opt.Timeout, r.path)
 	if err != nil {
 		return nil, err
 	}
-	ref := strings.TrimSpace(string(stdout))
 
-	if !strings.HasPrefix(ref, RefsHeads) {
-		return nil, fmt.Errorf("invalid HEAD branch: %v", stdout)
-	}
-
-	return &Branch{
-		Name: ref[len(RefsHeads):],
-		Path: ref,
-	}, nil
-}
-
-// SetDefaultBranch sets default branch of repository.
-func (r *Repository) SetDefaultBranch(name string) error {
-	_, err := NewCommand("symbolic-ref", "HEAD", RefsHeads+name).RunInDir(r.path)
-	return err
-}
-
-// GetBranches returns all branches of the repository.
-func (r *Repository) GetBranches() ([]string, error) {
-	stdout, err := NewCommand("show-ref", "--heads").RunInDir(r.path)
-	if err != nil {
-		return nil, err
-	}
-
-	infos := strings.Split(string(stdout), "\n")
-	branches := make([]string, len(infos)-1)
-	for i, info := range infos[:len(infos)-1] {
-		fields := strings.Fields(info)
+	lines := strings.Split(string(stdout), "\n")
+	refs := make([]string, 0, len(lines))
+	for i := range lines {
+		fields := strings.Fields(lines[i])
 		if len(fields) != 2 {
-			continue // NOTE: I should believe git will not give me wrong string.
+			continue
 		}
-		branches[i] = strings.TrimPrefix(fields[1], RefsHeads)
+		refs = append(refs, fields[1])
 	}
-	return branches, nil
+	return refs, nil
 }
 
-// Option(s) for delete branch
+// DeleteBranchOptions contains optional arguments for deleting a branch.
+// // Docs: https://git-scm.com/docs/git-branch
 type DeleteBranchOptions struct {
+	// Indicates whether to force delete the branch.
 	Force bool
+	// The timeout duration before giving up. The default timeout duration will be used when not supplied.
+	Timeout time.Duration
 }
 
-// DeleteBranch deletes a branch from given repository path.
-func DeleteBranch(repoPath, name string, opts DeleteBranchOptions) error {
-	cmd := NewCommand("branch")
+// DeleteBranch deletes the branch from the repository.
+func (r *Repository) DeleteBranch(name string, opts ...DeleteBranchOptions) error {
+	var opt DeleteBranchOptions
+	if len(opts) > 0 {
+		opt = opts[0]
+	}
 
-	if opts.Force {
+	cmd := NewCommand("branch")
+	if opt.Force {
 		cmd.AddArgs("-D")
 	} else {
 		cmd.AddArgs("-d")
 	}
-
-	cmd.AddArgs(name)
-	_, err := cmd.RunInDir(repoPath)
-
+	_, err := cmd.AddArgs(name).RunInDirWithTimeout(opt.Timeout, r.path)
 	return err
-}
-
-// DeleteBranch deletes a branch from repository.
-func (r *Repository) DeleteBranch(name string, opts DeleteBranchOptions) error {
-	return DeleteBranch(r.path, name, opts)
 }
