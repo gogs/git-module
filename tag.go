@@ -9,9 +9,9 @@ import "bytes"
 // Tag represents a Git tag.
 type Tag struct {
 	Name     string
-	ID       SHA1
+	ID       *SHA1
 	repo     *Repository
-	CommitID SHA1 // The id of this commit object
+	CommitID *SHA1 // The id of this commit object
 	Type     string
 	Tagger   *Signature
 	Message  string

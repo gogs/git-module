@@ -12,7 +12,7 @@ import (
 
 // Tree represents a flat directory listing.
 type Tree struct {
-	ID   SHA1
+	ID   *SHA1
 	repo *Repository
 
 	parent *Tree
@@ -21,7 +21,7 @@ type Tree struct {
 	entriesParsed bool
 }
 
-func NewTree(repo *Repository, id SHA1) *Tree {
+func NewTree(repo *Repository, id *SHA1) *Tree {
 	return &Tree{
 		ID:   id,
 		repo: repo,

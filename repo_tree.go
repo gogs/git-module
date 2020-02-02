@@ -4,7 +4,7 @@
 
 package git
 
-func (r *Repository) getTree(id SHA1) (*Tree, error) {
+func (r *Repository) getTree(id *SHA1) (*Tree, error) {
 	treePath := filepathFromSHA1(r.path, id.String())
 	if isFile(treePath) {
 		_, err := NewCommand("ls-tree", id.String()).RunInDir(r.path)

@@ -12,8 +12,8 @@ import (
 
 // CommitByID contains information of a Git commit.
 type Commit struct {
-	id        SHA1
-	parents   []SHA1
+	id        *SHA1
+	parents   []*SHA1
 	author    *Signature
 	committer *Signature
 	message   string
@@ -26,7 +26,7 @@ type Commit struct {
 }
 
 // ID returns the SHA-1 hash of the commit.
-func (c *Commit) ID() SHA1 {
+func (c *Commit) ID() *SHA1 {
 	return c.id
 }
 
@@ -52,9 +52,9 @@ func (c *Commit) Summary() string {
 
 // ParentID returns the SHA-1 hash of the n-th parent (0-based) of this commit.
 // It returns ErrRevisionNotExist if no such parent exists.
-func (c *Commit) ParentID(n int) (SHA1, error) {
+func (c *Commit) ParentID(n int) (*SHA1, error) {
 	if n >= len(c.parents) {
-		return SHA1{}, ErrRevisionNotExist{"", ""}
+		return nil, ErrRevisionNotExist{"", ""}
 	}
 	return c.parents[n], nil
 }

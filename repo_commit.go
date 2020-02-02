@@ -16,7 +16,6 @@ import (
 // It assumes "\n\n" separates the header from the rest of the message.
 func parseCommit(data []byte) (*Commit, error) {
 	commit := new(Commit)
-	commit.parents = make([]SHA1, 0, 1)
 	// we now have the contents of the commit object. Let's investigate.
 	nextline := 0
 loop:
@@ -36,11 +35,11 @@ loop:
 				commit.Tree.ID = id
 			case "parent":
 				// A commit can have one or more parents
-				oid, err := NewIDFromString(string(line[spacepos+1:]))
+				id, err := NewIDFromString(string(line[spacepos+1:]))
 				if err != nil {
 					return nil, err
 				}
-				commit.parents = append(commit.parents, oid)
+				commit.parents = append(commit.parents, id)
 			case "author", "tagger":
 				sig, err := newSignatureFromCommitline(line[spacepos+1:])
 				if err != nil {
