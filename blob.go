@@ -32,5 +32,5 @@ func (b *Blob) Bytes() ([]byte, error) {
 
 // Pipeline reads the content of the blob and pipes stdout and stderr to supplied io.Writer.
 func (b *Blob) Pipeline(stdout, stderr io.Writer) error {
-	return NewCommand("show", b.ID.String()).RunInDirPipeline(b.repo.Path, stdout, stderr)
+	return NewCommand("show", b.ID.String()).RunInDirPipeline(b.repo.path, stdout, stderr)
 }

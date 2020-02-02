@@ -306,12 +306,12 @@ func ParsePatch(done chan<- error, maxLines, maxLineCharacteres, maxFiles int, r
 
 // GetDiffRange returns a parsed diff object between given commits.
 func GetDiffRange(repoPath, beforeCommitID, afterCommitID string, maxLines, maxLineCharacteres, maxFiles int) (*Diff, error) {
-	repo, err := OpenRepository(repoPath)
+	repo, err := Open(repoPath)
 	if err != nil {
 		return nil, err
 	}
 
-	commit, err := repo.GetCommit(afterCommitID)
+	commit, err := repo.CommitByID(afterCommitID)
 	if err != nil {
 		return nil, err
 	}
@@ -356,12 +356,12 @@ const (
 
 // GetRawDiff dumps diff results of repository in given commit ID to io.Writer.
 func GetRawDiff(repoPath, commitID string, diffType RawDiffType, writer io.Writer) error {
-	repo, err := OpenRepository(repoPath)
+	repo, err := Open(repoPath)
 	if err != nil {
 		return fmt.Errorf("OpenRepository: %v", err)
 	}
 
-	commit, err := repo.GetCommit(commitID)
+	commit, err := repo.CommitByID(commitID)
 	if err != nil {
 		return err
 	}

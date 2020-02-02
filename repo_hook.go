@@ -9,8 +9,8 @@ import (
 	"path"
 )
 
-func (repo *Repository) Hook(name HookName) (*Hook, error) {
-	return GetHook(repo.Path, name)
+func (r *Repository) Hook(name HookName) (*Hook, error) {
+	return GetHook(r.path, name)
 }
 
 // ListHooks returns a list of Git hooks found in given repository. It may return an empty slice
@@ -34,6 +34,6 @@ func ListHooks(repoPath string) ([]*Hook, error) {
 	return hooks, nil
 }
 
-func (repo *Repository) Hooks() ([]*Hook, error) {
-	return ListHooks(repo.Path)
+func (r *Repository) Hooks() ([]*Hook, error) {
+	return ListHooks(r.path)
 }

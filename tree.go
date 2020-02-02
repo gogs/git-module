@@ -139,7 +139,7 @@ func (t *Tree) ListEntries() (Entries, error) {
 	}
 	t.entriesParsed = true
 
-	stdout, err := NewCommand("ls-tree", t.ID.String()).RunInDirBytes(t.repo.Path)
+	stdout, err := NewCommand("ls-tree", t.ID.String()).RunInDir(t.repo.path)
 	if err != nil {
 		return nil, err
 	}

@@ -48,13 +48,13 @@ var (
 // BinVersion returns current Git binary version that is used by this module.
 func BinVersion() (string, error) {
 	gitVersionOnce.Do(func() {
-		var stdout string
+		var stdout []byte
 		stdout, gitVersionErr = NewCommand("version").Run()
 		if gitVersionErr != nil {
 			return
 		}
 
-		fields := strings.Fields(stdout)
+		fields := strings.Fields(string(stdout))
 		if len(fields) < 3 {
 			gitVersionErr = fmt.Errorf("not enough output: %s", stdout)
 			return

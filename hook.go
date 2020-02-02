@@ -75,7 +75,7 @@ func (h *Hook) Name() HookName {
 	return h.name
 }
 
-// Path returns the absolute file path of the Git hook.
+// path returns the path of the Git hook.
 func (h *Hook) Path() string {
 	return h.path
 }
@@ -95,7 +95,6 @@ func (h *Hook) Content() string {
 func (h *Hook) Update(content string) error {
 	h.content = strings.TrimSpace(content)
 	h.content = strings.Replace(h.content, "\r", "", -1)
-	os.MkdirAll(path.Dir(h.path), os.ModePerm)
+	_ = os.MkdirAll(path.Dir(h.path), os.ModePerm)
 	return ioutil.WriteFile(h.path, []byte(h.content), os.ModePerm)
 }
-

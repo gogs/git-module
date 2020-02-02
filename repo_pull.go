@@ -5,6 +5,7 @@
 package git
 
 import (
+	"bytes"
 	"container/list"
 	"fmt"
 	"strconv"
@@ -20,30 +21,30 @@ type PullRequestInfo struct {
 }
 
 // GetMergeBase checks and returns merge base of two branches.
-func (repo *Repository) GetMergeBase(base, head string) (string, error) {
-	stdout, err := NewCommand("merge-base", base, head).RunInDir(repo.Path)
+func (r *Repository) GetMergeBase(base, head string) (string, error) {
+	stdout, err := NewCommand("merge-base", base, head).RunInDir(r.path)
 	if err != nil {
 		if strings.Contains(err.Error(), "exit status 1") {
 			return "", ErrNoMergeBase{}
 		}
 		return "", err
 	}
-	return strings.TrimSpace(stdout), nil
+	return strings.TrimSpace(string(stdout)), nil
 }
 
 // GetPullRequestInfo generates and returns pull request information
 // between base and head branches of repositories.
-func (repo *Repository) GetPullRequestInfo(basePath, baseBranch, headBranch string) (_ *PullRequestInfo, err error) {
+func (r *Repository) GetPullRequestInfo(basePath, baseBranch, headBranch string) (_ *PullRequestInfo, err error) {
 	var remoteBranch string
 
 	// We don't need a temporary remote for same repository.
-	if repo.Path != basePath {
+	if r.path != basePath {
 		// Add a temporary remote
 		tmpRemote := strconv.FormatInt(time.Now().UnixNano(), 10)
-		if err = repo.AddRemote(tmpRemote, basePath, true); err != nil {
+		if err = r.AddRemote(tmpRemote, basePath, true); err != nil {
 			return nil, fmt.Errorf("AddRemote: %v", err)
 		}
-		defer repo.RemoveRemote(tmpRemote)
+		defer r.RemoveRemote(tmpRemote)
 
 		remoteBranch = "remotes/" + tmpRemote + "/" + baseBranch
 	} else {
@@ -51,31 +52,31 @@ func (repo *Repository) GetPullRequestInfo(basePath, baseBranch, headBranch stri
 	}
 
 	prInfo := new(PullRequestInfo)
-	prInfo.MergeBase, err = repo.GetMergeBase(remoteBranch, headBranch)
+	prInfo.MergeBase, err = r.GetMergeBase(remoteBranch, headBranch)
 	if err != nil {
 		return nil, err
 	}
 
-	logs, err := NewCommand("log", prInfo.MergeBase+"..."+headBranch, prettyLogFormat).RunInDirBytes(repo.Path)
+	logs, err := NewCommand("log", prInfo.MergeBase+"..."+headBranch, prettyLogFormat).RunInDir(r.path)
 	if err != nil {
 		return nil, err
 	}
-	prInfo.Commits, err = repo.parsePrettyFormatLogToList(logs)
+	prInfo.Commits, err = r.parsePrettyFormatLogToList(logs)
 	if err != nil {
 		return nil, fmt.Errorf("parsePrettyFormatLogToList: %v", err)
 	}
 
 	// Count number of changed files.
-	stdout, err := NewCommand("diff", "--name-only", remoteBranch+"..."+headBranch).RunInDir(repo.Path)
+	stdout, err := NewCommand("diff", "--name-only", remoteBranch+"..."+headBranch).RunInDir(r.path)
 	if err != nil {
 		return nil, err
 	}
-	prInfo.NumFiles = len(strings.Split(stdout, "\n")) - 1
+	prInfo.NumFiles = bytes.Count(stdout, []byte("\n"))
 
 	return prInfo, nil
 }
 
 // GetPatch generates and returns patch data between given revisions.
-func (repo *Repository) GetPatch(base, head string) ([]byte, error) {
-	return NewCommand("diff", "-p", "--binary", base, head).RunInDirBytes(repo.Path)
+func (r *Repository) GetPatch(base, head string) ([]byte, error) {
+	return NewCommand("diff", "-p", "--binary", base, head).RunInDir(r.path)
 }

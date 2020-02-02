@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestBlob_Reader(t *testing.T) {
+func TestBlob(t *testing.T) {
 	expOutput := `Copyright (c) 2015 All Gogs Contributors
 
 Permission is hereby granted, free of charge, to any person obtaining a copy

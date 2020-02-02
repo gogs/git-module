@@ -22,8 +22,8 @@ func IsBranchExist(repoPath, name string) bool {
 	return IsReferenceExist(repoPath, BranchPrefix+name)
 }
 
-func (repo *Repository) IsBranchExist(name string) bool {
-	return IsBranchExist(repo.Path, name)
+func (r *Repository) IsBranchExist(name string) bool {
+	return IsBranchExist(r.path, name)
 }
 
 // Branch represents a Git branch.
@@ -33,37 +33,37 @@ type Branch struct {
 }
 
 // GetHEADBranch returns corresponding branch of HEAD.
-func (repo *Repository) GetHEADBranch() (*Branch, error) {
-	stdout, err := NewCommand("symbolic-ref", "HEAD").RunInDir(repo.Path)
+func (r *Repository) GetHEADBranch() (*Branch, error) {
+	stdout, err := NewCommand("symbolic-ref", "HEAD").RunInDir(r.path)
 	if err != nil {
 		return nil, err
 	}
-	stdout = strings.TrimSpace(stdout)
+	ref := strings.TrimSpace(string(stdout))
 
-	if !strings.HasPrefix(stdout, BranchPrefix) {
+	if !strings.HasPrefix(ref, BranchPrefix) {
 		return nil, fmt.Errorf("invalid HEAD branch: %v", stdout)
 	}
 
 	return &Branch{
-		Name: stdout[len(BranchPrefix):],
-		Path: stdout,
+		Name: ref[len(BranchPrefix):],
+		Path: ref,
 	}, nil
 }
 
 // SetDefaultBranch sets default branch of repository.
-func (repo *Repository) SetDefaultBranch(name string) error {
-	_, err := NewCommand("symbolic-ref", "HEAD", BranchPrefix+name).RunInDir(repo.Path)
+func (r *Repository) SetDefaultBranch(name string) error {
+	_, err := NewCommand("symbolic-ref", "HEAD", BranchPrefix+name).RunInDir(r.path)
 	return err
 }
 
 // GetBranches returns all branches of the repository.
-func (repo *Repository) GetBranches() ([]string, error) {
-	stdout, err := NewCommand("show-ref", "--heads").RunInDir(repo.Path)
+func (r *Repository) GetBranches() ([]string, error) {
+	stdout, err := NewCommand("show-ref", "--heads").RunInDir(r.path)
 	if err != nil {
 		return nil, err
 	}
 
-	infos := strings.Split(stdout, "\n")
+	infos := strings.Split(string(stdout), "\n")
 	branches := make([]string, len(infos)-1)
 	for i, info := range infos[:len(infos)-1] {
 		fields := strings.Fields(info)
@@ -97,24 +97,24 @@ func DeleteBranch(repoPath, name string, opts DeleteBranchOptions) error {
 }
 
 // DeleteBranch deletes a branch from repository.
-func (repo *Repository) DeleteBranch(name string, opts DeleteBranchOptions) error {
-	return DeleteBranch(repo.Path, name, opts)
+func (r *Repository) DeleteBranch(name string, opts DeleteBranchOptions) error {
+	return DeleteBranch(r.path, name, opts)
 }
 
 // AddRemote adds a new remote to repository.
-func (repo *Repository) AddRemote(name, url string, fetch bool) error {
+func (r *Repository) AddRemote(name, url string, fetch bool) error {
 	cmd := NewCommand("remote", "add")
 	if fetch {
 		cmd.AddArgs("-f")
 	}
 	cmd.AddArgs(name, url)
 
-	_, err := cmd.RunInDir(repo.Path)
+	_, err := cmd.RunInDir(r.path)
 	return err
 }
 
 // RemoveRemote removes a remote from repository.
-func (repo *Repository) RemoveRemote(name string) error {
-	_, err := NewCommand("remote", "remove", name).RunInDir(repo.Path)
+func (r *Repository) RemoveRemote(name string) error {
+	_, err := NewCommand("remote", "remove", name).RunInDir(r.path)
 	return err
 }

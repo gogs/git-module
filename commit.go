@@ -11,7 +11,7 @@ import (
 	"sync"
 )
 
-// Commit contains information of a Git commit.
+// CommitByID contains information of a Git commit.
 type Commit struct {
 	id        SHA1
 	parents   []SHA1
@@ -130,7 +130,7 @@ func (c *Commit) AncestorsWithLimit(limit int) (*list.List, error) {
 // CommitsAfter returns a list of commits after given commit ID up to this commit.
 // The returned list sorted from the newest to the oldest.
 func (c *Commit) CommitsAfter(commitID string) (*list.List, error) {
-	endCommit, err := c.repo.GetCommit(commitID)
+	endCommit, err := c.repo.CommitByID(commitID)
 	if err != nil {
 		return nil, err
 	}
@@ -146,4 +146,9 @@ func (c *Commit) SearchCommits(keyword string) (*list.List, error) {
 // FilesChangedSince returns a list of files changed since given commit ID.
 func (c *Commit) FilesChangedSince(commitID string) ([]string, error) {
 	return c.repo.getFilesChanged(commitID, c.id.String())
+}
+
+// FileStatus returns file status of the commit.
+func (c *Commit) FileStatus() (*NameStatus, error) {
+	return c.repo.ShowNameStatus(c.id.String())
 }

@@ -16,30 +16,30 @@ import (
 const RemotePrefix = "refs/remotes/"
 
 // getRefCommitID returns the last commit ID string of given reference (branch or tag).
-func (repo *Repository) getRefCommitID(name string) (string, error) {
-	stdout, err := NewCommand("show-ref", "--verify", name).RunInDir(repo.Path)
+func (r *Repository) getRefCommitID(name string) (string, error) {
+	stdout, err := NewCommand("show-ref", "--verify", name).RunInDir(r.path)
 	if err != nil {
 		if strings.Contains(err.Error(), "not a valid ref") {
 			return "", ErrNotExist{name, ""}
 		}
 		return "", err
 	}
-	return strings.Split(stdout, " ")[0], nil
+	return strings.Split(string(stdout), " ")[0], nil
 }
 
 // GetBranchCommitID returns last commit ID string of given branch.
-func (repo *Repository) GetBranchCommitID(name string) (string, error) {
-	return repo.getRefCommitID(BranchPrefix + name)
+func (r *Repository) GetBranchCommitID(name string) (string, error) {
+	return r.getRefCommitID(BranchPrefix + name)
 }
 
 // GetTagCommitID returns last commit ID string of given tag.
-func (repo *Repository) GetTagCommitID(name string) (string, error) {
-	return repo.getRefCommitID(TagPrefix + name)
+func (r *Repository) GetTagCommitID(name string) (string, error) {
+	return r.getRefCommitID(TagPrefix + name)
 }
 
 // GetRemoteBranchCommitID returns last commit ID string of given remote branch.
-func (repo *Repository) GetRemoteBranchCommitID(name string) (string, error) {
-	return repo.getRefCommitID(RemotePrefix + name)
+func (r *Repository) GetRemoteBranchCommitID(name string) (string, error) {
+	return r.getRefCommitID(RemotePrefix + name)
 }
 
 // parseCommitData parses commit information from the (uncompressed) raw
@@ -96,14 +96,14 @@ l:
 	return commit, nil
 }
 
-func (repo *Repository) getCommit(id SHA1) (*Commit, error) {
-	c, ok := repo.commitCache.Get(id.String())
+func (r *Repository) getCommit(id SHA1) (*Commit, error) {
+	c, ok := r.commitCache.Get(id.String())
 	if ok {
 		log("Hit cache: %s", id)
 		return c.(*Commit), nil
 	}
 
-	data, err := NewCommand("cat-file", "commit", id.String()).RunInDirBytes(repo.Path)
+	data, err := NewCommand("cat-file", "commit", id.String()).RunInDir(r.path)
 	if err != nil {
 		if strings.Contains(err.Error(), "exit status 128") {
 			return nil, ErrNotExist{id.String(), ""}
@@ -115,17 +115,17 @@ func (repo *Repository) getCommit(id SHA1) (*Commit, error) {
 	if err != nil {
 		return nil, err
 	}
-	commit.repo = repo
+	commit.repo = r
 	commit.id = id
 
-	repo.commitCache.Set(id.String(), commit)
+	r.commitCache.Set(id.String(), commit)
 	return commit, nil
 }
 
-// GetCommit returns commit object of by ID string.
-func (repo *Repository) GetCommit(commitID string) (*Commit, error) {
+// CommitByID returns commit object of by ID string.
+func (r *Repository) CommitByID(commitID string) (*Commit, error) {
 	var err error
-	commitID, err = GetFullCommitID(repo.Path, commitID)
+	commitID, err = r.RevParse(commitID)
 	if err != nil {
 		return nil, err
 	}
@@ -134,94 +134,94 @@ func (repo *Repository) GetCommit(commitID string) (*Commit, error) {
 		return nil, err
 	}
 
-	return repo.getCommit(id)
+	return r.getCommit(id)
 }
 
 // GetBranchCommit returns the last commit of given branch.
-func (repo *Repository) GetBranchCommit(name string) (*Commit, error) {
-	commitID, err := repo.GetBranchCommitID(name)
+func (r *Repository) GetBranchCommit(name string) (*Commit, error) {
+	commitID, err := r.GetBranchCommitID(name)
 	if err != nil {
 		return nil, err
 	}
-	return repo.GetCommit(commitID)
+	return r.CommitByID(commitID)
 }
 
 // GetTagCommit returns the commit of given tag.
-func (repo *Repository) GetTagCommit(name string) (*Commit, error) {
-	commitID, err := repo.GetTagCommitID(name)
+func (r *Repository) GetTagCommit(name string) (*Commit, error) {
+	commitID, err := r.GetTagCommitID(name)
 	if err != nil {
 		return nil, err
 	}
-	return repo.GetCommit(commitID)
+	return r.CommitByID(commitID)
 }
 
 // GetRemoteBranchCommit returns the last commit of given remote branch.
-func (repo *Repository) GetRemoteBranchCommit(name string) (*Commit, error) {
-	commitID, err := repo.GetRemoteBranchCommitID(name)
+func (r *Repository) GetRemoteBranchCommit(name string) (*Commit, error) {
+	commitID, err := r.GetRemoteBranchCommitID(name)
 	if err != nil {
 		return nil, err
 	}
-	return repo.GetCommit(commitID)
+	return r.CommitByID(commitID)
 }
 
-func (repo *Repository) getCommitByPathWithID(id SHA1, relpath string) (*Commit, error) {
+func (r *Repository) getCommitByPathWithID(id SHA1, relpath string) (*Commit, error) {
 	// File name starts with ':' must be escaped.
 	if relpath[0] == ':' {
 		relpath = `\` + relpath
 	}
 
-	stdout, err := NewCommand("log", "-1", prettyLogFormat, id.String(), "--", relpath).RunInDir(repo.Path)
+	stdout, err := NewCommand("log", "-1", prettyLogFormat, id.String(), "--", relpath).RunInDir(r.path)
 	if err != nil {
 		return nil, err
 	}
 
-	id, err = NewIDFromString(stdout)
+	id, err = NewIDFromString(string(stdout))
 	if err != nil {
 		return nil, err
 	}
 
-	return repo.getCommit(id)
+	return r.getCommit(id)
 }
 
 // GetCommitByPath returns the last commit of relative path.
-func (repo *Repository) GetCommitByPath(relpath string) (*Commit, error) {
-	stdout, err := NewCommand("log", "-1", prettyLogFormat, "--", relpath).RunInDirBytes(repo.Path)
+func (r *Repository) GetCommitByPath(relpath string) (*Commit, error) {
+	stdout, err := NewCommand("log", "-1", prettyLogFormat, "--", relpath).RunInDir(r.path)
 	if err != nil {
 		return nil, err
 	}
 
-	commits, err := repo.parsePrettyFormatLogToList(stdout)
+	commits, err := r.parsePrettyFormatLogToList(stdout)
 	if err != nil {
 		return nil, err
 	}
 	return commits.Front().Value.(*Commit), nil
 }
 
-func (repo *Repository) CommitsByRangeSize(revision string, page, size int) (*list.List, error) {
+func (r *Repository) CommitsByRangeSize(revision string, page, size int) (*list.List, error) {
 	stdout, err := NewCommand("log", revision, "--skip="+strconv.Itoa((page-1)*size),
-		"--max-count="+strconv.Itoa(size), prettyLogFormat).RunInDirBytes(repo.Path)
+		"--max-count="+strconv.Itoa(size), prettyLogFormat).RunInDir(r.path)
 	if err != nil {
 		return nil, err
 	}
-	return repo.parsePrettyFormatLogToList(stdout)
+	return r.parsePrettyFormatLogToList(stdout)
 }
 
 var DefaultCommitsPageSize = 30
 
-func (repo *Repository) CommitsByRange(revision string, page int) (*list.List, error) {
-	return repo.CommitsByRangeSize(revision, page, DefaultCommitsPageSize)
+func (r *Repository) CommitsByRange(revision string, page int) (*list.List, error) {
+	return r.CommitsByRangeSize(revision, page, DefaultCommitsPageSize)
 }
 
-func (repo *Repository) searchCommits(id SHA1, keyword string) (*list.List, error) {
-	stdout, err := NewCommand("log", id.String(), "-100", "-i", "--grep="+keyword, prettyLogFormat).RunInDirBytes(repo.Path)
+func (r *Repository) searchCommits(id SHA1, keyword string) (*list.List, error) {
+	stdout, err := NewCommand("log", id.String(), "-100", "-i", "--grep="+keyword, prettyLogFormat).RunInDir(r.path)
 	if err != nil {
 		return nil, err
 	}
-	return repo.parsePrettyFormatLogToList(stdout)
+	return r.parsePrettyFormatLogToList(stdout)
 }
 
-func (repo *Repository) getFilesChanged(id1 string, id2 string) ([]string, error) {
-	stdout, err := NewCommand("diff", "--name-only", id1, id2).RunInDirBytes(repo.Path)
+func (r *Repository) getFilesChanged(id1 string, id2 string) ([]string, error) {
+	stdout, err := NewCommand("diff", "--name-only", id1, id2).RunInDir(r.path)
 	if err != nil {
 		return nil, err
 	}
@@ -239,7 +239,7 @@ func commitsCount(repoPath, revision, relpath string) (int64, error) {
 		return 0, err
 	}
 
-	return strconv.ParseInt(strings.TrimSpace(stdout), 10, 64)
+	return strconv.ParseInt(strings.TrimSpace(string(stdout)), 10, 64)
 }
 
 // CommitsCount returns number of total commits up to given revision.
@@ -248,68 +248,68 @@ func CommitsCount(repoPath, revision string) (int64, error) {
 }
 
 // CommitsCount returns number of total commits up to given revision of the repository.
-func (repo *Repository) CommitsCount(revision string) (int64, error) {
-	return CommitsCount(repo.Path, revision)
+func (r *Repository) CommitsCount(revision string) (int64, error) {
+	return CommitsCount(r.path, revision)
 }
 
-func (repo *Repository) FileCommitsCount(revision, file string) (int64, error) {
-	return commitsCount(repo.Path, revision, file)
+func (r *Repository) FileCommitsCount(revision, file string) (int64, error) {
+	return commitsCount(r.path, revision, file)
 }
 
-func (repo *Repository) CommitsByFileAndRangeSize(revision, file string, page, size int) (*list.List, error) {
+func (r *Repository) CommitsByFileAndRangeSize(revision, file string, page, size int) (*list.List, error) {
 	stdout, err := NewCommand("log", revision, "--skip="+strconv.Itoa((page-1)*size),
-		"--max-count="+strconv.Itoa(size), prettyLogFormat, "--", file).RunInDirBytes(repo.Path)
+		"--max-count="+strconv.Itoa(size), prettyLogFormat, "--", file).RunInDir(r.path)
 	if err != nil {
 		return nil, err
 	}
-	return repo.parsePrettyFormatLogToList(stdout)
+	return r.parsePrettyFormatLogToList(stdout)
 }
 
-func (repo *Repository) CommitsByFileAndRange(revision, file string, page int) (*list.List, error) {
-	return repo.CommitsByFileAndRangeSize(revision, file, page, DefaultCommitsPageSize)
+func (r *Repository) CommitsByFileAndRange(revision, file string, page int) (*list.List, error) {
+	return r.CommitsByFileAndRangeSize(revision, file, page, DefaultCommitsPageSize)
 }
 
-func (repo *Repository) FilesCountBetween(startCommitID, endCommitID string) (int, error) {
-	stdout, err := NewCommand("diff", "--name-only", startCommitID+"..."+endCommitID).RunInDir(repo.Path)
+func (r *Repository) FilesCountBetween(startCommitID, endCommitID string) (int, error) {
+	stdout, err := NewCommand("diff", "--name-only", startCommitID+"..."+endCommitID).RunInDir(r.path)
 	if err != nil {
 		return 0, err
 	}
-	return len(strings.Split(stdout, "\n")) - 1, nil
+	return len(strings.Split(string(stdout), "\n")) - 1, nil
 }
 
 // CommitsBetween returns a list that contains commits between [last, before).
-func (repo *Repository) CommitsBetween(last *Commit, before *Commit) (*list.List, error) {
-	stdout, err := NewCommand("rev-list", before.id.String()+"..."+last.id.String()).RunInDirBytes(repo.Path)
+func (r *Repository) CommitsBetween(last *Commit, before *Commit) (*list.List, error) {
+	stdout, err := NewCommand("rev-list", before.id.String()+"..."+last.id.String()).RunInDir(r.path)
 	if err != nil {
 		return nil, err
 	}
-	return repo.parsePrettyFormatLogToList(bytes.TrimSpace(stdout))
+	return r.parsePrettyFormatLogToList(bytes.TrimSpace(stdout))
 }
 
-func (repo *Repository) CommitsBetweenIDs(last, before string) (*list.List, error) {
-	lastCommit, err := repo.GetCommit(last)
+func (r *Repository) CommitsBetweenIDs(last, before string) (*list.List, error) {
+	lastCommit, err := r.CommitByID(last)
 	if err != nil {
 		return nil, err
 	}
-	beforeCommit, err := repo.GetCommit(before)
+	beforeCommit, err := r.CommitByID(before)
 	if err != nil {
 		return nil, err
 	}
-	return repo.CommitsBetween(lastCommit, beforeCommit)
+	return r.CommitsBetween(lastCommit, beforeCommit)
 }
 
-func (repo *Repository) CommitsCountBetween(start, end string) (int64, error) {
-	return commitsCount(repo.Path, start+"..."+end, "")
+func (r *Repository) CommitsCountBetween(start, end string) (int64, error) {
+	return commitsCount(r.path, start+"..."+end, "")
 }
 
 // The limit is depth, not total number of returned commits.
-func (repo *Repository) commitsBefore(l *list.List, parent *list.Element, id SHA1, current, limit int) error {
+func (r *Repository) commitsBefore(l *list.List, parent *list.Element, id SHA1, current, limit int) error {
 	// Reach the limit
 	if limit > 0 && current > limit {
 		return nil
 	}
 
-	commit, err := repo.getCommit(id)
+	commit, err := r.getCommit(id)
 	if err != nil {
 		return fmt.Errorf("getCommit: %v", err)
 	}
@@ -353,7 +353,7 @@ func (repo *Repository) commitsBefore(l *list.List, parent *list.Element, id SHA
 		if err != nil {
 			return err
 		}
-		err = repo.commitsBefore(l, pr, id, current+1, limit)
+		err = r.commitsBefore(l, pr, id, current+1, limit)
 		if err != nil {
 			return err
 		}
@@ -362,25 +362,25 @@ func (repo *Repository) commitsBefore(l *list.List, parent *list.Element, id SHA
 	return nil
 }
 
-func (repo *Repository) getCommitsBefore(id SHA1) (*list.List, error) {
+func (r *Repository) getCommitsBefore(id SHA1) (*list.List, error) {
 	l := list.New()
-	return l, repo.commitsBefore(l, nil, id, 1, 0)
+	return l, r.commitsBefore(l, nil, id, 1, 0)
 }
 
-func (repo *Repository) getCommitsBeforeLimit(id SHA1, num int) (*list.List, error) {
+func (r *Repository) getCommitsBeforeLimit(id SHA1, num int) (*list.List, error) {
 	l := list.New()
-	return l, repo.commitsBefore(l, nil, id, 1, num)
+	return l, r.commitsBefore(l, nil, id, 1, num)
 }
 
 // CommitsAfterDate returns a list of commits which committed after given date.
 // The format of date should be in RFC3339.
-func (repo *Repository) CommitsAfterDate(date string) (*list.List, error) {
-	stdout, err := NewCommand("log", prettyLogFormat, "--since="+date).RunInDirBytes(repo.Path)
+func (r *Repository) CommitsAfterDate(date string) (*list.List, error) {
+	stdout, err := NewCommand("log", prettyLogFormat, "--since="+date).RunInDir(r.path)
 	if err != nil {
 		return nil, err
 	}
 
-	return repo.parsePrettyFormatLogToList(stdout)
+	return r.parsePrettyFormatLogToList(stdout)
 }
 
 // GetLatestCommitDate returns the date of latest commit of repository.
@@ -395,5 +395,5 @@ func GetLatestCommitDate(repoPath, branch string) (time.Time, error) {
 		return time.Time{}, err
 	}
 
-	return time.Parse("2006-01-02 15:04:05 -0700", strings.TrimSpace(stdout))
+	return time.Parse("2006-01-02 15:04:05 -0700", strings.TrimSpace(string(stdout)))
 }

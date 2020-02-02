@@ -4,23 +4,23 @@
 
 package git
 
-func (repo *Repository) getTree(id SHA1) (*Tree, error) {
-	treePath := filepathFromSHA1(repo.Path, id.String())
+func (r *Repository) getTree(id SHA1) (*Tree, error) {
+	treePath := filepathFromSHA1(r.path, id.String())
 	if isFile(treePath) {
-		_, err := NewCommand("ls-tree", id.String()).RunInDir(repo.Path)
+		_, err := NewCommand("ls-tree", id.String()).RunInDir(r.path)
 		if err != nil {
 			return nil, ErrNotExist{id.String(), ""}
 		}
 	}
 
-	return NewTree(repo, id), nil
+	return NewTree(r, id), nil
 }
 
 // Find the tree object in the repository.
-func (repo *Repository) GetTree(idStr string) (*Tree, error) {
+func (r *Repository) GetTree(idStr string) (*Tree, error) {
 	id, err := NewIDFromString(idStr)
 	if err != nil {
 		return nil, err
 	}
-	return repo.getTree(id)
+	return r.getTree(id)
 }

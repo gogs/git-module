@@ -5,6 +5,7 @@
 package git
 
 import (
+	"bytes"
 	"fmt"
 	"strings"
 
@@ -18,28 +19,28 @@ func IsTagExist(repoPath, name string) bool {
 	return IsReferenceExist(repoPath, TagPrefix+name)
 }
 
-func (repo *Repository) IsTagExist(name string) bool {
-	return IsTagExist(repo.Path, name)
+func (r *Repository) IsTagExist(name string) bool {
+	return IsTagExist(r.path, name)
 }
 
-func (repo *Repository) CreateTag(name, revision string) error {
-	_, err := NewCommand("tag", name, revision).RunInDir(repo.Path)
+func (r *Repository) CreateTag(name, revision string) error {
+	_, err := NewCommand("tag", name, revision).RunInDir(r.path)
 	return err
 }
 
-func (repo *Repository) getTag(id SHA1) (*Tag, error) {
-	t, ok := repo.tagCache.Get(id.String())
+func (r *Repository) getTag(id SHA1) (*Tag, error) {
+	t, ok := r.tagCache.Get(id.String())
 	if ok {
 		log("Hit cache: %s", id)
 		return t.(*Tag), nil
 	}
 
 	// Get tag type
-	tp, err := NewCommand("cat-file", "-t", id.String()).RunInDir(repo.Path)
+	tp, err := NewCommand("cat-file", "-t", id.String()).RunInDir(r.path)
 	if err != nil {
 		return nil, err
 	}
-	tp = strings.TrimSpace(tp)
+	tp = bytes.TrimSpace(tp)
 
 	// Tag is a commit.
 	if ObjectType(tp) == ObjectCommit {
@@ -47,15 +48,15 @@ func (repo *Repository) getTag(id SHA1) (*Tag, error) {
 			ID:     id,
 			Object: id,
 			Type:   string(ObjectCommit),
-			repo:   repo,
+			repo:   r,
 		}
 
-		repo.tagCache.Set(id.String(), tag)
+		r.tagCache.Set(id.String(), tag)
 		return tag, nil
 	}
 
 	// Tag with message.
-	data, err := NewCommand("cat-file", "-p", id.String()).RunInDirBytes(repo.Path)
+	data, err := NewCommand("cat-file", "-p", id.String()).RunInDir(r.path)
 	if err != nil {
 		return nil, err
 	}
@@ -66,25 +67,25 @@ func (repo *Repository) getTag(id SHA1) (*Tag, error) {
 	}
 
 	tag.ID = id
-	tag.repo = repo
+	tag.repo = r
 
-	repo.tagCache.Set(id.String(), tag)
+	r.tagCache.Set(id.String(), tag)
 	return tag, nil
 }
 
 // GetTag returns a Git tag by given name.
-func (repo *Repository) GetTag(name string) (*Tag, error) {
-	stdout, err := NewCommand("show-ref", "--tags", name).RunInDir(repo.Path)
+func (r *Repository) GetTag(name string) (*Tag, error) {
+	stdout, err := NewCommand("show-ref", "--tags", name).RunInDir(r.path)
 	if err != nil {
 		return nil, err
 	}
 
-	id, err := NewIDFromString(strings.Split(stdout, " ")[0])
+	id, err := NewIDFromString(strings.Split(string(stdout), " ")[0])
 	if err != nil {
 		return nil, err
 	}
 
-	tag, err := repo.getTag(id)
+	tag, err := r.getTag(id)
 	if err != nil {
 		return nil, err
 	}
@@ -93,18 +94,18 @@ func (repo *Repository) GetTag(name string) (*Tag, error) {
 }
 
 // GetTags returns all tags of the repository.
-func (repo *Repository) GetTags() ([]string, error) {
+func (r *Repository) GetTags() ([]string, error) {
 	cmd := NewCommand("tag", "-l")
 	if goversion.Compare(gitVersion, "2.4.9", ">=") {
 		cmd.AddArgs("--sort=-creatordate")
 	}
 
-	stdout, err := cmd.RunInDir(repo.Path)
+	stdout, err := cmd.RunInDir(r.path)
 	if err != nil {
 		return nil, err
 	}
 
-	tags := strings.Split(stdout, "\n")
+	tags := strings.Split(string(stdout), "\n")
 	tags = tags[:len(tags)-1]
 
 	if goversion.Compare(gitVersion, "2.4.9", "<") {
@@ -132,8 +133,8 @@ type TagsResult struct {
 }
 
 // GetTagsAfter returns list of tags 'after' (exlusive) given tag.
-func (repo *Repository) GetTagsAfter(after string, limit int) (*TagsResult, error) {
-	allTags, err := repo.GetTags()
+func (r *Repository) GetTagsAfter(after string, limit int) (*TagsResult, error) {
+	allTags, err := r.GetTags()
 	if err != nil {
 		return nil, fmt.Errorf("GetTags: %v", err)
 	}
@@ -199,11 +200,11 @@ func (repo *Repository) GetTagsAfter(after string, limit int) (*TagsResult, erro
 }
 
 // DeleteTag deletes a tag from the repository
-func (repo *Repository) DeleteTag(name string) error {
+func (r *Repository) DeleteTag(name string) error {
 	cmd := NewCommand("tag", "-d")
 
 	cmd.AddArgs(name)
-	_, err := cmd.RunInDir(repo.Path)
+	_, err := cmd.RunInDir(r.path)
 
 	return err
 }
