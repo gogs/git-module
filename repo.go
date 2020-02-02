@@ -52,24 +52,8 @@ func (r *Repository) parsePrettyFormatLogToList(logs []byte) (*list.List, error)
 	return l, nil
 }
 
-// NetworkOptions contains arguments for a network operation.
-type NetworkOptions struct {
-	// The timeout duration before giving up. The default timeout duration will be used when not supplied.
-	Timeout time.Duration
-}
-
-// IsURLAccessible returns true if given remote URL is accessible via Git.
-func IsURLAccessible(url string, opts ...NetworkOptions) bool {
-	var opt NetworkOptions
-	if len(opts) > 1 {
-		opt = opts[0]
-	}
-
-	_, err := NewCommand("ls-remote", "-q", "-h", url, "HEAD").RunWithTimeout(opt.Timeout)
-	return err == nil
-}
-
 // InitOptions contains optional arguments for initializing a repository.
+// Docs: https://git-scm.com/docs/git-init
 type InitOptions struct {
 	// Indicates whether the repository should be initialized in bare format.
 	Bare bool
@@ -112,6 +96,7 @@ func Open(path string) (*Repository, error) {
 }
 
 // CloneOptions contains optional arguments for cloning a repository.
+// Docs: https://git-scm.com/docs/git-clone
 type CloneOptions struct {
 	// Indicates whether the repository should be cloned as a mirror.
 	Mirror bool
@@ -156,6 +141,7 @@ func Clone(url, dst string, opts ...CloneOptions) error {
 }
 
 // FetchOptions contains optional arguments for fetching repository updates.
+// Docs: https://git-scm.com/docs/git-fetch
 type FetchOptions struct {
 	// Indicates whether to prune during fetching.
 	Prune bool
@@ -180,6 +166,7 @@ func (r *Repository) Fetch(opts ...FetchOptions) error {
 }
 
 // PullOptions contains optional arguments for pulling repository updates.
+// Docs: https://git-scm.com/docs/git-pull
 type PullOptions struct {
 	// Indicates whether to rebased during pulling.
 	Rebase bool
@@ -219,6 +206,7 @@ func (r *Repository) Pull(opts ...PullOptions) error {
 }
 
 // PushOptions contains optional arguments for pushing repository changes.
+// Docs: https://git-scm.com/docs/git-push
 type PushOptions struct {
 	// The environment variables set for the push.
 	Envs []string
@@ -238,6 +226,7 @@ func (r *Repository) Push(remote, branch string, opts ...PushOptions) error {
 }
 
 // CheckoutOptions contains optional arguments for checking out to a branch.
+// Docs: https://git-scm.com/docs/git-checkout
 type CheckoutOptions struct {
 	// The base branch if checks out to a new branch.
 	BaseBranch string
@@ -266,6 +255,7 @@ func (r *Repository) Checkout(branch string, opts ...CheckoutOptions) error {
 }
 
 // ResetOptions contains optional arguments for resetting a branch.
+// Docs: https://git-scm.com/docs/git-reset
 type ResetOptions struct {
 	// Indicates whether to perform a hard reset.
 	Hard bool
@@ -290,6 +280,7 @@ func (r *Repository) Reset(rev string, opts ...ResetOptions) error {
 }
 
 // MoveOptions contains optional arguments for moving a file, a directory, or a symlink.
+// Docs: https://git-scm.com/docs/git-mv
 type MoveOptions struct {
 	// The timeout duration before giving up. The default timeout duration will be used when not supplied.
 	Timeout time.Duration
@@ -307,6 +298,7 @@ func (r *Repository) Move(src, dst string, opts ...MoveOptions) error {
 }
 
 // AddOptions contains optional arguments for adding local changes.
+// Docs: https://git-scm.com/docs/git-add
 type AddOptions struct {
 	// Indicates whether to add all changes to index.
 	All bool
@@ -336,6 +328,7 @@ func (r *Repository) Add(opts ...AddOptions) error {
 }
 
 // CommitOptions contains optional arguments to commit changes.
+// Docs: https://git-scm.com/docs/git-commit
 type CommitOptions struct {
 	// Author is the author of the changes if that's not the same as committer.
 	Author *Signature
@@ -374,6 +367,7 @@ type NameStatus struct {
 }
 
 // ShowNameStatusOptions contains optional arguments for showing name status.
+// Docs: https://git-scm.com/docs/git-show#Documentation/git-show.txt---name-status
 type ShowNameStatusOptions struct {
 	// The timeout duration before giving up. The default timeout duration will be used when not supplied.
 	Timeout time.Duration
@@ -421,6 +415,7 @@ func (r *Repository) ShowNameStatus(commitID string, opts ...ShowNameStatusOptio
 }
 
 // RevParseOptions contains optional arguments for parsing revision.
+// Docs: https://git-scm.com/docs/git-rev-parse
 type RevParseOptions struct {
 	// The timeout duration before giving up. The default timeout duration will be used when not supplied.
 	Timeout time.Duration
@@ -456,6 +451,7 @@ type CountObject struct {
 }
 
 // CountObjectsOptions contains optional arguments for counting objects.
+// Docs: https://git-scm.com/docs/git-count-objects
 type CountObjectsOptions struct {
 	// The timeout duration before giving up. The default timeout duration will be used when not supplied.
 	Timeout time.Duration
@@ -504,6 +500,7 @@ func (r *Repository) CountObjects(opts ...CountObjectsOptions) (*CountObject, er
 }
 
 // FsckOptions contains optional arguments for verifying the objects.
+// Docs: https://git-scm.com/docs/git-fsck
 type FsckOptions struct {
 	// The timeout duration before giving up. The default timeout duration will be used when not supplied.
 	Timeout time.Duration
