@@ -400,3 +400,10 @@ func GetFullCommitID(repoPath, shortID string) (string, error) {
 	}
 	return strings.TrimSpace(commitID), nil
 }
+
+// FsckWithTimeout verifies the connectivity and validity of the objects in the database
+// with given timeout duration.
+func FsckWithTimeout(timeout time.Duration, repoPath string, args ...string) error {
+	_, err := NewCommand("fsck").AddArgs(args...).RunInDirWithTimeout(timeout, repoPath)
+	return err
+}

@@ -1,8 +1,12 @@
+// Copyright 2020 The Gogs Authors. All rights reserved.
+// Use of this source code is governed by a MIT-style
+// license that can be found in the LICENSE file.
+
 package git
 
 import (
 	"bufio"
-	"io"
+	"bytes"
 	"strings"
 )
 
@@ -18,13 +22,13 @@ func (c *Commit) Submodules() (Submodules, error) {
 			return
 		}
 
-		var r io.Reader
-		r, c.submodulesErr = e.Blob().Reader()
+		var p []byte
+		p, c.submodulesErr = e.Blob().Bytes()
 		if c.submodulesErr != nil {
 			return
 		}
 
-		scanner := bufio.NewScanner(r)
+		scanner := bufio.NewScanner(bytes.NewReader(p))
 		c.submodules = newObjectCache()
 		var inSection bool
 		var path string

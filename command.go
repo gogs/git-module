@@ -90,7 +90,7 @@ func (c *Command) RunInDirPipelineWithTimeout(timeout time.Duration, stdout, std
 	case <-ctx.Done():
 		if cmd.Process != nil && cmd.ProcessState != nil && !cmd.ProcessState.Exited() {
 			if err := cmd.Process.Kill(); err != nil {
-				return fmt.Errorf("failed to kill process: %v", err)
+				return fmt.Errorf("kill process: %v", err)
 			}
 		}
 

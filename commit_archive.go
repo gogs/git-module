@@ -5,29 +5,27 @@
 package git
 
 import (
-	"fmt"
 	"path/filepath"
 	"strings"
 )
 
-type ArchiveType int
+// Archive is the format of the archive.
+type Archive string
 
+// A list of formats can be created by Git for an archive.
 const (
-	ArchiveZip ArchiveType = iota + 1
-	ArchiveTarGz
+	ArchiveZip   Archive = "zip"
+	ArchiveTarGz Archive = "tar.gz"
 )
 
-func (c *Commit) CreateArchive(target string, archiveType ArchiveType) error {
-	var format string
-	switch archiveType {
-	case ArchiveZip:
-		format = "zip"
-	case ArchiveTarGz:
-		format = "tar.gz"
-	default:
-		return fmt.Errorf("unknown format: %v", archiveType)
-	}
-
-	_, err := NewCommand("archive", "--prefix="+filepath.Base(strings.TrimSuffix(c.repo.Path, ".git"))+"/", "--format="+format, "-o", target, c.id.String()).RunInDir(c.repo.Path)
+// CreateArchive creates given format of archive to the destination.
+func (c *Commit) CreateArchive(format Archive, dst string) error {
+	prefix := filepath.Base(strings.TrimSuffix(c.repo.Path, ".git")) + "/"
+	_, err := NewCommand("archive",
+		"--prefix="+prefix,
+		"--format="+string(format),
+		"-o", dst,
+		c.id.String(),
+	).RunInDir(c.repo.Path)
 	return err
 }

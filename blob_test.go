@@ -6,7 +6,6 @@ package git
 
 import (
 	"bytes"
-	"io/ioutil"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -44,13 +43,9 @@ THE SOFTWARE.`
 	}
 
 	t.Run("get data all at once", func(t *testing.T) {
-		r, err := blob.Reader()
+		p, err := blob.Bytes()
 		assert.Nil(t, err)
-		assert.NotNil(t, r)
-
-		data, err := ioutil.ReadAll(r)
-		assert.Nil(t, err)
-		assert.Equal(t, expOutput, string(data))
+		assert.Equal(t, expOutput, string(p))
 	})
 
 	t.Run("get data with pipeline", func(t *testing.T) {

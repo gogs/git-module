@@ -15,9 +15,9 @@ type Blob struct {
 	*TreeEntry
 }
 
-// Reader reads the content of the blob all at once and wrap it as io.Reader.
+// Bytes reads and returns the content of the blob all at once in bytes.
 // This can be very slow and memory consuming for huge content.
-func (b *Blob) Reader() (io.Reader, error) {
+func (b *Blob) Bytes() ([]byte, error) {
 	stdout := new(bytes.Buffer)
 	stderr := new(bytes.Buffer)
 
@@ -27,7 +27,7 @@ func (b *Blob) Reader() (io.Reader, error) {
 	if err := b.Pipeline(stdout, stderr); err != nil {
 		return nil, concatenateError(err, stderr.String())
 	}
-	return stdout, nil
+	return stdout.Bytes(), nil
 }
 
 // Pipeline reads the content of the blob and pipes stdout and stderr to supplied io.Writer.
