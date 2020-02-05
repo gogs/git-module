@@ -5,107 +5,58 @@
 package git
 
 import (
-	"errors"
 	"io/ioutil"
 	"os"
 	"path"
 	"strings"
 )
 
-var (
-	// Direcotry of hook and sample files. Can be changed to "custom_hooks" for very purpose.
-	HookDir       = "hooks"
-	HookSampleDir = HookDir
-	// HookNames is a list of Git server hooks' name that are supported.
-	HookNames = []string{
-		"pre-receive",
-		"update",
-		"post-receive",
-	}
+// HookName is the name of a Git hook.
+type HookName string
+
+// A list of Git server hooks' name that are supported.
+const (
+	HookPreReceive  HookName = "pre-receive"
+	HookUpdate      HookName = "update"
+	HookPostReceive HookName = "post-receive"
 )
 
-var (
-	ErrNotValidHook = errors.New("not a valid Git hook")
-)
+// ServerSideHooks contains a list of Git hooks are supported on the server side.
+var ServerSideHooks = []HookName{HookPreReceive, HookUpdate, HookPostReceive}
 
-// IsValidHookName returns true if given name is a valid Git hook.
-func IsValidHookName(name string) bool {
-	for _, hn := range HookNames {
-		if hn == name {
-			return true
-		}
-	}
-	return false
-}
-
-// Hook represents a Git hook.
+// Hook contains information of a Git hook.
 type Hook struct {
-	name     string
-	IsActive bool   // Indicates whether repository has this hook.
-	Content  string // Content of hook if it's active.
-	Sample   string // Sample content from Git.
-	path     string // Hook file path.
+	name     HookName
+	path     string // The absolute file path of the hook.
+	isSample bool   // Indicates whether this hook is read from the sample.
+	content  string // The content of the hook.
 }
 
-// GetHook returns a Git hook by given name and repository.
-func GetHook(repoPath, name string) (*Hook, error) {
-	if !IsValidHookName(name) {
-		return nil, ErrNotValidHook
-	}
-	h := &Hook{
-		name: name,
-		path: path.Join(repoPath, HookDir, name),
-	}
-	if isFile(h.path) {
-		data, err := ioutil.ReadFile(h.path)
-		if err != nil {
-			return nil, err
-		}
-		h.IsActive = true
-		h.Content = string(data)
-		return h, nil
-	}
-
-	// Check sample file
-	samplePath := path.Join(repoPath, HookSampleDir, h.name) + ".sample"
-	if isFile(samplePath) {
-		data, err := ioutil.ReadFile(samplePath)
-		if err != nil {
-			return nil, err
-		}
-		h.Sample = string(data)
-	}
-	return h, nil
-}
-
-func (h *Hook) Name() string {
+// Name returns the name of the Git hook.
+func (h *Hook) Name() HookName {
 	return h.name
 }
 
-// Update updates content hook file.
-func (h *Hook) Update() error {
-	if len(strings.TrimSpace(h.Content)) == 0 {
-		if isExist(h.path) {
-			return os.Remove(h.path)
-		}
-		return nil
-	}
-	os.MkdirAll(path.Dir(h.path), os.ModePerm)
-	return ioutil.WriteFile(h.path, []byte(strings.Replace(h.Content, "\r", "", -1)), os.ModePerm)
+// path returns the path of the Git hook.
+func (h *Hook) Path() string {
+	return h.path
 }
 
-// ListHooks returns a list of Git hooks of given repository.
-func ListHooks(repoPath string) (_ []*Hook, err error) {
-	if !isDir(path.Join(repoPath, "hooks")) {
-		return nil, errors.New("hooks path does not exist")
-	}
+// IsSample returns true if the content is read from the sample hook.
+func (h *Hook) IsSample() bool {
+	return h.isSample
+}
 
-	hooks := make([]*Hook, len(HookNames))
-	for i, name := range HookNames {
-		hooks[i], err = GetHook(repoPath, name)
-		if err != nil {
-			return nil, err
-		}
-	}
-	return hooks, nil
+// Content returns the content of the Git hook.
+func (h *Hook) Content() string {
+	return h.content
+}
+
+// Update writes the content of the Git hook on filesystem. It updates the memory copy of
+// the content as well.
+func (h *Hook) Update(content string) error {
+	h.content = strings.TrimSpace(content)
+	h.content = strings.Replace(h.content, "\r", "", -1)
+	_ = os.MkdirAll(path.Dir(h.path), os.ModePerm)
+	return ioutil.WriteFile(h.path, []byte(h.content), os.ModePerm)
 }

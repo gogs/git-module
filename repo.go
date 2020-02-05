@@ -5,9 +5,10 @@
 package git
 
 import (
+	"bufio"
 	"bytes"
-	"container/list"
-	"errors"
+	"fmt"
+	"io"
 	"os"
 	"path"
 	"path/filepath"
@@ -16,215 +17,427 @@ import (
 	"time"
 )
 
-// Repository represents a Git repository.
+// Repository contains information of a Git repository.
 type Repository struct {
-	Path string
+	path string
 
-	commitCache *objectCache
-	tagCache    *objectCache
+	cachedCommits *objectCache
+	cachedTags    *objectCache
 }
 
-const prettyLogFormat = `--pretty=format:%H`
+// Path returns the path of the repository.
+func (r *Repository) Path() string {
+	return r.path
+}
 
-func (repo *Repository) parsePrettyFormatLogToList(logs []byte) (*list.List, error) {
-	l := list.New()
+const LogFormatHashOnly = `format:%H`
+
+// parsePrettyFormatLogToList returns a list of commits parsed from given logs that are
+// formatted in LogFormatHashOnly.
+func (r *Repository) parsePrettyFormatLogToList(timeout time.Duration, logs []byte) ([]*Commit, error) {
 	if len(logs) == 0 {
-		return l, nil
+		return []*Commit{}, nil
 	}
 
-	parts := bytes.Split(logs, []byte{'\n'})
-
-	for _, commitId := range parts {
-		commit, err := repo.GetCommit(string(commitId))
+	var err error
+	ids := bytes.Split(logs, []byte{'\n'})
+	commits := make([]*Commit, len(ids))
+	for i, id := range ids {
+		commits[i], err = r.CatFileCommit(string(id), CatFileCommitOptions{Timeout: timeout})
 		if err != nil {
 			return nil, err
 		}
-		l.PushBack(commit)
 	}
-
-	return l, nil
+	return commits, nil
 }
 
-type NetworkOptions struct {
-	URL     string
+// InitOptions contains optional arguments for initializing a repository.
+// Docs: https://git-scm.com/docs/git-init
+type InitOptions struct {
+	// Indicates whether the repository should be initialized in bare format.
+	Bare bool
+	// The timeout duration before giving up. The default timeout duration will be used when not supplied.
 	Timeout time.Duration
 }
 
-// IsRepoURLAccessible checks if given repository URL is accessible.
-func IsRepoURLAccessible(opts NetworkOptions) bool {
-	cmd := NewCommand("ls-remote", "-q", "-h", opts.URL, "HEAD")
-	if opts.Timeout <= 0 {
-		opts.Timeout = -1
+// Init initializes a new Git repository.
+func Init(path string, opts ...InitOptions) error {
+	var opt InitOptions
+	if len(opts) > 0 {
+		opt = opts[0]
 	}
-	_, err := cmd.RunTimeout(opts.Timeout)
-	return err == nil
-}
 
-// InitRepository initializes a new Git repository.
-func InitRepository(repoPath string, bare bool) error {
-	os.MkdirAll(repoPath, os.ModePerm)
+	_ = os.MkdirAll(path, os.ModePerm)
 
 	cmd := NewCommand("init")
-	if bare {
-		cmd.AddArguments("--bare")
+	if opt.Bare {
+		cmd.AddArgs("--bare")
 	}
-	_, err := cmd.RunInDir(repoPath)
+	_, err := cmd.RunInDirWithTimeout(opt.Timeout, path)
 	return err
 }
 
-// OpenRepository opens the repository at the given path.
-func OpenRepository(repoPath string) (*Repository, error) {
-	repoPath, err := filepath.Abs(repoPath)
+// Open opens the repository at the given path. It returns an os.ErrNotExist
+// if the path does not exist.
+func Open(path string) (*Repository, error) {
+	path, err := filepath.Abs(path)
 	if err != nil {
 		return nil, err
-	} else if !isDir(repoPath) {
-		return nil, errors.New("no such file or directory")
+	} else if !isDir(path) {
+		return nil, os.ErrNotExist
 	}
 
 	return &Repository{
-		Path:        repoPath,
-		commitCache: newObjectCache(),
-		tagCache:    newObjectCache(),
+		path:          path,
+		cachedCommits: newObjectCache(),
+		cachedTags:    newObjectCache(),
 	}, nil
 }
 
-type CloneRepoOptions struct {
-	Mirror  bool
-	Bare    bool
-	Quiet   bool
-	Branch  string
+// CloneOptions contains optional arguments for cloning a repository.
+// Docs: https://git-scm.com/docs/git-clone
+type CloneOptions struct {
+	// Indicates whether the repository should be cloned as a mirror.
+	Mirror bool
+	// Indicates whether the repository should be cloned in bare format.
+	Bare bool
+	// Indicates whether to suppress the log output.
+	Quiet bool
+	// The branch to checkout for the working tree when Bare=false.
+	Branch string
+	// The timeout duration before giving up. The default timeout duration will be used when not supplied.
 	Timeout time.Duration
 }
 
-// Clone clones original repository to target path.
-func Clone(from, to string, opts CloneRepoOptions) (err error) {
-	toDir := path.Dir(to)
-	if err = os.MkdirAll(toDir, os.ModePerm); err != nil {
+// Clone clones the repository from remote URL to the destination.
+func Clone(url, dst string, opts ...CloneOptions) error {
+	var opt CloneOptions
+	if len(opts) > 0 {
+		opt = opts[0]
+	}
+
+	err := os.MkdirAll(path.Dir(dst), os.ModePerm)
+	if err != nil {
 		return err
 	}
 
 	cmd := NewCommand("clone")
-	if opts.Mirror {
-		cmd.AddArguments("--mirror")
+	if opt.Mirror {
+		cmd.AddArgs("--mirror")
 	}
-	if opts.Bare {
-		cmd.AddArguments("--bare")
+	if opt.Bare {
+		cmd.AddArgs("--bare")
 	}
-	if opts.Quiet {
-		cmd.AddArguments("--quiet")
+	if opt.Quiet {
+		cmd.AddArgs("--quiet")
 	}
-	if len(opts.Branch) > 0 {
-		cmd.AddArguments("-b", opts.Branch)
+	if !opt.Bare && opt.Branch != "" {
+		cmd.AddArgs("-b", opt.Branch)
 	}
-	cmd.AddArguments(from, to)
 
-	if opts.Timeout <= 0 {
-		opts.Timeout = -1
-	}
-	_, err = cmd.RunTimeout(opts.Timeout)
+	_, err = cmd.AddArgs(url, dst).RunWithTimeout(opt.Timeout)
 	return err
 }
 
-type FetchRemoteOptions struct {
-	Prune   bool
+// FetchOptions contains optional arguments for fetching repository updates.
+// Docs: https://git-scm.com/docs/git-fetch
+type FetchOptions struct {
+	// Indicates whether to prune during fetching.
+	Prune bool
+	// The timeout duration before giving up. The default timeout duration will be used when not supplied.
 	Timeout time.Duration
 }
 
-// Fetch fetches changes from remotes without merging.
-func Fetch(repoPath string, opts FetchRemoteOptions) error {
+// Fetch fetches updates for the repository.
+func (r *Repository) Fetch(opts ...FetchOptions) error {
+	var opt FetchOptions
+	if len(opts) > 0 {
+		opt = opts[0]
+	}
+
 	cmd := NewCommand("fetch")
-	if opts.Prune {
-		cmd.AddArguments("--prune")
+	if opt.Prune {
+		cmd.AddArgs("--prune")
 	}
 
-	if opts.Timeout <= 0 {
-		opts.Timeout = -1
-	}
-	_, err := cmd.RunInDirTimeout(opts.Timeout, repoPath)
+	_, err := cmd.RunInDirWithTimeout(opt.Timeout, r.path)
 	return err
 }
 
-type PullRemoteOptions struct {
-	All     bool
-	Rebase  bool
-	Remote  string
-	Branch  string
+// PullOptions contains optional arguments for pulling repository updates.
+// Docs: https://git-scm.com/docs/git-pull
+type PullOptions struct {
+	// Indicates whether to rebased during pulling.
+	Rebase bool
+	// Indicates whether to pull from all remotes.
+	All bool
+	// The remote to pull updates from when All=false.
+	Remote string
+	// The branch to pull updates from when All=false and Remote is supplied.
+	Branch string
+	// The timeout duration before giving up. The default timeout duration will be used when not supplied.
 	Timeout time.Duration
 }
 
-// Pull pulls changes from remotes.
-func Pull(repoPath string, opts PullRemoteOptions) error {
+// Pull pulls updates for the repository.
+func (r *Repository) Pull(opts ...PullOptions) error {
+	var opt PullOptions
+	if len(opts) > 0 {
+		opt = opts[0]
+	}
+
 	cmd := NewCommand("pull")
-	if opts.Rebase {
-		cmd.AddArguments("--rebase")
+	if opt.Rebase {
+		cmd.AddArgs("--rebase")
 	}
-	if opts.All {
-		cmd.AddArguments("--all")
-	} else {
-		cmd.AddArguments(opts.Remote)
-		cmd.AddArguments(opts.Branch)
+	if opt.All {
+		cmd.AddArgs("--all")
+	}
+	if !opt.All && opt.Remote != "" {
+		cmd.AddArgs(opt.Remote)
+		if opt.Branch != "" {
+			cmd.AddArgs(opt.Branch)
+		}
 	}
 
-	if opts.Timeout <= 0 {
-		opts.Timeout = -1
-	}
-	_, err := cmd.RunInDirTimeout(opts.Timeout, repoPath)
+	_, err := cmd.RunInDirWithTimeout(opt.Timeout, r.path)
 	return err
 }
 
-// PushWithEnvs pushs local commits to given remote branch with given environment variables.
-func PushWithEnvs(repoPath, remote, branch string, envs []string) error {
-	_, err := NewCommand("push", remote, branch).AddEnvs(envs...).RunInDir(repoPath)
+// PushOptions contains optional arguments for pushing repository changes.
+// Docs: https://git-scm.com/docs/git-push
+type PushOptions struct {
+	// The environment variables set for the push.
+	Envs []string
+	// The timeout duration before giving up. The default timeout duration will be used when not supplied.
+	Timeout time.Duration
+}
+
+// Push pushs local changes to given remote and branch for the repository.
+func (r *Repository) Push(remote, branch string, opts ...PushOptions) error {
+	var opt PushOptions
+	if len(opts) > 0 {
+		opt = opts[0]
+	}
+
+	_, err := NewCommand("push", remote, branch).AddEnvs(opt.Envs...).RunInDirWithTimeout(opt.Timeout, r.path)
 	return err
 }
 
-// Push pushs local commits to given remote branch.
-func Push(repoPath, remote, branch string) error {
-	return PushWithEnvs(repoPath, remote, branch, nil)
-}
-
+// CheckoutOptions contains optional arguments for checking out to a branch.
+// Docs: https://git-scm.com/docs/git-checkout
 type CheckoutOptions struct {
-	Branch    string
-	OldBranch string
-	Timeout   time.Duration
+	// The base branch if checks out to a new branch.
+	BaseBranch string
+	// The timeout duration before giving up. The default timeout duration will be used when not supplied.
+	Timeout time.Duration
 }
 
-// Checkout checkouts a branch
-func Checkout(repoPath string, opts CheckoutOptions) error {
+// Checkout checks out to given branch for the repository.
+func (r *Repository) Checkout(branch string, opts ...CheckoutOptions) error {
+	var opt CheckoutOptions
+	if len(opts) > 0 {
+		opt = opts[0]
+	}
+
 	cmd := NewCommand("checkout")
-	if len(opts.OldBranch) > 0 {
-		cmd.AddArguments("-b")
+	if opt.BaseBranch != "" {
+		cmd.AddArgs("-b")
+	}
+	cmd.AddArgs(branch)
+	if opt.BaseBranch != "" {
+		cmd.AddArgs(opt.BaseBranch)
 	}
 
-	cmd.AddArguments(opts.Branch)
-
-	if len(opts.OldBranch) > 0 {
-		cmd.AddArguments(opts.OldBranch)
-	}
-	if opts.Timeout <= 0 {
-		opts.Timeout = -1
-	}
-	_, err := cmd.RunInDirTimeout(opts.Timeout, repoPath)
+	_, err := cmd.RunInDirWithTimeout(opt.Timeout, r.path)
 	return err
 }
 
-// ResetHEAD resets HEAD to given revision or head of branch.
-func ResetHEAD(repoPath string, hard bool, revision string) error {
+// ResetOptions contains optional arguments for resetting a branch.
+// Docs: https://git-scm.com/docs/git-reset
+type ResetOptions struct {
+	// Indicates whether to perform a hard reset.
+	Hard bool
+	// The timeout duration before giving up. The default timeout duration will be used when not supplied.
+	Timeout time.Duration
+}
+
+// Reset resets working tree to given revision for the repository.
+func (r *Repository) Reset(rev string, opts ...ResetOptions) error {
+	var opt ResetOptions
+	if len(opts) > 0 {
+		opt = opts[0]
+	}
+
 	cmd := NewCommand("reset")
-	if hard {
-		cmd.AddArguments("--hard")
+	if opt.Hard {
+		cmd.AddArgs("--hard")
 	}
-	_, err := cmd.AddArguments(revision).RunInDir(repoPath)
+
+	_, err := cmd.AddArgs(rev).RunInDir(r.path)
 	return err
 }
 
-// MoveFile moves a file to another file or directory.
-func MoveFile(repoPath, oldTreeName, newTreeName string) error {
-	_, err := NewCommand("mv").AddArguments(oldTreeName, newTreeName).RunInDir(repoPath)
+// MoveOptions contains optional arguments for moving a file, a directory, or a symlink.
+// Docs: https://git-scm.com/docs/git-mv
+type MoveOptions struct {
+	// The timeout duration before giving up. The default timeout duration will be used when not supplied.
+	Timeout time.Duration
+}
+
+// Move moves a file, a directory, or a symlink file or directory from source to destination.
+func (r *Repository) Move(src, dst string, opts ...MoveOptions) error {
+	var opt MoveOptions
+	if len(opts) > 0 {
+		opt = opts[0]
+	}
+
+	_, err := NewCommand("mv", src, dst).RunInDirWithTimeout(opt.Timeout, r.path)
 	return err
 }
 
-// CountObject represents disk usage report of Git repository.
+// AddOptions contains optional arguments for adding local changes.
+// Docs: https://git-scm.com/docs/git-add
+type AddOptions struct {
+	// Indicates whether to add all changes to index.
+	All bool
+	// The specific pathspecs to be added to index.
+	Pathsepcs []string
+	// The timeout duration before giving up. The default timeout duration will be used when not supplied.
+	Timeout time.Duration
+}
+
+// Add adds local changes to index for the repository.
+func (r *Repository) Add(opts ...AddOptions) error {
+	var opt AddOptions
+	if len(opts) > 0 {
+		opt = opts[0]
+	}
+
+	cmd := NewCommand("add")
+	if opt.All {
+		cmd.AddArgs("--all")
+	}
+	if len(opt.Pathsepcs) > 0 {
+		cmd.AddArgs("--")
+		cmd.AddArgs(opt.Pathsepcs...)
+	}
+	_, err := cmd.RunInDirWithTimeout(opt.Timeout, r.path)
+	return err
+}
+
+// CommitOptions contains optional arguments to commit changes.
+// Docs: https://git-scm.com/docs/git-commit
+type CommitOptions struct {
+	// Author is the author of the changes if that's not the same as committer.
+	Author *Signature
+	// The timeout duration before giving up. The default timeout duration will be used when not supplied.
+	Timeout time.Duration
+}
+
+// Commit commits local changes with given author, committer and message for the repository.
+func (r *Repository) Commit(committer *Signature, message string, opts ...CommitOptions) error {
+	var opt CommitOptions
+	if len(opts) > 0 {
+		opt = opts[0]
+	}
+
+	cmd := NewCommand("commit")
+	cmd.AddEnvs("GIT_COMMITTER_NAME="+committer.Name, "GIT_COMMITTER_EMAIL="+committer.Email)
+
+	if opt.Author != nil {
+		cmd.AddArgs(fmt.Sprintf("--author='%s <%s>'", opt.Author.Name, opt.Author.Email))
+	}
+	cmd.AddArgs("-m", message)
+
+	_, err := cmd.RunInDirWithTimeout(opt.Timeout, r.path)
+	// No stderr but exit status 1 means nothing to commit.
+	if err != nil && err.Error() == "exit status 1" {
+		return nil
+	}
+	return err
+}
+
+// NameStatus contains name status of a commit.
+type NameStatus struct {
+	Added    []string
+	Removed  []string
+	Modified []string
+}
+
+// ShowNameStatusOptions contains optional arguments for showing name status.
+// Docs: https://git-scm.com/docs/git-show#Documentation/git-show.txt---name-status
+type ShowNameStatusOptions struct {
+	// The timeout duration before giving up. The default timeout duration will be used when not supplied.
+	Timeout time.Duration
+}
+
+// ShowNameStatus returns name status of given commit of the repository.
+func (r *Repository) ShowNameStatus(commitID string, opts ...ShowNameStatusOptions) (*NameStatus, error) {
+	var opt ShowNameStatusOptions
+	if len(opts) > 0 {
+		opt = opts[0]
+	}
+
+	fileStatus := &NameStatus{}
+	stdout, w := io.Pipe()
+	done := make(chan struct{})
+	go func() {
+		scanner := bufio.NewScanner(stdout)
+		for scanner.Scan() {
+			fields := strings.Fields(scanner.Text())
+			if len(fields) < 2 {
+				continue
+			}
+
+			switch fields[0][0] {
+			case 'A':
+				fileStatus.Added = append(fileStatus.Added, fields[1])
+			case 'D':
+				fileStatus.Removed = append(fileStatus.Removed, fields[1])
+			case 'M':
+				fileStatus.Modified = append(fileStatus.Modified, fields[1])
+			}
+		}
+		done <- struct{}{}
+	}()
+
+	stderr := new(bytes.Buffer)
+	err := NewCommand("show", "--name-status", "--pretty=format:''", commitID).RunInDirPipelineWithTimeout(opt.Timeout, w, stderr, r.path)
+	_ = w.Close() // Close writer to exit parsing goroutine
+	if err != nil {
+		return nil, concatenateError(err, stderr.String())
+	}
+
+	<-done
+	return fileStatus, nil
+}
+
+// RevParseOptions contains optional arguments for parsing revision.
+// Docs: https://git-scm.com/docs/git-rev-parse
+type RevParseOptions struct {
+	// The timeout duration before giving up. The default timeout duration will be used when not supplied.
+	Timeout time.Duration
+}
+
+// RevParse returns full length (40) commit ID by given revision in the repository.
+func (r *Repository) RevParse(rev string, opts ...RevParseOptions) (string, error) {
+	var opt RevParseOptions
+	if len(opts) > 0 {
+		opt = opts[0]
+	}
+
+	commitID, err := NewCommand("rev-parse", rev).RunInDirWithTimeout(opt.Timeout, r.path)
+	if err != nil {
+		if strings.Contains(err.Error(), "exit status 128") {
+			return "", ErrRevisionNotExist{rev, ""}
+		}
+		return "", err
+	}
+	return strings.TrimSpace(string(commitID)), nil
+}
+
+// CountObject contains disk usage report of a repository.
 type CountObject struct {
 	Count         int64
 	Size          int64
@@ -236,51 +449,69 @@ type CountObject struct {
 	SizeGarbage   int64
 }
 
-const (
-	statCount         = "count: "
-	statSize          = "size: "
-	statInPack        = "in-pack: "
-	statPacks         = "packs: "
-	statSizePack      = "size-pack: "
-	statPrunePackable = "prune-packable: "
-	statGarbage       = "garbage: "
-	statSizeGarbage   = "size-garbage: "
-)
-
-func strToInt64(s string) int64 {
-	i, _ := strconv.ParseInt(s, 10, 64)
-	return i
+// CountObjectsOptions contains optional arguments for counting objects.
+// Docs: https://git-scm.com/docs/git-count-objects
+type CountObjectsOptions struct {
+	// The timeout duration before giving up. The default timeout duration will be used when not supplied.
+	Timeout time.Duration
 }
 
-// GetRepoSize returns disk usage report of repository in given path.
-func GetRepoSize(repoPath string) (*CountObject, error) {
-	cmd := NewCommand("count-objects", "-v")
-	stdout, err := cmd.RunInDir(repoPath)
+// CountObjects returns disk usage report of the repository.
+func (r *Repository) CountObjects(opts ...CountObjectsOptions) (*CountObject, error) {
+	var opt CountObjectsOptions
+	if len(opts) > 0 {
+		opt = opts[0]
+	}
+
+	stdout, err := NewCommand("count-objects", "-v").RunInDirWithTimeout(opt.Timeout, r.path)
 	if err != nil {
 		return nil, err
 	}
 
+	toInt64 := func(b []byte) int64 {
+		i, _ := strconv.ParseInt(string(b), 10, 64)
+		return i
+	}
+
 	countObject := new(CountObject)
-	for _, line := range strings.Split(stdout, "\n") {
+	for _, line := range bytes.Split(stdout, []byte("\n")) {
 		switch {
-		case strings.HasPrefix(line, statCount):
-			countObject.Count = strToInt64(line[7:])
-		case strings.HasPrefix(line, statSize):
-			countObject.Size = strToInt64(line[6:]) * 1024
-		case strings.HasPrefix(line, statInPack):
-			countObject.InPack = strToInt64(line[9:])
-		case strings.HasPrefix(line, statPacks):
-			countObject.Packs = strToInt64(line[7:])
-		case strings.HasPrefix(line, statSizePack):
-			countObject.SizePack = strToInt64(line[11:]) * 1024
-		case strings.HasPrefix(line, statPrunePackable):
-			countObject.PrunePackable = strToInt64(line[16:])
-		case strings.HasPrefix(line, statGarbage):
-			countObject.Garbage = strToInt64(line[9:])
-		case strings.HasPrefix(line, statSizeGarbage):
-			countObject.SizeGarbage = strToInt64(line[14:]) * 1024
+		case bytes.HasPrefix(line, []byte("count: ")):
+			countObject.Count = toInt64(line[7:])
+		case bytes.HasPrefix(line, []byte("size: ")):
+			countObject.Size = toInt64(line[6:]) * 1024
+		case bytes.HasPrefix(line, []byte("in-pack: ")):
+			countObject.InPack = toInt64(line[9:])
+		case bytes.HasPrefix(line, []byte("packs: ")):
+			countObject.Packs = toInt64(line[7:])
+		case bytes.HasPrefix(line, []byte("size-pack: ")):
+			countObject.SizePack = toInt64(line[11:]) * 1024
+		case bytes.HasPrefix(line, []byte("prune-packable: ")):
+			countObject.PrunePackable = toInt64(line[16:])
+		case bytes.HasPrefix(line, []byte("garbage: ")):
+			countObject.Garbage = toInt64(line[9:])
+		case bytes.HasPrefix(line, []byte("size-garbage: ")):
+			countObject.SizeGarbage = toInt64(line[14:]) * 1024
 		}
 	}
 
 	return countObject, nil
+}
+
+// FsckOptions contains optional arguments for verifying the objects.
+// Docs: https://git-scm.com/docs/git-fsck
+type FsckOptions struct {
+	// The timeout duration before giving up. The default timeout duration will be used when not supplied.
+	Timeout time.Duration
+}
+
+// Fsck verifies the connectivity and validity of the objects in the database for the repository.
+func (r *Repository) Fsck(opts ...FsckOptions) error {
+	var opt FsckOptions
+	if len(opts) > 0 {
+		opt = opts[0]
+	}
+
+	_, err := NewCommand("fsck").RunInDirWithTimeout(opt.Timeout, r.path)
+	return err
 }

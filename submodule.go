@@ -4,75 +4,84 @@
 
 package git
 
-import "strings"
+import (
+	"strings"
+	"sync"
+)
 
-type SubModule struct {
-	Name string
-	URL  string
+// Submodule contains information of a Git submodule.
+type Submodule struct {
+	name string
+	url  string
 }
 
-// SubModuleFile represents a file with submodule type.
-type SubModuleFile struct {
+// Name returns the name of the submodule.
+func (s *Submodule) Name() string {
+	return s.name
+}
+
+// URL returns the URL of the submodule.
+func (s *Submodule) URL() string {
+	return s.url
+}
+
+// SubmoduleFile is a file with submodule type.
+type SubmoduleFile struct {
 	*Commit
 
-	refURL string
-	refID  string
+	refID      string
+	refURL     string
+	refURLOnce sync.Once
 }
 
-func NewSubModuleFile(c *Commit, refURL, refID string) *SubModuleFile {
-	return &SubModuleFile{
-		Commit: c,
-		refURL: refURL,
-		refID:  refID,
-	}
-}
+// RefURL guesses and returns the reference URL.
+func (f *SubmoduleFile) RefURL(urlPrefix, parentPath string) string {
+	f.refURLOnce.Do(func() {
+		f.refURL = strings.TrimSuffix(f.refURL, ".git")
 
-// RefURL guesses and returns reference URL.
-func (sf *SubModuleFile) RefURL(urlPrefix string, parentPath string) string {
-	if sf.refURL == "" {
-		return ""
-	}
-
-	url := strings.TrimSuffix(sf.refURL, ".git")
-
-	// git://xxx/user/repo
-	if strings.HasPrefix(url, "git://") {
-		return "http://" + strings.TrimPrefix(url, "git://")
-	}
-
-	// http[s]://xxx/user/repo
-	if strings.HasPrefix(url, "http://") || strings.HasPrefix(url, "https://") {
-		return url
-	}
-
-	// Relative url prefix check (according to git submodule documentation)
-	if strings.HasPrefix(url, "./") || strings.HasPrefix(url, "../") {
-		// ...construct and return correct submodule url here...
-		idx := strings.Index(parentPath, "/src/")
-		if idx == -1 {
-			return url
+		// git://xxx/user/repo
+		if strings.HasPrefix(f.refURL, "git://") {
+			f.refURL = "http://" + strings.TrimPrefix(f.refURL, "git://")
+			return
 		}
-		return strings.TrimSuffix(urlPrefix, "/") + parentPath[:idx] + "/" + url
-	}
 
-	// sysuser@xxx:user/repo
-	i := strings.Index(url, "@")
-	j := strings.LastIndex(url, ":")
-
-	// Only process when i < j because git+ssh://git@git.forwardbias.in/npploader.git
-	if i > -1 && j > -1 && i < j {
-		// fix problem with reverse proxy works only with local server
-		if strings.Contains(urlPrefix, url[i+1:j]) {
-			return urlPrefix + url[j+1:]
-		} else {
-			return "http://" + url[i+1:j] + "/" + url[j+1:]
+		// http[s]://xxx/user/repo
+		if strings.HasPrefix(f.refURL, "http://") || strings.HasPrefix(f.refURL, "https://") {
+			return
 		}
-	}
 
-	return url
+		// Relative URL prefix check (according to Git submodule documentation)
+		if strings.HasPrefix(f.refURL, "./") || strings.HasPrefix(f.refURL, "../") {
+			// ...construct and return correct submodule URL here.
+			idx := strings.Index(parentPath, "/src/")
+			if idx == -1 {
+				return
+			}
+			f.refURL = strings.TrimSuffix(urlPrefix, "/") + parentPath[:idx] + "/" + f.refURL
+			return
+		}
+
+		// sysuser@xxx:user/repo
+		i := strings.Index(f.refURL, "@")
+		j := strings.LastIndex(f.refURL, ":")
+
+		// Only process when i < j because git+ssh://git@git.forwardbias.in/npploader.git
+		if i > -1 && j > -1 && i < j {
+			// Fix problem with reverse proxy works only with local server
+			if strings.Contains(urlPrefix, f.refURL[i+1:j]) {
+				f.refURL = urlPrefix + f.refURL[j+1:]
+				return
+			}
+
+			f.refURL = "http://" + f.refURL[i+1:j] + "/" + f.refURL[j+1:]
+			return
+		}
+	})
+
+	return f.refURL
 }
 
-// RefID returns reference ID.
-func (sf *SubModuleFile) RefID() string {
-	return sf.refID
+// RefID returns the reference ID.
+func (f *SubmoduleFile) RefID() string {
+	return f.refID
 }

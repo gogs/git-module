@@ -7,75 +7,101 @@ package git
 import (
 	"fmt"
 	"path"
-	"path/filepath"
 	"runtime"
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
+	"time"
 )
 
+// EntryMode is the unix file mode of a tree entry.
 type EntryMode int
 
 // There are only a few file modes in Git. They look like unix file modes, but they can only be
 // one of these.
 const (
+	EntryTree    EntryMode = 0040000
 	EntryBlob    EntryMode = 0100644
 	EntryExec    EntryMode = 0100755
 	EntrySymlink EntryMode = 0120000
 	EntryCommit  EntryMode = 0160000
-	EntryTree    EntryMode = 0040000
 )
 
 type TreeEntry struct {
-	ID   sha1
-	Type ObjectType
-
 	mode EntryMode
+	typ  ObjectType
+	id   *SHA1
 	name string
 
-	ptree *Tree
+	parent *Tree
 
-	size  int64
-	sized bool
+	size     int64
+	sizeOnce sync.Once
 }
 
-func (te *TreeEntry) Name() string {
-	return te.name
+// IsTree returns tree if the entry itself is another tree (i.e. a directory).
+func (e *TreeEntry) IsTree() bool {
+	return e.mode == EntryTree
 }
 
-func (te *TreeEntry) Size() int64 {
-	if te.IsDir() {
-		return 0
-	} else if te.sized {
-		return te.size
-	}
-
-	stdout, err := NewCommand("cat-file", "-s", te.ID.String()).RunInDir(te.ptree.repo.Path)
-	if err != nil {
-		return 0
-	}
-
-	te.sized = true
-	te.size, _ = strconv.ParseInt(strings.TrimSpace(stdout), 10, 64)
-	return te.size
+// IsBlob returns true if the entry is a blob.
+func (e *TreeEntry) IsBlob() bool {
+	return e.mode == EntryBlob
 }
 
-func (te *TreeEntry) IsSubModule() bool {
-	return te.mode == EntryCommit
+// IsExec returns tree if the entry is an executable.
+func (e *TreeEntry) IsExec() bool {
+	return e.mode == EntryExec
 }
 
-func (te *TreeEntry) IsDir() bool {
-	return te.mode == EntryTree
+// IsSymlink returns true if the entry is a symbolic link.
+func (e *TreeEntry) IsSymlink() bool {
+	return e.mode == EntrySymlink
 }
 
-func (te *TreeEntry) IsLink() bool {
-	return te.mode == EntrySymlink
+// IsCommit returns true if the entry is a commit (i.e. a submodule).
+func (e *TreeEntry) IsCommit() bool {
+	return e.mode == EntryCommit
 }
 
-func (te *TreeEntry) Blob() *Blob {
+// Type returns the object type of the entry.
+func (e *TreeEntry) Type() ObjectType {
+	return e.typ
+}
+
+// ID returns the SHA-1 hash of the entry.
+func (e *TreeEntry) ID() *SHA1 {
+	return e.id
+}
+
+// Name returns name of the entry.
+func (e *TreeEntry) Name() string {
+	return e.name
+}
+
+// Size returns the size of thr entry.
+func (e *TreeEntry) Size() int64 {
+	e.sizeOnce.Do(func() {
+		if e.IsTree() {
+			return
+		}
+
+		stdout, err := NewCommand("cat-file", "-s", e.id.String()).RunInDir(e.parent.repo.path)
+		if err != nil {
+			return
+		}
+		e.size, _ = strconv.ParseInt(strings.TrimSpace(string(stdout)), 10, 64)
+	})
+
+	return e.size
+}
+
+// Blob returns a blob object from the entry.
+func (e *TreeEntry) Blob() *Blob {
 	return &Blob{
-		repo:      te.ptree.repo,
-		TreeEntry: te,
+		repo:      e.parent.repo,
+		TreeEntry: e,
 	}
 }
 
@@ -83,17 +109,17 @@ type Entries []*TreeEntry
 
 var sorter = []func(t1, t2 *TreeEntry) bool{
 	func(t1, t2 *TreeEntry) bool {
-		return (t1.IsDir() || t1.IsSubModule()) && !t2.IsDir() && !t2.IsSubModule()
+		return (t1.IsTree() || t1.IsCommit()) && !t2.IsTree() && !t2.IsCommit()
 	},
 	func(t1, t2 *TreeEntry) bool {
 		return t1.name < t2.name
 	},
 }
 
-func (tes Entries) Len() int      { return len(tes) }
-func (tes Entries) Swap(i, j int) { tes[i], tes[j] = tes[j], tes[i] }
-func (tes Entries) Less(i, j int) bool {
-	t1, t2 := tes[i], tes[j]
+func (es Entries) Len() int      { return len(es) }
+func (es Entries) Swap(i, j int) { es[i], es[j] = es[j], es[i] }
+func (es Entries) Less(i, j int) bool {
+	t1, t2 := es[i], es[j]
 	var k int
 	for k = 0; k < len(sorter)-1; k++ {
 		sort := sorter[k]
@@ -107,8 +133,8 @@ func (tes Entries) Less(i, j int) bool {
 	return sorter[k](t1, t2)
 }
 
-func (tes Entries) Sort() {
-	sort.Sort(tes)
+func (es Entries) Sort() {
+	sort.Sort(es)
 }
 
 var defaultConcurrency = runtime.NumCPU()
@@ -119,19 +145,19 @@ type commitInfo struct {
 	err       error
 }
 
-// GetCommitsInfo takes advantages of concurrency to speed up getting information
+// CommitsInfo takes advantages of concurrency to speed up getting information
 // of all commits that are corresponding to these entries. This method will automatically
 // choose the right number of goroutine (concurrency) to use related of the host CPU.
-func (tes Entries) GetCommitsInfo(commit *Commit, treePath string) ([][]interface{}, error) {
-	return tes.GetCommitsInfoWithCustomConcurrency(commit, treePath, 0)
+func (es Entries) CommitsInfo(timeout time.Duration, commit *Commit, treePath string) ([][]interface{}, error) {
+	return es.CommitsInfoWithCustomConcurrency(timeout, commit, treePath, 0)
 }
 
-// GetCommitsInfoWithCustomConcurrency takes advantages of concurrency to speed up getting information
+// CommitsInfoWithCustomConcurrency takes advantages of concurrency to speed up getting information
 // of all commits that are corresponding to these entries. If the given maxConcurrency is negative or
-// equal to zero:  the right number of goroutine (concurrency) to use will be choosen related of the
+// equal to zero: the right number of goroutine (concurrency) to use will be choosen related of the
 // host CPU.
-func (tes Entries) GetCommitsInfoWithCustomConcurrency(commit *Commit, treePath string, maxConcurrency int) ([][]interface{}, error) {
-	if len(tes) == 0 {
+func (es Entries) CommitsInfoWithCustomConcurrency(timeout time.Duration, commit *Commit, treePath string, maxConcurrency int) ([][]interface{}, error) {
+	if len(es) == 0 {
 		return nil, nil
 	}
 
@@ -148,7 +174,7 @@ func (tes Entries) GetCommitsInfoWithCustomConcurrency(commit *Commit, treePath 
 
 	// Receive loop will exit when it collects same number of data pieces as tree entries.
 	// It notifies doneChan before exits or notify early with possible error.
-	infoMap := make(map[string][]interface{}, len(tes))
+	infoMap := make(map[string][]interface{}, len(es))
 	go func() {
 		i := 0
 		for info := range revChan {
@@ -159,26 +185,29 @@ func (tes Entries) GetCommitsInfoWithCustomConcurrency(commit *Commit, treePath 
 
 			infoMap[info.entryName] = info.infos
 			i++
-			if i == len(tes) {
+			if i == len(es) {
 				break
 			}
 		}
 		doneChan <- nil
 	}()
 
-	for i := range tes {
+	for i := range es {
 		// When taskChan is idle (or has empty slots), put operation will not block.
 		// However when taskChan is full, code will block and wait any running goroutines to finish.
 		taskChan <- true
 
-		if tes[i].Type != ObjectCommit {
+		if es[i].typ != ObjectCommit {
 			go func(i int) {
-				cinfo := commitInfo{entryName: tes[i].Name()}
-				c, err := commit.GetCommitByPath(filepath.Join(treePath, tes[i].Name()))
+				cinfo := commitInfo{entryName: es[i].Name()}
+				c, err := commit.CommitByPath(CommitByRevisionOptions{
+					Path:    path.Join(treePath, es[i].Name()),
+					Timeout: timeout,
+				})
 				if err != nil {
-					cinfo.err = fmt.Errorf("GetCommitByPath (%s/%s): %v", treePath, tes[i].Name(), err)
+					cinfo.err = fmt.Errorf("CommitByPath (%s/%s): %v", treePath, es[i].Name(), err)
 				} else {
-					cinfo.infos = []interface{}{tes[i], c}
+					cinfo.infos = []interface{}{es[i], c}
 				}
 				revChan <- cinfo
 				<-taskChan // Clear one slot from taskChan to allow new goroutines to start.
@@ -188,24 +217,34 @@ func (tes Entries) GetCommitsInfoWithCustomConcurrency(commit *Commit, treePath 
 
 		// Handle submodule
 		go func(i int) {
-			cinfo := commitInfo{entryName: tes[i].Name()}
-			sm, err := commit.GetSubModule(path.Join(treePath, tes[i].Name()))
-			if err != nil && !IsErrNotExist(err) {
-				cinfo.err = fmt.Errorf("GetSubModule (%s/%s): %v", treePath, tes[i].Name(), err)
+			cinfo := commitInfo{entryName: es[i].Name()}
+			sm, err := commit.Submodule(path.Join(treePath, es[i].Name()))
+			if err != nil && !IsErrRevesionNotExist(err) {
+				cinfo.err = fmt.Errorf("GetSubModule (%s/%s): %v", treePath, es[i].Name(), err)
 				revChan <- cinfo
 				return
 			}
 
 			smURL := ""
 			if sm != nil {
-				smURL = sm.URL
+				smURL = sm.url
 			}
 
-			c, err := commit.GetCommitByPath(filepath.Join(treePath, tes[i].Name()))
+			c, err := commit.CommitByPath(CommitByRevisionOptions{
+				Path:    path.Join(treePath, es[i].Name()),
+				Timeout: timeout,
+			})
 			if err != nil {
-				cinfo.err = fmt.Errorf("GetCommitByPath (%s/%s): %v", treePath, tes[i].Name(), err)
+				cinfo.err = fmt.Errorf("CommitByPath (%s/%s): %v", treePath, es[i].Name(), err)
 			} else {
-				cinfo.infos = []interface{}{tes[i], NewSubModuleFile(c, smURL, tes[i].ID.String())}
+				cinfo.infos = []interface{}{
+					es[i],
+					&SubmoduleFile{
+						Commit: c,
+						refURL: smURL,
+						refID:  es[i].id.String(),
+					},
+				}
 			}
 			revChan <- cinfo
 			<-taskChan
@@ -216,9 +255,9 @@ func (tes Entries) GetCommitsInfoWithCustomConcurrency(commit *Commit, treePath 
 		return nil, err
 	}
 
-	commitsInfo := make([][]interface{}, len(tes))
-	for i := 0; i < len(tes); i++ {
-		commitsInfo[i] = infoMap[tes[i].Name()]
+	commitsInfo := make([][]interface{}, len(es))
+	for i := 0; i < len(es); i++ {
+		commitsInfo[i] = infoMap[es[i].Name()]
 	}
 	return commitsInfo, nil
 }

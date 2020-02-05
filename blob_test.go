@@ -6,25 +6,13 @@ package git
 
 import (
 	"bytes"
-	"io/ioutil"
 	"testing"
 
-	. "github.com/smartystreets/goconvey/convey"
+	"github.com/stretchr/testify/assert"
 )
 
-var testBlob = &Blob{
-	repo: &Repository{},
-	TreeEntry: &TreeEntry{
-		ID: MustIDFromString("176d8dfe018c850d01851b05fb8a430096247353"),
-		ptree: &Tree{
-			repo: &Repository{},
-		},
-	},
-}
-
-func Test_Blob_Data(t *testing.T) {
-	Convey("Get blob data", t, func() {
-		_output := `Copyright (c) 2015 All Gogs Contributors
+func TestBlob(t *testing.T) {
+	expOutput := `Copyright (c) 2015 All Gogs Contributors
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -44,36 +32,26 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.`
 
-		Convey("Get data all at once", func() {
-			r, err := testBlob.Data()
-			So(err, ShouldBeNil)
-			So(r, ShouldNotBeNil)
+	blob := &Blob{
+		repo: &Repository{},
+		TreeEntry: &TreeEntry{
+			id: MustIDFromString("176d8dfe018c850d01851b05fb8a430096247353"), // Blob ID of "LICENSE" file
+			parent: &Tree{
+				repo: &Repository{},
+			},
+		},
+	}
 
-			data, err := ioutil.ReadAll(r)
-			So(err, ShouldBeNil)
-			So(string(data), ShouldEqual, _output)
-		})
-
-		Convey("Get blob data with pipeline", func() {
-			stdout := new(bytes.Buffer)
-			err := testBlob.DataPipeline(stdout, nil)
-			So(err, ShouldBeNil)
-			So(stdout.String(), ShouldEqual, _output)
-		})
+	t.Run("get data all at once", func(t *testing.T) {
+		p, err := blob.Bytes()
+		assert.Nil(t, err)
+		assert.Equal(t, expOutput, string(p))
 	})
-}
 
-func Benchmark_Blob_Data(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		r, _ := testBlob.Data()
-		ioutil.ReadAll(r)
-	}
-}
-
-func Benchmark_Blob_DataPipeline(b *testing.B) {
-	stdout := new(bytes.Buffer)
-	for i := 0; i < b.N; i++ {
-		stdout.Reset()
-		testBlob.DataPipeline(stdout, nil)
-	}
+	t.Run("get data with pipeline", func(t *testing.T) {
+		stdout := new(bytes.Buffer)
+		err := blob.Pipeline(stdout, nil)
+		assert.Nil(t, err)
+		assert.Equal(t, expOutput, stdout.String())
+	})
 }

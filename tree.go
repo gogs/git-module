@@ -5,144 +5,65 @@
 package git
 
 import (
-	"bytes"
-	"fmt"
 	"strings"
+	"sync"
 )
 
-// Tree represents a flat directory listing.
+// Tree represents a flat directory listing in Git.
 type Tree struct {
-	ID   sha1
+	id     *SHA1
+	parent *Tree
+
 	repo *Repository
 
-	// parent tree
-	ptree *Tree
-
-	entries       Entries
-	entriesParsed bool
+	entries     Entries
+	entriesOnce sync.Once
+	entriesErr  error
 }
 
-func NewTree(repo *Repository, id sha1) *Tree {
-	return &Tree{
-		ID:   id,
-		repo: repo,
-	}
-}
-
-// Predefine []byte variables to avoid runtime allocations.
-var (
-	escapedSlash = []byte(`\\`)
-	regularSlash = []byte(`\`)
-	escapedTab   = []byte(`\t`)
-	regularTab   = []byte("\t")
-)
-
-// UnescapeChars reverses escaped characters.
-func UnescapeChars(in []byte) []byte {
-	if bytes.ContainsAny(in, "\\\t") {
-		return in
-	}
-
-	out := bytes.Replace(in, escapedSlash, regularSlash, -1)
-	out = bytes.Replace(out, escapedTab, regularTab, -1)
-	return out
-}
-
-// parseTreeData parses tree information from the (uncompressed) raw
-// data from the tree object.
-func parseTreeData(tree *Tree, data []byte) ([]*TreeEntry, error) {
-	entries := make([]*TreeEntry, 0, 10)
-	l := len(data)
-	pos := 0
-	for pos < l {
-		entry := new(TreeEntry)
-		entry.ptree = tree
-		step := 6
-		switch string(data[pos : pos+step]) {
-		case "100644", "100664":
-			entry.mode = EntryBlob
-			entry.Type = ObjectBlob
-		case "100755":
-			entry.mode = EntryExec
-			entry.Type = ObjectBlob
-		case "120000":
-			entry.mode = EntrySymlink
-			entry.Type = ObjectBlob
-		case "160000":
-			entry.mode = EntryCommit
-			entry.Type = ObjectCommit
-
-			step = 8
-		case "040000":
-			entry.mode = EntryTree
-			entry.Type = ObjectTree
-		default:
-			return nil, fmt.Errorf("unknown type: %v", string(data[pos:pos+step]))
-		}
-		pos += step + 6 // Skip string type of entry type.
-
-		step = 40
-		id, err := NewIDFromString(string(data[pos : pos+step]))
-		if err != nil {
-			return nil, err
-		}
-		entry.ID = id
-		pos += step + 1 // Skip half of sha1.
-
-		step = bytes.IndexByte(data[pos:], '\n')
-
-		// In case entry name is surrounded by double quotes(it happens only in git-shell).
-		if data[pos] == '"' {
-			entry.name = string(UnescapeChars(data[pos+1 : pos+step-1]))
-		} else {
-			entry.name = string(data[pos : pos+step])
-		}
-
-		pos += step + 1
-		entries = append(entries, entry)
-	}
-	return entries, nil
-}
-
-func (t *Tree) SubTree(rpath string) (*Tree, error) {
-	if len(rpath) == 0 {
+// Subtree returns a subtree by given subpath of the tree.
+func (t *Tree) Subtree(subpath string, opts ...LsTreeOptions) (*Tree, error) {
+	if len(subpath) == 0 {
 		return t, nil
 	}
 
-	paths := strings.Split(rpath, "/")
+	paths := strings.Split(subpath, "/")
 	var (
 		err error
 		g   = t
 		p   = t
-		te  *TreeEntry
+		e   *TreeEntry
 	)
 	for _, name := range paths {
-		te, err = p.GetTreeEntryByPath(name)
+		e, err = p.TreeEntry(name, opts...)
 		if err != nil {
 			return nil, err
 		}
 
-		g, err = t.repo.getTree(te.ID)
-		if err != nil {
-			return nil, err
+		g = &Tree{
+			id:     e.id,
+			parent: p,
+			repo:   t.repo,
 		}
-		g.ptree = p
 		p = g
 	}
 	return g, nil
 }
 
-// ListEntries returns all entries of current tree.
-func (t *Tree) ListEntries() (Entries, error) {
-	if t.entriesParsed {
-		return t.entries, nil
-	}
-	t.entriesParsed = true
+// Entries returns all entries of the tree.
+func (t *Tree) Entries(opts ...LsTreeOptions) (Entries, error) {
+	t.entriesOnce.Do(func() {
+		if t.entries != nil {
+			return
+		}
 
-	stdout, err := NewCommand("ls-tree", t.ID.String()).RunInDirBytes(t.repo.Path)
-	if err != nil {
-		return nil, err
-	}
-	t.entries, err = parseTreeData(t, stdout)
-	return t.entries, err
+		var tt *Tree
+		tt, t.entriesErr = t.repo.LsTree(t.id.String(), opts...)
+		if t.entriesErr != nil {
+			return
+		}
+		t.entries = tt.entries
+	})
+
+	return t.entries, t.entriesErr
 }

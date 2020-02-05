@@ -5,106 +5,162 @@
 package git
 
 import (
-	"fmt"
+	"bytes"
 	"strings"
+	"time"
 
 	goversion "github.com/mcuadros/go-version"
 )
 
-const TagPrefix = "refs/tags/"
-
-// IsTagExist returns true if given tag exists in the repository.
-func IsTagExist(repoPath, name string) bool {
-	return IsReferenceExist(repoPath, TagPrefix+name)
+// parseTag parses tag information from the (uncompressed) raw data of the tag object.
+// It assumes "\n\n" separates the header from the rest of the message.
+func parseTag(data []byte) (*Tag, error) {
+	tag := new(Tag)
+	// we now have the contents of the commit object. Let's investigate.
+	nextline := 0
+l:
+	for {
+		eol := bytes.IndexByte(data[nextline:], '\n')
+		switch {
+		case eol > 0:
+			line := data[nextline : nextline+eol]
+			spacepos := bytes.IndexByte(line, ' ')
+			reftype := line[:spacepos]
+			switch string(reftype) {
+			case "object":
+				id, err := NewIDFromString(string(line[spacepos+1:]))
+				if err != nil {
+					return nil, err
+				}
+				tag.commitID = id
+			case "type":
+				// A commit can have one or more parents
+				tag.typ = ObjectType(line[spacepos+1:])
+			case "tagger":
+				sig, err := parseSignature(line[spacepos+1:])
+				if err != nil {
+					return nil, err
+				}
+				tag.tagger = sig
+			}
+			nextline += eol + 1
+		case eol == 0:
+			tag.message = string(data[nextline+1:])
+			break l
+		default:
+			break l
+		}
+	}
+	return tag, nil
 }
 
-func (repo *Repository) IsTagExist(name string) bool {
-	return IsTagExist(repo.Path, name)
-}
-
-func (repo *Repository) CreateTag(name, revision string) error {
-	_, err := NewCommand("tag", name, revision).RunInDir(repo.Path)
-	return err
-}
-
-func (repo *Repository) getTag(id sha1) (*Tag, error) {
-	t, ok := repo.tagCache.Get(id.String())
+// getTag returns a tag by given SHA1 hash.
+func (r *Repository) getTag(timeout time.Duration, id *SHA1) (*Tag, error) {
+	t, ok := r.cachedTags.Get(id.String())
 	if ok {
-		log("Hit cache: %s", id)
+		log("Cached tag hit: %s", id)
 		return t.(*Tag), nil
 	}
 
-	// Get tag type
-	tp, err := NewCommand("cat-file", "-t", id.String()).RunInDir(repo.Path)
+	// Check tag type
+	typ, err := NewCommand("cat-file", "-t", id.String()).RunInDirWithTimeout(timeout, r.path)
 	if err != nil {
 		return nil, err
 	}
-	tp = strings.TrimSpace(tp)
+	typ = bytes.TrimSpace(typ)
 
-	// Tag is a commit.
-	if ObjectType(tp) == ObjectCommit {
-		tag := &Tag{
-			ID:     id,
-			Object: id,
-			Type:   string(ObjectCommit),
-			repo:   repo,
+	var tag *Tag
+	switch ObjectType(typ) {
+	case ObjectCommit: // Tag is a commit
+		tag = &Tag{
+			typ:      ObjectCommit,
+			id:       id,
+			commitID: id,
+			repo:     r,
 		}
 
-		repo.tagCache.Set(id.String(), tag)
-		return tag, nil
+	case ObjectTag: // Tag is an annotation
+		data, err := NewCommand("cat-file", "-p", id.String()).RunInDir(r.path)
+		if err != nil {
+			return nil, err
+		}
+
+		tag, err := parseTag(data)
+		if err != nil {
+			return nil, err
+		}
+
+		tag.id = id
+		tag.repo = r
 	}
 
-	// Tag with message.
-	data, err := NewCommand("cat-file", "-p", id.String()).RunInDirBytes(repo.Path)
-	if err != nil {
-		return nil, err
-	}
-
-	tag, err := parseTagData(data)
-	if err != nil {
-		return nil, err
-	}
-
-	tag.ID = id
-	tag.repo = repo
-
-	repo.tagCache.Set(id.String(), tag)
+	r.cachedTags.Set(id.String(), tag)
 	return tag, nil
 }
 
-// GetTag returns a Git tag by given name.
-func (repo *Repository) GetTag(name string) (*Tag, error) {
-	stdout, err := NewCommand("show-ref", "--tags", name).RunInDir(repo.Path)
+// TagOptions contains optional arguments for getting a tag.
+// Docs: https://git-scm.com/docs/git-cat-file
+type TagOptions struct {
+	// The timeout duration before giving up. The default timeout duration will be used when not supplied.
+	Timeout time.Duration
+}
+
+// Tag returns a Git tag by given refspec.
+func (r *Repository) Tag(refspec string, opts ...TagOptions) (*Tag, error) {
+	var opt TagOptions
+	if len(opts) > 0 {
+		opt = opts[0]
+	}
+
+	refs, err := r.ShowRef(ShowRefOptions{
+		Tags:     true,
+		Patterns: []string{refspec},
+		Timeout:  opt.Timeout,
+	})
+	if err != nil {
+		return nil, err
+	} else if len(refs) == 0 {
+		return nil, ErrReferenceNotExist
+	}
+
+	id, err := NewIDFromString(refs[0].ID)
 	if err != nil {
 		return nil, err
 	}
 
-	id, err := NewIDFromString(strings.Split(stdout, " ")[0])
+	tag, err := r.getTag(opt.Timeout, id)
 	if err != nil {
 		return nil, err
 	}
-
-	tag, err := repo.getTag(id)
-	if err != nil {
-		return nil, err
-	}
-	tag.Name = name
+	tag.refspec = refspec
 	return tag, nil
 }
 
-// GetTags returns all tags of the repository.
-func (repo *Repository) GetTags() ([]string, error) {
-	cmd := NewCommand("tag", "-l")
+// TagListOptions contains optional arguments for listing tags.
+// Docs: https://git-scm.com/docs/git-tag#Documentation/git-tag.txt---list
+type TagListOptions struct {
+	// The timeout duration before giving up. The default timeout duration will be used when not supplied.
+	Timeout time.Duration
+}
+
+// TagList returns a list of tags in the repository.
+func (r *Repository) TagList(opts ...TagListOptions) ([]string, error) {
+	var opt TagListOptions
+	if len(opts) > 0 {
+		opt = opts[0]
+	}
+
+	cmd := NewCommand("tag", "--list")
 	if goversion.Compare(gitVersion, "2.4.9", ">=") {
-		cmd.AddArguments("--sort=-creatordate")
+		cmd.AddArgs("--sort=-creatordate")
 	}
 
-	stdout, err := cmd.RunInDir(repo.Path)
+	stdout, err := cmd.RunInDirWithTimeout(opt.Timeout, r.path)
 	if err != nil {
 		return nil, err
 	}
 
-	tags := strings.Split(stdout, "\n")
+	tags := strings.Split(string(stdout), "\n")
 	tags = tags[:len(tags)-1]
 
 	if goversion.Compare(gitVersion, "2.4.9", "<") {
@@ -120,90 +176,38 @@ func (repo *Repository) GetTags() ([]string, error) {
 	return tags, nil
 }
 
-type TagsResult struct {
-	// Indicates whether results include the latest tag.
-	HasLatest bool
-	// If results do not include the latest tag, a indicator 'after' to go back.
-	PreviousAfter string
-	// Indicates whether results include the oldest tag.
-	ReachEnd bool
-	// List of returned tags.
-	Tags []string
+// CreateTagOptions contains optional arguments for creating a tag.
+// Docs: https://git-scm.com/docs/git-tag
+type CreateTagOptions struct {
+	// The timeout duration before giving up. The default timeout duration will be used when not supplied.
+	Timeout time.Duration
 }
 
-// GetTagsAfter returns list of tags 'after' (exlusive) given tag.
-func (repo *Repository) GetTagsAfter(after string, limit int) (*TagsResult, error) {
-	allTags, err := repo.GetTags()
-	if err != nil {
-		return nil, fmt.Errorf("GetTags: %v", err)
+// CreateTag creates a new tag on given revision.
+func (r *Repository) CreateTag(name, rev string, opts ...CreateTagOptions) error {
+	var opt CreateTagOptions
+	if len(opts) > 0 {
+		opt = opts[0]
 	}
 
-	if limit < 0 {
-		limit = 0
-	}
-
-	numAllTags := len(allTags)
-	if len(after) == 0 && limit == 0 {
-		return &TagsResult{
-			HasLatest: true,
-			ReachEnd:  true,
-			Tags:      allTags,
-		}, nil
-	} else if len(after) == 0 && limit > 0 {
-		endIdx := limit
-		if limit >= numAllTags {
-			endIdx = numAllTags
-		}
-		return &TagsResult{
-			HasLatest: true,
-			ReachEnd:  limit >= numAllTags,
-			Tags:      allTags[:endIdx],
-		}, nil
-	}
-
-	previousAfter := ""
-	hasMatch := false
-	tags := make([]string, 0, len(allTags))
-	for i := range allTags {
-		if hasMatch {
-			tags = allTags[i:]
-			break
-		}
-		if allTags[i] == after {
-			hasMatch = true
-			if limit > 0 && i-limit >= 0 {
-				previousAfter = allTags[i-limit]
-			}
-			continue
-		}
-	}
-
-	if !hasMatch {
-		tags = allTags
-	}
-
-	// If all tags after match is equal to the limit, it reaches the oldest tag as well.
-	if limit == 0 || len(tags) <= limit {
-		return &TagsResult{
-			HasLatest:     !hasMatch,
-			PreviousAfter: previousAfter,
-			ReachEnd:      true,
-			Tags:          tags,
-		}, nil
-	}
-	return &TagsResult{
-		HasLatest:     !hasMatch,
-		PreviousAfter: previousAfter,
-		Tags:          tags[:limit],
-	}, nil
+	_, err := NewCommand("tag", name, rev).RunInDirWithTimeout(opt.Timeout, r.path)
+	return err
 }
 
-// DeleteTag deletes a tag from the repository
-func (repo *Repository) DeleteTag(name string) error {
-	cmd := NewCommand("tag", "-d")
+// DeleteTagOptions contains optional arguments for deleting a tag.
+// Docs: https://git-scm.com/docs/git-tag#Documentation/git-tag.txt---delete
+type DeleteTagOptions struct {
+	// The timeout duration before giving up. The default timeout duration will be used when not supplied.
+	Timeout time.Duration
+}
 
-	cmd.AddArguments(name)
-	_, err := cmd.RunInDir(repo.Path)
+// DeleteTag deletes a tag from the repository.
+func (r *Repository) DeleteTag(name string, opts ...DeleteTagOptions) error {
+	var opt DeleteTagOptions
+	if len(opts) > 0 {
+		opt = opts[0]
+	}
 
+	_, err := NewCommand("tag", "--delete", name).RunInDirWithTimeout(opt.Timeout, r.path)
 	return err
 }

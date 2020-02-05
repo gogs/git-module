@@ -5,340 +5,57 @@
 package git
 
 import (
-	"bufio"
 	"bytes"
 	"fmt"
 	"io"
-	"io/ioutil"
-	"strconv"
-	"strings"
 	"time"
 )
 
-// DiffLineType represents the type of a line in diff.
-type DiffLineType uint8
-
-const (
-	DiffLinePlain DiffLineType = iota + 1
-	DiffLineAdd
-	DiffLineDel
-	DiffLineSection
-)
-
-// DiffFileType represents the file status in diff.
-type DiffFileType uint8
-
-const (
-	DiffFileAdd DiffFileType = iota + 1
-	DiffFileChange
-	DiffFileDel
-	DiffFileRename
-)
-
-// DiffLine represents a line in diff.
-type DiffLine struct {
-	LeftIdx  int
-	RightIdx int
-	Type     DiffLineType
-	Content  string
+// DiffRangeOptions contains optional arguments for parsing diff.
+// Docs: https://git-scm.com/docs/git-diff#Documentation/git-diff.txt---full-index
+type DiffRangeOptions struct {
+	// The commit ID to used for computing diff between a range of commits (base, revision]. When not set,
+	// only computes diff for a single commit at revision.
+	Base string
+	// The timeout duration before giving up. The default timeout duration will be used when not supplied.
+	Timeout time.Duration
 }
 
-func (d *DiffLine) GetType() int {
-	return int(d.Type)
-}
-
-// DiffSection represents a section in diff.
-type DiffSection struct {
-	Name  string
-	Lines []*DiffLine
-}
-
-// Line returns a specific line by type (add or del) and file line number from a section.
-func (diffSection *DiffSection) Line(lineType DiffLineType, idx int) *DiffLine {
-	var (
-		difference    = 0
-		addCount      = 0
-		delCount      = 0
-		matchDiffLine *DiffLine
-	)
-
-LOOP:
-	for _, diffLine := range diffSection.Lines {
-		switch diffLine.Type {
-		case DiffLineAdd:
-			addCount++
-		case DiffLineDel:
-			delCount++
-		default:
-			if matchDiffLine != nil {
-				break LOOP
-			}
-			difference = diffLine.RightIdx - diffLine.LeftIdx
-			addCount = 0
-			delCount = 0
-		}
-
-		switch lineType {
-		case DiffLineDel:
-			if diffLine.RightIdx == 0 && diffLine.LeftIdx == idx-difference {
-				matchDiffLine = diffLine
-			}
-		case DiffLineAdd:
-			if diffLine.LeftIdx == 0 && diffLine.RightIdx == idx+difference {
-				matchDiffLine = diffLine
-			}
-		}
+// Diff returns a parsed diff object between given commits.
+func (r *Repository) Diff(rev string, maxLines, maxLineChars, maxFiles int, opts ...DiffRangeOptions) (*Diff, error) {
+	var opt DiffRangeOptions
+	if len(opts) > 0 {
+		opt = opts[0]
 	}
 
-	if addCount == delCount {
-		return matchDiffLine
-	}
-	return nil
-}
-
-// DiffFile represents a file in diff.
-type DiffFile struct {
-	Name               string
-	OldName            string
-	Index              string // 40-byte SHA, Changed/New: new SHA; Deleted: old SHA
-	Addition, Deletion int
-	Type               DiffFileType
-	IsCreated          bool
-	IsDeleted          bool
-	IsBin              bool
-	IsRenamed          bool
-	IsSubmodule        bool
-	Sections           []*DiffSection
-	IsIncomplete       bool
-}
-
-func (diffFile *DiffFile) GetType() int {
-	return int(diffFile.Type)
-}
-
-func (diffFile *DiffFile) NumSections() int {
-	return len(diffFile.Sections)
-}
-
-// Diff contains all information of a specific diff output.
-type Diff struct {
-	TotalAddition, TotalDeletion int
-	Files                        []*DiffFile
-	IsIncomplete                 bool
-}
-
-func (diff *Diff) NumFiles() int {
-	return len(diff.Files)
-}
-
-const _DIFF_HEAD = "diff --git "
-
-// ParsePatch takes a reader and parses everything it receives in diff format.
-func ParsePatch(done chan<- error, maxLines, maxLineCharacteres, maxFiles int, reader io.Reader) *Diff {
-	var (
-		diff = &Diff{Files: make([]*DiffFile, 0)}
-
-		curFile    *DiffFile
-		curSection = &DiffSection{
-			Lines: make([]*DiffLine, 0, 10),
-		}
-
-		leftLine, rightLine int
-		lineCount           int
-		curFileLinesCount   int
-	)
-	input := bufio.NewReader(reader)
-	isEOF := false
-	for !isEOF {
-		// TODO: would input.ReadBytes be more memory-efficient?
-		line, err := input.ReadString('\n')
-		if err != nil {
-			if err == io.EOF {
-				isEOF = true
-			} else {
-				done <- fmt.Errorf("ReadString: %v", err)
-				return nil
-			}
-		}
-
-		if len(line) > 0 && line[len(line)-1] == '\n' {
-			// Remove line break.
-			line = line[:len(line)-1]
-		}
-
-		if strings.HasPrefix(line, "+++ ") || strings.HasPrefix(line, "--- ") || len(line) == 0 {
-			continue
-		}
-
-		curFileLinesCount++
-		lineCount++
-
-		// Diff data too large, we only show the first about maxlines lines
-		if curFileLinesCount >= maxLines || len(line) >= maxLineCharacteres {
-			curFile.IsIncomplete = true
-		}
-
-		switch {
-		case line[0] == ' ':
-			diffLine := &DiffLine{Type: DiffLinePlain, Content: line, LeftIdx: leftLine, RightIdx: rightLine}
-			leftLine++
-			rightLine++
-			curSection.Lines = append(curSection.Lines, diffLine)
-			continue
-		case line[0] == '@':
-			curSection = &DiffSection{}
-			curFile.Sections = append(curFile.Sections, curSection)
-			ss := strings.Split(line, "@@")
-			diffLine := &DiffLine{Type: DiffLineSection, Content: line}
-			curSection.Lines = append(curSection.Lines, diffLine)
-
-			// Parse line number.
-			ranges := strings.Split(ss[1][1:], " ")
-			leftLine, _ = strconv.Atoi(strings.Split(ranges[0], ",")[0][1:])
-			if len(ranges) > 1 {
-				rightLine, _ = strconv.Atoi(strings.Split(ranges[1], ",")[0])
-			} else {
-				rightLine = leftLine
-			}
-			continue
-		case line[0] == '+':
-			curFile.Addition++
-			diff.TotalAddition++
-			diffLine := &DiffLine{Type: DiffLineAdd, Content: line, RightIdx: rightLine}
-			rightLine++
-			curSection.Lines = append(curSection.Lines, diffLine)
-			continue
-		case line[0] == '-':
-			curFile.Deletion++
-			diff.TotalDeletion++
-			diffLine := &DiffLine{Type: DiffLineDel, Content: line, LeftIdx: leftLine}
-			if leftLine > 0 {
-				leftLine++
-			}
-			curSection.Lines = append(curSection.Lines, diffLine)
-		case strings.HasPrefix(line, "Binary"):
-			curFile.IsBin = true
-			continue
-		}
-
-		// Get new file.
-		if strings.HasPrefix(line, _DIFF_HEAD) {
-			middle := -1
-
-			// Note: In case file name is surrounded by double quotes (it happens only in git-shell).
-			// e.g. diff --git "a/xxx" "b/xxx"
-			hasQuote := line[len(_DIFF_HEAD)] == '"'
-			if hasQuote {
-				middle = strings.Index(line, ` "b/`)
-			} else {
-				middle = strings.Index(line, " b/")
-			}
-
-			beg := len(_DIFF_HEAD)
-			a := line[beg+2 : middle]
-			b := line[middle+3:]
-			if hasQuote {
-				a = string(UnescapeChars([]byte(a[1 : len(a)-1])))
-				b = string(UnescapeChars([]byte(b[1 : len(b)-1])))
-			}
-
-			curFile = &DiffFile{
-				Name:     a,
-				Type:     DiffFileChange,
-				Sections: make([]*DiffSection, 0, 10),
-			}
-			diff.Files = append(diff.Files, curFile)
-			if len(diff.Files) >= maxFiles {
-				diff.IsIncomplete = true
-				io.Copy(ioutil.Discard, reader)
-				break
-			}
-			curFileLinesCount = 0
-
-			// Check file diff type and submodule.
-		CHECK_TYPE:
-			for {
-				line, err := input.ReadString('\n')
-				if err != nil {
-					if err == io.EOF {
-						isEOF = true
-					} else {
-						done <- fmt.Errorf("ReadString: %v", err)
-						return nil
-					}
-				}
-
-				switch {
-				case strings.HasPrefix(line, "new file"):
-					curFile.Type = DiffFileAdd
-					curFile.IsCreated = true
-					curFile.IsSubmodule = strings.HasSuffix(line, " 160000\n")
-				case strings.HasPrefix(line, "deleted"):
-					curFile.Type = DiffFileDel
-					curFile.IsDeleted = true
-					curFile.IsSubmodule = strings.HasSuffix(line, " 160000\n")
-				case strings.HasPrefix(line, "index"):
-					if curFile.IsDeleted {
-						curFile.Index = line[6:46]
-					} else if len(line) >= 88 {
-						curFile.Index = line[49:88]
-					} else {
-						curFile.Index = curFile.Name
-					}
-					break CHECK_TYPE
-				case strings.HasPrefix(line, "similarity index 100%"):
-					curFile.Type = DiffFileRename
-					curFile.IsRenamed = true
-					curFile.OldName = curFile.Name
-					curFile.Name = b
-					curFile.Index = b
-					break CHECK_TYPE
-				case strings.HasPrefix(line, "old mode"):
-					break CHECK_TYPE
-				}
-			}
-		}
-	}
-
-	done <- nil
-	return diff
-}
-
-// GetDiffRange returns a parsed diff object between given commits.
-func GetDiffRange(repoPath, beforeCommitID, afterCommitID string, maxLines, maxLineCharacteres, maxFiles int) (*Diff, error) {
-	repo, err := OpenRepository(repoPath)
-	if err != nil {
-		return nil, err
-	}
-
-	commit, err := repo.GetCommit(afterCommitID)
+	commit, err := r.CatFileCommit(rev, CatFileCommitOptions{Timeout: opt.Timeout})
 	if err != nil {
 		return nil, err
 	}
 
 	cmd := NewCommand()
-	if len(beforeCommitID) == 0 {
+	if opt.Base == "" {
 		// First commit of repository
-		if commit.ParentCount() == 0 {
-			cmd.AddArguments("show", "--full-index", afterCommitID)
+		if commit.ParentsCount() == 0 {
+			cmd.AddArgs("show", "--full-index", rev)
 		} else {
 			c, _ := commit.Parent(0)
-			cmd.AddArguments("diff", "--full-index", "-M", c.ID.String(), afterCommitID)
+			cmd.AddArgs("diff", "--full-index", "-M", c.id.String(), rev)
 		}
 	} else {
-		cmd.AddArguments("diff", "--full-index", "-M", beforeCommitID, afterCommitID)
+		cmd.AddArgs("diff", "--full-index", "-M", opt.Base, rev)
 	}
 
 	stdout, w := io.Pipe()
 	done := make(chan error)
 	var diff *Diff
 	go func() {
-		diff = ParsePatch(done, maxLines, maxLineCharacteres, maxFiles, stdout)
+		diff = SteamParsePatch(stdout, done, maxLines, maxLineChars, maxFiles)
 	}()
 
 	stderr := new(bytes.Buffer)
-	err = cmd.RunInDirTimeoutPipeline(2*time.Minute, repoPath, w, stderr)
-	w.Close() // Close writer to exit parsing goroutine
+	err = cmd.RunInDirPipelineWithTimeout(2*time.Minute, w, stderr, r.path)
+	_ = w.Close() // Close writer to exit parsing goroutine
 	if err != nil {
 		return nil, concatenateError(err, stderr.String())
 	}
@@ -346,22 +63,29 @@ func GetDiffRange(repoPath, beforeCommitID, afterCommitID string, maxLines, maxL
 	return diff, <-done
 }
 
-// RawDiffType represents the type of raw diff format.
-type RawDiffType string
+// RawDiffFormat is the format of a raw diff.
+type RawDiffFormat string
 
 const (
-	RawDiffNormal RawDiffType = "diff"
-	RawDiffPatch  RawDiffType = "patch"
+	RawDiffNormal RawDiffFormat = "diff"
+	RawDiffPatch  RawDiffFormat = "patch"
 )
 
-// GetRawDiff dumps diff results of repository in given commit ID to io.Writer.
-func GetRawDiff(repoPath, commitID string, diffType RawDiffType, writer io.Writer) error {
-	repo, err := OpenRepository(repoPath)
-	if err != nil {
-		return fmt.Errorf("OpenRepository: %v", err)
+// RawDiffOptions contains optional arguments for dumpping a raw diff.
+// Docs: https://git-scm.com/docs/git-format-patch
+type RawDiffOptions struct {
+	// The timeout duration before giving up. The default timeout duration will be used when not supplied.
+	Timeout time.Duration
+}
+
+// RawDiff dumps diff of repository in given revision directly to given io.Writer.
+func (r *Repository) RawDiff(rev string, diffType RawDiffFormat, w io.Writer, opts ...RawDiffOptions) error {
+	var opt RawDiffOptions
+	if len(opts) > 0 {
+		opt = opts[0]
 	}
 
-	commit, err := repo.GetCommit(commitID)
+	commit, err := r.CatFileCommit(rev, CatFileCommitOptions{Timeout: opt.Timeout})
 	if err != nil {
 		return err
 	}
@@ -369,32 +93,42 @@ func GetRawDiff(repoPath, commitID string, diffType RawDiffType, writer io.Write
 	cmd := NewCommand()
 	switch diffType {
 	case RawDiffNormal:
-		if commit.ParentCount() == 0 {
-			cmd.AddArguments("show", commitID)
+		if commit.ParentsCount() == 0 {
+			cmd.AddArgs("show", rev)
 		} else {
 			c, _ := commit.Parent(0)
-			cmd.AddArguments("diff", "-M", c.ID.String(), commitID)
+			cmd.AddArgs("diff", "-M", c.id.String(), rev)
 		}
 	case RawDiffPatch:
-		if commit.ParentCount() == 0 {
-			cmd.AddArguments("format-patch", "--no-signature", "--stdout", "--root", commitID)
+		if commit.ParentsCount() == 0 {
+			cmd.AddArgs("format-patch", "--no-signature", "--stdout", "--root", rev)
 		} else {
 			c, _ := commit.Parent(0)
-			query := fmt.Sprintf("%s...%s", commitID, c.ID.String())
-			cmd.AddArguments("format-patch", "--no-signature", "--stdout", query)
+			cmd.AddArgs("format-patch", "--no-signature", "--stdout", rev+"..."+c.id.String())
 		}
 	default:
 		return fmt.Errorf("invalid diffType: %s", diffType)
 	}
 
 	stderr := new(bytes.Buffer)
-	if err = cmd.RunInDirPipeline(repoPath, writer, stderr); err != nil {
+	if err = cmd.RunInDirPipelineWithTimeout(opt.Timeout, w, stderr, r.path); err != nil {
 		return concatenateError(err, stderr.String())
 	}
 	return nil
 }
 
-// GetDiffCommit returns a parsed diff object of given commit.
-func GetDiffCommit(repoPath, commitID string, maxLines, maxLineCharacteres, maxFiles int) (*Diff, error) {
-	return GetDiffRange(repoPath, "", commitID, maxLines, maxLineCharacteres, maxFiles)
+// DiffBinaryOptions contains optional arguments for producing binary patch.
+type DiffBinaryOptions struct {
+	// The timeout duration before giving up. The default timeout duration will be used when not supplied.
+	Timeout time.Duration
+}
+
+// DiffBinary returns binary patch between base and head revisions that could be used for git-apply.
+func (r *Repository) DiffBinary(base, head string, opts ...DiffBinaryOptions) ([]byte, error) {
+	var opt DiffBinaryOptions
+	if len(opts) > 0 {
+		opt = opts[0]
+	}
+
+	return NewCommand("diff", "--binary", base, head).RunInDirWithTimeout(opt.Timeout, r.path)
 }

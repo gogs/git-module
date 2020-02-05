@@ -6,69 +6,69 @@ package git
 
 import (
 	"fmt"
+	"io"
 	"strings"
-	"time"
+	"sync"
 )
 
 var (
-	// Debug enables verbose logging on everything.
-	// This should be false in case Gogs starts in SSH mode.
-	Debug  = false
-	Prefix = "[git-module] "
+	// logOutput is the writer to write logs. When not set, no log will be produced.
+	logOutput io.Writer
+	// logPrefix is the prefix prepend to each log entry.
+	logPrefix = "[git-module] "
 )
 
+// SetOutput sets the output writer for logs.
+func SetOutput(output io.Writer) {
+	logOutput = output
+}
+
+// SetPrefix sets the prefix to be prepended to each log entry.
+func SetPrefix(prefix string) {
+	logPrefix = prefix
+}
+
 func log(format string, args ...interface{}) {
-	if !Debug {
+	if logOutput == nil {
 		return
 	}
 
-	fmt.Print(Prefix)
-	if len(args) == 0 {
-		fmt.Println(format)
-	} else {
-		fmt.Printf(format+"\n", args...)
-	}
+	fmt.Fprint(logOutput, logPrefix)
+	fmt.Fprintf(logOutput, format, args...)
+	fmt.Fprintln(logOutput)
 }
 
-var gitVersion string
+var (
+	// gitVersion stores the Git binary version.
+	gitVersion     string
+	gitVersionOnce sync.Once
+	gitVersionErr  error
+)
 
-// Version returns current Git version from shell.
+// BinVersion returns current Git binary version that is used by this module.
 func BinVersion() (string, error) {
-	if len(gitVersion) > 0 {
-		return gitVersion, nil
-	}
+	gitVersionOnce.Do(func() {
+		var stdout []byte
+		stdout, gitVersionErr = NewCommand("version").Run()
+		if gitVersionErr != nil {
+			return
+		}
 
-	stdout, err := NewCommand("version").Run()
-	if err != nil {
-		return "", err
-	}
+		fields := strings.Fields(string(stdout))
+		if len(fields) < 3 {
+			gitVersionErr = fmt.Errorf("not enough output: %s", stdout)
+			return
+		}
 
-	fields := strings.Fields(stdout)
-	if len(fields) < 3 {
-		return "", fmt.Errorf("not enough output: %s", stdout)
-	}
+		// Handle special case on Windows.
+		i := strings.Index(fields[2], "windows")
+		if i >= 1 {
+			gitVersion = fields[2][:i-1]
+			return
+		}
 
-	// Handle special case on Windows.
-	i := strings.Index(fields[2], "windows")
-	if i >= 1 {
-		gitVersion = fields[2][:i-1]
-		return gitVersion, nil
-	}
+		gitVersion = fields[2]
+	})
 
-	gitVersion = fields[2]
-	return gitVersion, nil
-}
-
-func init() {
-	BinVersion()
-}
-
-// Fsck verifies the connectivity and validity of the objects in the database
-func Fsck(repoPath string, timeout time.Duration, args ...string) error {
-	// Make sure timeout makes sense.
-	if timeout <= 0 {
-		timeout = -1
-	}
-	_, err := NewCommand("fsck").AddArguments(args...).RunInDirTimeout(timeout, repoPath)
-	return err
+	return gitVersion, gitVersionErr
 }

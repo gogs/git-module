@@ -4,23 +4,119 @@
 
 package git
 
-func (repo *Repository) getTree(id sha1) (*Tree, error) {
-	treePath := filepathFromSHA1(repo.Path, id.String())
-	if isFile(treePath) {
-		_, err := NewCommand("ls-tree", id.String()).RunInDir(repo.Path)
-		if err != nil {
-			return nil, ErrNotExist{id.String(), ""}
-		}
+import (
+	"bytes"
+	"fmt"
+	"time"
+)
+
+// UnescapeChars reverses escaped characters.
+func UnescapeChars(in []byte) []byte {
+	if bytes.ContainsAny(in, "\\\t") {
+		return in
 	}
 
-	return NewTree(repo, id), nil
+	out := bytes.Replace(in, escapedSlash, regularSlash, -1)
+	out = bytes.Replace(out, escapedTab, regularTab, -1)
+	return out
 }
 
-// Find the tree object in the repository.
-func (repo *Repository) GetTree(idStr string) (*Tree, error) {
-	id, err := NewIDFromString(idStr)
+// Predefine []byte variables to avoid runtime allocations.
+var (
+	escapedSlash = []byte(`\\`)
+	regularSlash = []byte(`\`)
+	escapedTab   = []byte(`\t`)
+	regularTab   = []byte("\t")
+)
+
+// parseTree parses tree information from the (uncompressed) raw data of the tree object.
+func parseTree(t *Tree, data []byte) ([]*TreeEntry, error) {
+	entries := make([]*TreeEntry, 0, 10)
+	l := len(data)
+	pos := 0
+	for pos < l {
+		entry := new(TreeEntry)
+		entry.parent = t
+		step := 6
+		switch string(data[pos : pos+step]) {
+		case "100644", "100664":
+			entry.mode = EntryBlob
+			entry.typ = ObjectBlob
+		case "100755":
+			entry.mode = EntryExec
+			entry.typ = ObjectBlob
+		case "120000":
+			entry.mode = EntrySymlink
+			entry.typ = ObjectBlob
+		case "160000":
+			entry.mode = EntryCommit
+			entry.typ = ObjectCommit
+
+			step = 8
+		case "040000":
+			entry.mode = EntryTree
+			entry.typ = ObjectTree
+		default:
+			return nil, fmt.Errorf("unknown type: %v", string(data[pos:pos+step]))
+		}
+		pos += step + 6 // Skip string type of entry type.
+
+		step = 40
+		id, err := NewIDFromString(string(data[pos : pos+step]))
+		if err != nil {
+			return nil, err
+		}
+		entry.id = id
+		pos += step + 1 // Skip half of SHA1.
+
+		step = bytes.IndexByte(data[pos:], '\n')
+
+		// In case entry name is surrounded by double quotes(it happens only in git-shell).
+		if data[pos] == '"' {
+			entry.name = string(UnescapeChars(data[pos+1 : pos+step-1]))
+		} else {
+			entry.name = string(data[pos : pos+step])
+		}
+
+		pos += step + 1
+		entries = append(entries, entry)
+	}
+	return entries, nil
+}
+
+// LsTreeOptions contains optional arguments for listing trees.
+// Docs: https://git-scm.com/docs/git-ls-tree
+type LsTreeOptions struct {
+	// The timeout duration before giving up. The default timeout duration will be used when not supplied.
+	Timeout time.Duration
+}
+
+// LsTree returns the tree object in the repository by given revision.
+func (r *Repository) LsTree(rev string, opts ...LsTreeOptions) (*Tree, error) {
+	var opt LsTreeOptions
+	if len(opts) > 0 {
+		opt = opts[0]
+	}
+
+	var err error
+	rev, err = r.RevParse(rev, RevParseOptions{Timeout: opt.Timeout})
 	if err != nil {
 		return nil, err
 	}
-	return repo.getTree(id)
+	t := &Tree{
+		id:   MustIDFromString(rev),
+		repo: r,
+	}
+
+	stdout, err := NewCommand("ls-tree", rev).RunInDirWithTimeout(opt.Timeout, r.path)
+	if err != nil {
+		return nil, ErrRevisionNotExist{rev, ""}
+	}
+
+	t.entries, err = parseTree(t, stdout)
+	if err != nil {
+		return nil, err
+	}
+
+	return t, nil
 }
