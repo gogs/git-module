@@ -4,23 +4,36 @@
 
 package git
 
-func (r *Repository) getTree(id *SHA1) (*Tree, error) {
-	treePath := filepathFromSHA1(r.path, id.String())
-	if isFile(treePath) {
-		_, err := NewCommand("ls-tree", id.String()).RunInDir(r.path)
-		if err != nil {
-			return nil, ErrRevisionNotExist{id.String(), ""}
-		}
-	}
+import (
+	"time"
+)
 
-	return NewTree(r, id), nil
+// LsTreeOptions contains optional arguments for listing trees.
+// Docs: https://git-scm.com/docs/git-ls-tree
+type LsTreeOptions struct {
+	// The timeout duration before giving up. The default timeout duration will be used when not supplied.
+	Timeout time.Duration
 }
 
-// Find the tree object in the repository.
-func (r *Repository) GetTree(idStr string) (*Tree, error) {
-	id, err := NewIDFromString(idStr)
+// LsTree returns the tree object in the repository by given revision.
+func (r *Repository) LsTree(rev string, opts ...LsTreeOptions) (*Tree, error) {
+	var opt LsTreeOptions
+	if len(opts) > 0 {
+		opt = opts[0]
+	}
+
+	_, err := NewCommand("ls-tree", rev).RunInDirWithTimeout(opt.Timeout, r.path)
+	if err != nil {
+		return nil, ErrRevisionNotExist{rev, ""}
+	}
+
+	rev, err = r.RevParse(rev, RevParseOptions{Timeout: opt.Timeout})
 	if err != nil {
 		return nil, err
 	}
-	return r.getTree(id)
+
+	return &Tree{
+		id:   MustIDFromString(rev),
+		repo: r,
+	}, nil
 }

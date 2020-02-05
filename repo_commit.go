@@ -32,7 +32,7 @@ loop:
 				if err != nil {
 					return nil, err
 				}
-				commit.Tree.ID = id
+				commit.Tree.id = id
 			case "parent":
 				// A commit can have one or more parents
 				id, err := NewIDFromString(string(line[spacepos+1:]))
@@ -196,7 +196,7 @@ func (r *Repository) CommitByRevision(rev string, opts ...CommitByRevisionOption
 	if err != nil {
 		return nil, err
 	} else if len(commits) == 0 {
-		return nil, ErrRevisionNotExist{}
+		return nil, ErrRevisionNotExist{rev, opt.Path}
 	}
 	return commits[0], nil
 }

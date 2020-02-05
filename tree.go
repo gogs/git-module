@@ -10,22 +10,15 @@ import (
 	"strings"
 )
 
-// Tree represents a flat directory listing.
+// Tree represents a flat directory listing in Git.
 type Tree struct {
-	ID   *SHA1
+	id   *SHA1
 	repo *Repository
 
 	parent *Tree
 
 	entries       Entries
 	entriesParsed bool
-}
-
-func NewTree(repo *Repository, id *SHA1) *Tree {
-	return &Tree{
-		ID:   id,
-		repo: repo,
-	}
 }
 
 // Predefine []byte variables to avoid runtime allocations.
@@ -121,7 +114,7 @@ func (t *Tree) SubTree(rpath string) (*Tree, error) {
 			return nil, err
 		}
 
-		g, err = t.repo.getTree(te.ID)
+		g, err = t.repo.LsTree(te.ID.String())
 		if err != nil {
 			return nil, err
 		}
@@ -138,7 +131,7 @@ func (t *Tree) ListEntries() (Entries, error) {
 	}
 	t.entriesParsed = true
 
-	stdout, err := NewCommand("ls-tree", t.ID.String()).RunInDir(t.repo.path)
+	stdout, err := NewCommand("ls-tree", t.id.String()).RunInDir(t.repo.path)
 	if err != nil {
 		return nil, err
 	}

@@ -7,7 +7,6 @@ package git
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 	"sync"
 )
 
@@ -58,23 +57,9 @@ func isFile(filePath string) bool {
 	return !f.IsDir()
 }
 
-// isExist checks whether a file or directory exists.
-// It returns false when the file or directory does not exist.
-func isExist(path string) bool {
-	_, err := os.Stat(path)
-	return err == nil || os.IsExist(err)
-}
-
 func concatenateError(err error, stderr string) error {
 	if len(stderr) == 0 {
 		return err
 	}
 	return fmt.Errorf("%v - %s", err, stderr)
-}
-
-// If the object is stored in its own file (i.e not in a pack file),
-// this function returns the full path to the object file.
-// It does not test if the file exists.
-func filepathFromSHA1(rootdir, sha1 string) string {
-	return filepath.Join(rootdir, "objects", sha1[:2], sha1[2:])
 }
