@@ -35,8 +35,8 @@ THE SOFTWARE.`
 	blob := &Blob{
 		repo: &Repository{},
 		TreeEntry: &TreeEntry{
-			ID: MustIDFromString("176d8dfe018c850d01851b05fb8a430096247353"), // Blob ID of "LICENSE" file
-			ptree: &Tree{
+			id: MustIDFromString("176d8dfe018c850d01851b05fb8a430096247353"), // Blob ID of "LICENSE" file
+			parent: &Tree{
 				repo: &Repository{},
 			},
 		},

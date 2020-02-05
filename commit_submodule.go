@@ -17,7 +17,7 @@ type Submodules = *objectCache
 func (c *Commit) Submodules() (Submodules, error) {
 	c.submodulesOnce.Do(func() {
 		var e *TreeEntry
-		e, c.submodulesErr = c.GetTreeEntryByPath(".gitmodules")
+		e, c.submodulesErr = c.TreeEntry(".gitmodules")
 		if c.submodulesErr != nil {
 			return
 		}

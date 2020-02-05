@@ -9,22 +9,23 @@ import (
 	"strings"
 )
 
-func (t *Tree) GetTreeEntryByPath(relpath string) (*TreeEntry, error) {
-	if len(relpath) == 0 {
+// TreeEntry returns the TreeEntry by given subpath of the tree.
+func (t *Tree) TreeEntry(subpath string, opts ...LsTreeOptions) (*TreeEntry, error) {
+	if len(subpath) == 0 {
 		return &TreeEntry{
-			ID:   t.id,
-			Type: ObjectTree,
+			id:   t.id,
+			typ:  ObjectTree,
 			mode: EntryTree,
 		}, nil
 	}
 
-	relpath = path.Clean(relpath)
-	parts := strings.Split(relpath, "/")
+	subpath = path.Clean(subpath)
+	paths := strings.Split(subpath, "/")
 	var err error
 	tree := t
-	for i, name := range parts {
-		if i == len(parts)-1 {
-			entries, err := tree.ListEntries()
+	for i, name := range paths {
+		if i == len(paths)-1 {
+			entries, err := tree.Entries(opts...)
 			if err != nil {
 				return nil, err
 			}
@@ -34,24 +35,25 @@ func (t *Tree) GetTreeEntryByPath(relpath string) (*TreeEntry, error) {
 				}
 			}
 		} else {
-			tree, err = tree.SubTree(name)
+			tree, err = tree.Subtree(name, opts...)
 			if err != nil {
 				return nil, err
 			}
 		}
 	}
-	return nil, ErrRevisionNotExist{"", relpath}
+	return nil, ErrRevisionNotExist{"", subpath}
 }
 
-func (t *Tree) GetBlobByPath(relpath string) (*Blob, error) {
-	entry, err := t.GetTreeEntryByPath(relpath)
+// Blob returns the blob object by given subpath of the tree.
+func (t *Tree) Blob(subpath string, opts ...LsTreeOptions) (*Blob, error) {
+	e, err := t.TreeEntry(subpath, opts...)
 	if err != nil {
 		return nil, err
 	}
 
-	if !entry.IsDir() {
-		return entry.Blob(), nil
+	if !e.IsBlob() {
+		return e.Blob(), nil
 	}
 
-	return nil, ErrRevisionNotExist{"", relpath}
+	return nil, ErrRevisionNotExist{"", subpath}
 }

@@ -129,7 +129,7 @@ func isImageFile(data []byte) (string, bool) {
 
 // IsImageFile returns true if the commit is a image blob.
 func (c *Commit) IsImageFile(name string) bool {
-	blob, err := c.GetBlobByPath(name)
+	blob, err := c.Blob(name)
 	if err != nil {
 		return false
 	}
