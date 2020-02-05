@@ -10,7 +10,7 @@ import (
 	"sync"
 )
 
-// CommitByID contains information of a Git commit.
+// Commit contains information of a Git commit.
 type Commit struct {
 	id        *SHA1
 	parents   []*SHA1

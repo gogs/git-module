@@ -12,4 +12,5 @@ const (
 	ObjectCommit ObjectType = "commit"
 	ObjectTree   ObjectType = "tree"
 	ObjectBlob   ObjectType = "blob"
+	ObjectTag    ObjectType = "tag"
 )

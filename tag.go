@@ -6,19 +6,20 @@ package git
 
 import "bytes"
 
-// Tag represents a Git tag.
+// Tag contains information of a Git tag.
 type Tag struct {
-	Name     string
-	ID       *SHA1
-	repo     *Repository
-	CommitID *SHA1 // The id of this commit object
-	Type     string
-	Tagger   *Signature
-	Message  string
+	typ      ObjectType
+	id       *SHA1
+	commitID *SHA1 // The ID of the underlying commit
+	refspec  string
+	tagger   *Signature
+	message  string
+
+	repo *Repository
 }
 
 func (tag *Tag) Commit(opts ...CatFileCommitOptions) (*Commit, error) {
-	return tag.repo.CatFileCommit(tag.CommitID.String(), opts...)
+	return tag.repo.CatFileCommit(tag.commitID.String(), opts...)
 }
 
 // Parse commit information from the (uncompressed) raw
@@ -26,7 +27,7 @@ func (tag *Tag) Commit(opts ...CatFileCommitOptions) (*Commit, error) {
 // \n\n separate headers from message
 func parseTagData(data []byte) (*Tag, error) {
 	tag := new(Tag)
-	// we now have the contents of the commit object. Let's investigate...
+	// we now have the contents of the commit object. Let's investigate.
 	nextline := 0
 l:
 	for {
@@ -42,20 +43,20 @@ l:
 				if err != nil {
 					return nil, err
 				}
-				tag.CommitID = id
+				tag.commitID = id
 			case "type":
 				// A commit can have one or more parents
-				tag.Type = string(line[spacepos+1:])
+				tag.typ = ObjectType(line[spacepos+1:])
 			case "tagger":
 				sig, err := newSignatureFromCommitline(line[spacepos+1:])
 				if err != nil {
 					return nil, err
 				}
-				tag.Tagger = sig
+				tag.tagger = sig
 			}
 			nextline += eol + 1
 		case eol == 0:
-			tag.Message = string(data[nextline+1:])
+			tag.message = string(data[nextline+1:])
 			break l
 		default:
 			break l

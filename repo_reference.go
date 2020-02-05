@@ -90,14 +90,18 @@ func (r *Repository) SymbolicRef(opts ...SymbolicRefOptions) (string, error) {
 // ShowRefOptions contains optional arguments for listing references.
 // Docs: https://git-scm.com/docs/git-show-ref
 type ShowRefOptions struct {
-	// Indicates whether to only show heads.
+	// Indicates whether to include heads.
 	Heads bool
+	// Indicates whether to include tags.
+	Tags bool
+	// The list of patterns to filter results.
+	Patterns []string
 	// The timeout duration before giving up. The default timeout duration will be used when not supplied.
 	Timeout time.Duration
 }
 
 // ShowRef returns a list of references in the repository.
-func (r *Repository) ShowRef(opts ...ShowRefOptions) ([]string, error) {
+func (r *Repository) ShowRef(opts ...ShowRefOptions) ([]*Reference, error) {
 	var opt ShowRefOptions
 	if len(opts) > 0 {
 		opt = opts[0]
@@ -107,6 +111,13 @@ func (r *Repository) ShowRef(opts ...ShowRefOptions) ([]string, error) {
 	if opt.Heads {
 		cmd.AddArgs("--heads")
 	}
+	if opt.Tags {
+		cmd.AddArgs("--tags")
+	}
+	if len(opt.Patterns) > 0 {
+		cmd.AddArgs("--")
+		cmd.AddArgs(opt.Patterns...)
+	}
 
 	stdout, err := cmd.RunInDirWithTimeout(opt.Timeout, r.path)
 	if err != nil {
@@ -114,13 +125,16 @@ func (r *Repository) ShowRef(opts ...ShowRefOptions) ([]string, error) {
 	}
 
 	lines := strings.Split(string(stdout), "\n")
-	refs := make([]string, 0, len(lines))
+	refs := make([]*Reference, 0, len(lines))
 	for i := range lines {
 		fields := strings.Fields(lines[i])
 		if len(fields) != 2 {
 			continue
 		}
-		refs = append(refs, fields[1])
+		refs = append(refs, &Reference{
+			ID:      fields[0],
+			Refspec: fields[1],
+		})
 	}
 	return refs, nil
 }

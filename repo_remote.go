@@ -13,9 +13,9 @@ import (
 // LsRemoteOptions contains arguments for listing references in a remote repository.
 // Docs: https://git-scm.com/docs/git-ls-remote
 type LsRemoteOptions struct {
-	// Indicates whether to only show heads.
+	// Indicates whether include heads.
 	Heads bool
-	// Indicates whether to only show tags.
+	// Indicates whether include tags.
 	Tags bool
 	// Indicates whether to not show peeled tags or pseudorefs.
 	Refs bool
