@@ -18,6 +18,7 @@ type Tag struct {
 	repo *Repository
 }
 
+// Commit returns the underlying commit of the tag.
 func (tag *Tag) Commit(opts ...CatFileCommitOptions) (*Commit, error) {
 	return tag.repo.CatFileCommit(tag.commitID.String(), opts...)
 }

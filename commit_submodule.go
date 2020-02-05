@@ -44,8 +44,8 @@ func (c *Commit) Submodules() (Submodules, error) {
 					path = strings.TrimSpace(fields[1])
 				} else if k == "url" {
 					c.submodules.Set(path, &Submodule{
-						Name: path,
-						URL:  strings.TrimSpace(fields[1])},
+						name: path,
+						url:  strings.TrimSpace(fields[1])},
 					)
 					inSection = false
 				}

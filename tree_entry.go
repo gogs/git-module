@@ -201,7 +201,7 @@ func (tes Entries) GetCommitsInfoWithCustomConcurrency(timeout time.Duration, co
 
 			smURL := ""
 			if sm != nil {
-				smURL = sm.URL
+				smURL = sm.url
 			}
 
 			c, err := commit.CommitByPath(CommitByRevisionOptions{
