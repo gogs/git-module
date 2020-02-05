@@ -12,7 +12,7 @@ import (
 	"time"
 )
 
-// parseCommit parses commit information from the (uncompressed) raw data from the commit object.
+// parseCommit parses commit information from the (uncompressed) raw data of the commit object.
 // It assumes "\n\n" separates the header from the rest of the message.
 func parseCommit(data []byte) (*Commit, error) {
 	commit := new(Commit)
@@ -41,13 +41,13 @@ loop:
 				}
 				commit.parents = append(commit.parents, id)
 			case "author", "tagger":
-				sig, err := newSignatureFromCommitline(line[spacepos+1:])
+				sig, err := parseSignature(line[spacepos+1:])
 				if err != nil {
 					return nil, err
 				}
 				commit.author = sig
 			case "committer":
-				sig, err := newSignatureFromCommitline(line[spacepos+1:])
+				sig, err := parseSignature(line[spacepos+1:])
 				if err != nil {
 					return nil, err
 				}

@@ -43,7 +43,7 @@ func (r *Repository) getTag(timeout time.Duration, id *SHA1) (*Tag, error) {
 			return nil, err
 		}
 
-		tag, err := parseTagData(data)
+		tag, err := parseTag(data)
 		if err != nil {
 			return nil, err
 		}

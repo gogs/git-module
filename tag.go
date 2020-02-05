@@ -22,10 +22,9 @@ func (tag *Tag) Commit(opts ...CatFileCommitOptions) (*Commit, error) {
 	return tag.repo.CatFileCommit(tag.commitID.String(), opts...)
 }
 
-// Parse commit information from the (uncompressed) raw
-// data from the commit object.
-// \n\n separate headers from message
-func parseTagData(data []byte) (*Tag, error) {
+// parseTag parses tag information from the (uncompressed) raw data of the tag object.
+// It assumes "\n\n" separates the header from the rest of the message.
+func parseTag(data []byte) (*Tag, error) {
 	tag := new(Tag)
 	// we now have the contents of the commit object. Let's investigate.
 	nextline := 0
@@ -48,7 +47,7 @@ l:
 				// A commit can have one or more parents
 				tag.typ = ObjectType(line[spacepos+1:])
 			case "tagger":
-				sig, err := newSignatureFromCommitline(line[spacepos+1:])
+				sig, err := parseSignature(line[spacepos+1:])
 				if err != nil {
 					return nil, err
 				}
