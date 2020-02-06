@@ -1,6 +1,6 @@
 # Git Module 
 
-[![Build Status](https://img.shields.io/travis/gogs/git-module/master.svg?style=for-the-badge&logo=travis)](https://travis-ci.org/gogs/git-module) [![Sourcegraph](https://img.shields.io/badge/view%20on-Sourcegraph-brightgreen.svg?style=for-the-badge&logo=sourcegraph)](https://sourcegraph.com/github.com/gogs/git-module)
+[![Build Status](https://img.shields.io/travis/gogs/git-module/master.svg?style=for-the-badge&logo=travis)](https://travis-ci.org/gogs/git-module) [![Build status](https://img.shields.io/appveyor/ci/unknwon/gogs-git-module?logo=appveyor&style=for-the-badge)](https://ci.appveyor.com/project/unknwon/gogs-git-module/branch/master) [![Sourcegraph](https://img.shields.io/badge/view%20on-Sourcegraph-brightgreen.svg?style=for-the-badge&logo=sourcegraph)](https://sourcegraph.com/github.com/gogs/git-module)
 
 Package git-module is a Go module for Git access through shell commands.
 
