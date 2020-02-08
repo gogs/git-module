@@ -24,7 +24,8 @@ func TestMain(m *testing.M) {
 		if err := Clone("https://github.com/gogs/git-module-testrepo.git", repoPath, CloneOptions{
 			Bare: true,
 		}); err != nil {
-			stdlog.Fatal(err)
+			stdlog.Println(err)
+			os.Exit(1)
 		}
 
 	}
@@ -32,7 +33,8 @@ func TestMain(m *testing.M) {
 	var err error
 	testrepo, err = Open(repoPath)
 	if err != nil {
-		stdlog.Fatal(err)
+		stdlog.Println(err)
+		os.Exit(1)
 	}
 
 	m.Run()
