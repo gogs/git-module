@@ -53,6 +53,34 @@ func (c *Command) AddEnvs(envs ...string) *Command {
 // DefaultTimeout is the default timeout duration for all commands.
 const DefaultTimeout = time.Minute
 
+// A limitDualWriter writes to W but limits the amount of data written to just N bytes.
+// On the other hand, it passes everything to w.
+type limitDualWriter struct {
+	W        io.Writer // underlying writer
+	N        int64     // max bytes remaining
+	prompted bool
+
+	w io.Writer
+}
+
+func (w *limitDualWriter) Write(p []byte) (int, error) {
+	if w.N > 0 {
+		limit := int64(len(p))
+		if limit > w.N {
+			limit = w.N
+		}
+		n, _ := w.W.Write(p[:limit])
+		w.N -= int64(n)
+	}
+
+	if !w.prompted && w.N <= 0 {
+		w.prompted = true
+		_, _ = w.W.Write([]byte("... (more omitted)"))
+	}
+
+	return w.w.Write(p)
+}
+
 // RunInDirPipelineWithTimeout executes the command in given directory and timeout duration.
 // It pipes stdout and stderr to supplied io.Writer. DefaultTimeout will be used if the timeout
 // duration is less than time.Nanosecond (i.e. less than or equal to 0).
@@ -61,11 +89,24 @@ func (c *Command) RunInDirPipelineWithTimeout(timeout time.Duration, stdout, std
 		timeout = DefaultTimeout
 	}
 
-	if len(dir) == 0 {
-		log("[timeout: %v] %s", timeout, c)
-	} else {
-		log("[timeout: %v] %s: %s", timeout, dir, c)
+	buf := new(bytes.Buffer)
+	w := stdout
+	if logOutput != nil {
+		buf.Grow(512)
+		w = &limitDualWriter{
+			W: buf,
+			N: int64(buf.Cap()),
+			w: stdout,
+		}
 	}
+
+	defer func() {
+		if len(dir) == 0 {
+			log("[timeout: %v] %s\n%s", timeout, c, buf.Bytes())
+		} else {
+			log("[timeout: %v] %s: %s\n%s", timeout, dir, c, buf.Bytes())
+		}
+	}()
 
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
@@ -75,7 +116,7 @@ func (c *Command) RunInDirPipelineWithTimeout(timeout time.Duration, stdout, std
 		cmd.Env = append(os.Environ(), c.envs...)
 	}
 	cmd.Dir = dir
-	cmd.Stdout = stdout
+	cmd.Stdout = w
 	cmd.Stderr = stderr
 	if err := cmd.Start(); err != nil {
 		return err
@@ -114,10 +155,6 @@ func (c *Command) RunInDirWithTimeout(timeout time.Duration, dir string) ([]byte
 	stderr := new(bytes.Buffer)
 	if err := c.RunInDirPipelineWithTimeout(timeout, stdout, stderr, dir); err != nil {
 		return nil, concatenateError(err, stderr.String())
-	}
-
-	if stdout.Len() > 0 {
-		log("stdout:\n%s", stdout.Bytes()[:1024])
 	}
 	return stdout.Bytes(), nil
 }

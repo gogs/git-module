@@ -9,4 +9,4 @@ go:
 
 install: go get -v -t ./...
 script:
-  - go test -v -cover -race
+  - go test -v -cover -race -verbose

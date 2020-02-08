@@ -2,7 +2,10 @@ package git
 
 import (
 	"bytes"
+	"flag"
 	"fmt"
+	stdlog "log"
+	"os"
 	"testing"
 
 	goversion "github.com/mcuadros/go-version"
@@ -10,13 +13,34 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-func TestSetOutput(t *testing.T) {
-	assert.Nil(t, logOutput)
+const repoPath = "testdata/testrepo.git"
 
-	var buf bytes.Buffer
-	SetOutput(&buf)
+var testrepo *Repository
 
-	assert.NotNil(t, logOutput)
+func TestMain(m *testing.M) {
+	verbose := flag.Bool("verbose", false, "")
+	flag.Parse()
+
+	if *verbose {
+		SetOutput(os.Stdout)
+	}
+
+	// Set up the test repository
+	if !isExist(repoPath) {
+		if err := Clone("https://github.com/gogs/git-module-testrepo.git", repoPath, CloneOptions{
+			Bare: true,
+		}); err != nil {
+			stdlog.Fatal(err)
+		}
+	}
+
+	var err error
+	testrepo, err = Open(repoPath)
+	if err != nil {
+		stdlog.Fatal(err)
+	}
+
+	os.Exit(m.Run())
 }
 
 func TestSetPrefix(t *testing.T) {

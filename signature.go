@@ -43,25 +43,6 @@ func parseSignature(line []byte) (*Signature, error) {
 			return nil, err
 		}
 		sig.When = time.Unix(seconds, 0)
-
-		// Handle the timezone shift
-		timezone := line[timestop+1:]
-
-		// Discard malformed timezone
-		if len(timezone) != 5 {
-			return sig, err
-		}
-
-		// Add or minus, default to add
-		var direction int64 = 1
-		if timezone[0] == '-' {
-			direction = -1
-		}
-
-		hours, _ := strconv.ParseInt(string(timezone[1:3]), 10, 64)
-		minutes, _ := strconv.ParseInt(string(timezone[3:]), 10, 64)
-		sig.When = sig.When.Add(time.Duration(direction*hours) * time.Hour)
-		sig.When = sig.When.Add(time.Duration(direction*minutes) * time.Minute)
 		return sig, nil
 	}
 

@@ -79,16 +79,16 @@ func Init(path string, opts ...InitOptions) error {
 
 // Open opens the repository at the given path. It returns an os.ErrNotExist
 // if the path does not exist.
-func Open(path string) (*Repository, error) {
-	path, err := filepath.Abs(path)
+func Open(repoPath string) (*Repository, error) {
+	repoPath, err := filepath.Abs(repoPath)
 	if err != nil {
 		return nil, err
-	} else if !isDir(path) {
+	} else if !isDir(repoPath) {
 		return nil, os.ErrNotExist
 	}
 
 	return &Repository{
-		path:          path,
+		path:          repoPath,
 		cachedCommits: newObjectCache(),
 		cachedTags:    newObjectCache(),
 	}, nil

@@ -57,6 +57,13 @@ func isFile(filePath string) bool {
 	return !f.IsDir()
 }
 
+// isExist checks whether a file or directory exists.
+// It returns false when the file or directory does not exist.
+func isExist(path string) bool {
+	_, err := os.Stat(path)
+	return err == nil || os.IsExist(err)
+}
+
 func concatenateError(err error, stderr string) error {
 	if len(stderr) == 0 {
 		return err

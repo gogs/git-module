@@ -100,7 +100,6 @@ func (e *TreeEntry) Size() int64 {
 // Blob returns a blob object from the entry.
 func (e *TreeEntry) Blob() *Blob {
 	return &Blob{
-		repo:      e.parent.repo,
 		TreeEntry: e,
 	}
 }
