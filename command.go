@@ -89,25 +89,24 @@ func (c *Command) RunInDirPipelineWithTimeout(timeout time.Duration, stdout, std
 		timeout = DefaultTimeout
 	}
 
-	if len(dir) == 0 {
-		log("[timeout: %v] %s", timeout, c)
-	} else {
-		log("[timeout: %v] %s: %s", timeout, dir, c)
-	}
-
+	buf := new(bytes.Buffer)
 	w := stdout
 	if logOutput != nil {
-		var buf bytes.Buffer
 		buf.Grow(512)
 		w = &limitDualWriter{
-			W: &buf,
+			W: buf,
 			N: int64(buf.Cap()),
 			w: stdout,
 		}
-		defer func() {
-			log("stdout:\n%s", buf.Bytes())
-		}()
 	}
+
+	defer func() {
+		if len(dir) == 0 {
+			log("[timeout: %v] %s\n%s", timeout, c, buf.Bytes())
+		} else {
+			log("[timeout: %v] %s: %s\n%s", timeout, dir, c, buf.Bytes())
+		}
+	}()
 
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
