@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	stdlog "log"
+	"os"
 	"testing"
 
 	goversion "github.com/mcuadros/go-version"
@@ -16,6 +17,8 @@ const repoPath = "testdata/testrepo.git"
 var testrepo *Repository
 
 func TestMain(m *testing.M) {
+	logOutput = os.Stdout
+
 	// Set up the test repository
 	if !isExist(repoPath) {
 		if err := Clone("https://github.com/gogs/git-module-testrepo.git", repoPath, CloneOptions{
