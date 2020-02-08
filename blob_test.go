@@ -12,32 +12,31 @@ import (
 )
 
 func TestBlob(t *testing.T) {
-	expOutput := `Copyright (c) 2015 All Gogs Contributors
+	expOutput := `This is a sample project students can use during Matthew's Git class.
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+Here is an addition by me
 
-The above copyright notice and this permission notice shall be included in
-all copies or substantial portions of the Software.
+We can have a bit of fun with this repo, knowing that we can always reset it to a known good state.  We can apply labels, and branch, then add new code and merge it in to the master branch.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-THE SOFTWARE.`
+As a quick reminder, this came from one of three locations in either SSH, Git, or HTTPS format:
+
+* git@github.com:matthewmccullough/hellogitworld.git
+* git://github.com/matthewmccullough/hellogitworld.git
+* https://matthewmccullough@github.com/matthewmccullough/hellogitworld.git
+
+We can, as an example effort, even modify this README and change it as if it were source code for the purposes of the class.
+
+This demo also includes an image with changes on a branch for examination of image diff on GitHub.
+`
 
 	blob := &Blob{
-		repo: &Repository{},
 		TreeEntry: &TreeEntry{
-			id: MustIDFromString("176d8dfe018c850d01851b05fb8a430096247353"), // Blob ID of "LICENSE" file
+			mode: EntryBlob,
+			typ:  ObjectBlob,
+			id:   MustIDFromString("adfd6da3c0a3fb038393144becbf37f14f780087"), // Blob ID of "README.txt" file
 			parent: &Tree{
-				repo: &Repository{},
+				id:   MustIDFromString("3f0e1b18894f451a166d38f9716a12db92886ae6"), // Commit ID
+				repo: testrepo,
 			},
 		},
 	}

@@ -3,12 +3,37 @@ package git
 import (
 	"bytes"
 	"fmt"
+	stdlog "log"
 	"testing"
 
 	goversion "github.com/mcuadros/go-version"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/sync/errgroup"
 )
+
+const repoPath = "testdata/testrepo.git"
+
+var testrepo *Repository
+
+func TestMain(m *testing.M) {
+	// Set up the test repository
+	if !isExist(repoPath) {
+		if err := Clone("https://github.com/gogs/git-module-testrepo.git", repoPath, CloneOptions{
+			Bare: true,
+		}); err != nil {
+			stdlog.Fatal(err)
+		}
+
+	}
+
+	var err error
+	testrepo, err = Open(repoPath)
+	if err != nil {
+		stdlog.Fatal(err)
+	}
+
+	m.Run()
+}
 
 func TestSetOutput(t *testing.T) {
 	assert.Nil(t, logOutput)
