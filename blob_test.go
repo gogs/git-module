@@ -35,7 +35,6 @@ This demo also includes an image with changes on a branch for examination of ima
 			typ:  ObjectBlob,
 			id:   MustIDFromString("adfd6da3c0a3fb038393144becbf37f14f780087"), // Blob ID of "README.txt" file
 			parent: &Tree{
-				id:   MustIDFromString("3f0e1b18894f451a166d38f9716a12db92886ae6"), // Commit ID
 				repo: testrepo,
 			},
 		},

@@ -50,6 +50,12 @@ func (c *Commit) Summary() string {
 	return strings.Split(c.message, "\n")[0]
 }
 
+// ParentsCount returns number of parents of the commit.
+// It returns 0 if this is the root commit, otherwise returns 1, 2, etc.
+func (c *Commit) ParentsCount() int {
+	return len(c.parents)
+}
+
 // ParentID returns the SHA-1 hash of the n-th parent (0-based) of this commit.
 // It returns ErrRevisionNotExist if no such parent exists.
 func (c *Commit) ParentID(n int) (*SHA1, error) {
@@ -68,12 +74,6 @@ func (c *Commit) Parent(n int, opts ...CatFileCommitOptions) (*Commit, error) {
 	}
 
 	return c.repo.CatFileCommit(id.String(), opts...)
-}
-
-// ParentsCount returns number of parents of the commit.
-// It returns 0 if this is the root commit, otherwise returns 1, 2, etc.
-func (c *Commit) ParentsCount() int {
-	return len(c.parents)
 }
 
 // CommitByPath returns the commit of the path in the state of this commit.
