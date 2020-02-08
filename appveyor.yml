@@ -13,4 +13,4 @@ deploy: false
 install:
   - go version
   - go env
-  - go test -v -cover -race
+  - go test -v -cover -race -verbose

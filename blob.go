@@ -21,7 +21,7 @@ func (b *Blob) Bytes() ([]byte, error) {
 	stderr := new(bytes.Buffer)
 
 	// Preallocate memory to save ~50% memory usage on big files.
-	stdout.Grow(int(b.Size() + 2048))
+	stdout.Grow(int(b.Size()))
 
 	if err := b.Pipeline(stdout, stderr); err != nil {
 		return nil, concatenateError(err, stderr.String())

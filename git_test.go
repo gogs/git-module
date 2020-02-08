@@ -2,6 +2,7 @@ package git
 
 import (
 	"bytes"
+	"flag"
 	"fmt"
 	stdlog "log"
 	"os"
@@ -17,36 +18,29 @@ const repoPath = "testdata/testrepo.git"
 var testrepo *Repository
 
 func TestMain(m *testing.M) {
-	logOutput = os.Stdout
+	verbose := flag.Bool("verbose", false, "")
+	flag.Parse()
+
+	if *verbose {
+		SetOutput(os.Stdout)
+	}
 
 	// Set up the test repository
 	if !isExist(repoPath) {
 		if err := Clone("https://github.com/gogs/git-module-testrepo.git", repoPath, CloneOptions{
 			Bare: true,
 		}); err != nil {
-			stdlog.Println(err)
-			os.Exit(1)
+			stdlog.Fatal(err)
 		}
-
 	}
 
 	var err error
 	testrepo, err = Open(repoPath)
 	if err != nil {
-		stdlog.Println(err)
-		os.Exit(1)
+		stdlog.Fatal(err)
 	}
 
-	m.Run()
-}
-
-func TestSetOutput(t *testing.T) {
-	assert.Nil(t, logOutput)
-
-	var buf bytes.Buffer
-	SetOutput(&buf)
-
-	assert.NotNil(t, logOutput)
+	os.Exit(m.Run())
 }
 
 func TestSetPrefix(t *testing.T) {
