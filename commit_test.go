@@ -88,22 +88,20 @@ func TestCommit_Parent(t *testing.T) {
 }
 
 func TestCommit_CommitByPath(t *testing.T) {
-	c, err := testrepo.CatFileCommit("435ffceb7ba576c937e922766e37d4f7abdcc122")
-	if err != nil {
-		t.Fatal(err)
-	}
-
 	tests := []struct {
+		id          string
 		opt         CommitByRevisionOptions
 		expCommitID string
 	}{
 		{
+			id: "2a52e96389d02209b451ae1ddf45d645b42d744c",
 			opt: CommitByRevisionOptions{
 				Path: "", // No path gets back to the commit itself
 			},
-			expCommitID: "435ffceb7ba576c937e922766e37d4f7abdcc122",
+			expCommitID: "2a52e96389d02209b451ae1ddf45d645b42d744c",
 		},
 		{
+			id: "2a52e96389d02209b451ae1ddf45d645b42d744c",
 			opt: CommitByRevisionOptions{
 				Path: "resources/labels.properties",
 			},
@@ -112,6 +110,11 @@ func TestCommit_CommitByPath(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run("", func(t *testing.T) {
+			c, err := testrepo.CatFileCommit(test.id)
+			if err != nil {
+				t.Fatal(err)
+			}
+
 			cc, err := c.CommitByPath(test.opt)
 			if err != nil {
 				t.Fatal(err)
@@ -205,17 +208,14 @@ func TestCommit_CommitsByPage(t *testing.T) {
 }
 
 func TestCommit_SearchCommits(t *testing.T) {
-	c, err := testrepo.CatFileCommit("2a52e96389d02209b451ae1ddf45d645b42d744c")
-	if err != nil {
-		t.Fatal(err)
-	}
-
 	tests := []struct {
+		id           string
 		pattern      string
 		opt          SearchCommitsOptions
 		expCommitIDs []string
 	}{
 		{
+			id:      "2a52e96389d02209b451ae1ddf45d645b42d744c",
 			pattern: "",
 			expCommitIDs: []string{
 				"2a52e96389d02209b451ae1ddf45d645b42d744c",
@@ -233,6 +233,7 @@ func TestCommit_SearchCommits(t *testing.T) {
 			},
 		},
 		{
+			id:      "2a52e96389d02209b451ae1ddf45d645b42d744c",
 			pattern: "",
 			opt: SearchCommitsOptions{
 				MaxCount: 3,
@@ -245,6 +246,7 @@ func TestCommit_SearchCommits(t *testing.T) {
 		},
 
 		{
+			id:      "2a52e96389d02209b451ae1ddf45d645b42d744c",
 			pattern: "feature",
 			expCommitIDs: []string{
 				"2a52e96389d02209b451ae1ddf45d645b42d744c",
@@ -252,6 +254,7 @@ func TestCommit_SearchCommits(t *testing.T) {
 			},
 		},
 		{
+			id:      "2a52e96389d02209b451ae1ddf45d645b42d744c",
 			pattern: "feature",
 			opt: SearchCommitsOptions{
 				MaxCount: 1,
@@ -262,6 +265,7 @@ func TestCommit_SearchCommits(t *testing.T) {
 		},
 
 		{
+			id:      "2a52e96389d02209b451ae1ddf45d645b42d744c",
 			pattern: "add.*",
 			opt: SearchCommitsOptions{
 				Path: "src",
@@ -275,6 +279,7 @@ func TestCommit_SearchCommits(t *testing.T) {
 			},
 		},
 		{
+			id:      "2a52e96389d02209b451ae1ddf45d645b42d744c",
 			pattern: "add.*",
 			opt: SearchCommitsOptions{
 				MaxCount: 2,
@@ -288,6 +293,11 @@ func TestCommit_SearchCommits(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run("", func(t *testing.T) {
+			c, err := testrepo.CatFileCommit(test.id)
+			if err != nil {
+				t.Fatal(err)
+			}
+
 			commits, err := c.SearchCommits(test.pattern, test.opt)
 			if err != nil {
 				t.Fatal(err)
@@ -458,6 +468,89 @@ func TestCommit_FilesChangedAfter(t *testing.T) {
 			}
 
 			assert.Equal(t, test.expFiles, files)
+		})
+	}
+}
+
+func TestCommit_CommitsAfter(t *testing.T) {
+	tests := []struct {
+		id           string
+		after        string
+		opt          RevListOptions
+		expCommitIDs []string
+	}{
+		{
+			id:    "978fb7f6388b49b532fbef8b856681cfa6fcaa0a",
+			after: "45a30ea9afa413e226ca8614179c011d545ca883",
+			expCommitIDs: []string{
+				"978fb7f6388b49b532fbef8b856681cfa6fcaa0a",
+				"ef7bebf8bdb1919d947afe46ab4b2fb4278039b3",
+				"ebbbf773431ba07510251bb03f9525c7bab2b13a",
+			},
+		},
+		{
+			id:    "978fb7f6388b49b532fbef8b856681cfa6fcaa0a",
+			after: "45a30ea9afa413e226ca8614179c011d545ca883",
+			opt: RevListOptions{
+				Path: "src",
+			},
+			expCommitIDs: []string{
+				"ebbbf773431ba07510251bb03f9525c7bab2b13a",
+			},
+		},
+	}
+	for _, test := range tests {
+		t.Run("", func(t *testing.T) {
+			c, err := testrepo.CatFileCommit(test.id)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			commits, err := c.CommitsAfter(test.after, test.opt)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			assert.Equal(t, test.expCommitIDs, commitsToIDs(commits))
+		})
+	}
+}
+
+func TestCommit_Ancestors(t *testing.T) {
+	tests := []struct {
+		id           string
+		opt          LogOptions
+		expCommitIDs []string
+	}{
+		{
+			id: "2a52e96389d02209b451ae1ddf45d645b42d744c",
+			opt: LogOptions{
+				MaxCount: 3,
+			},
+			expCommitIDs: []string{
+				"57d0bf61e57cdacb309ebd1075257c6bd7e1da81",
+				"cb2d322bee073327e058143329d200024bd6b4c6",
+				"818f033c4ae7f26b2b29e904942fa79a5ccaadd0",
+			},
+		},
+		{
+			id:           "755fd577edcfd9209d0ac072eed3b022cbe4d39b",
+			expCommitIDs: []string{},
+		},
+	}
+	for _, test := range tests {
+		t.Run("", func(t *testing.T) {
+			c, err := testrepo.CatFileCommit(test.id)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			commits, err := c.Ancestors(test.opt)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			assert.Equal(t, test.expCommitIDs, commitsToIDs(commits))
 		})
 	}
 }

@@ -116,7 +116,18 @@ func (c *Commit) CommitsAfter(after string, opts ...RevListOptions) ([]*Commit, 
 
 // Ancestors returns a list of ancestors of this commit in reverse chronological order.
 func (c *Commit) Ancestors(opts ...LogOptions) ([]*Commit, error) {
-	return c.repo.Log(c.id.String(), opts...)
+	if c.ParentsCount() == 0 {
+		return []*Commit{}, nil
+	}
+
+	var opt LogOptions
+	if len(opts) > 0 {
+		opt = opts[0]
+	}
+
+	opt.Skip++
+
+	return c.repo.Log(c.id.String(), opt)
 }
 
 func isImageFile(data []byte) (string, bool) {
