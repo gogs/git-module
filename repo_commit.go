@@ -79,15 +79,15 @@ func (r *Repository) CatFileCommit(rev string, opts ...CatFileCommitOptions) (*C
 		opt = opts[0]
 	}
 
+	cache, ok := r.cachedCommits.Get(rev)
+	if ok {
+		log("Cached commit hit: %s", rev)
+		return cache.(*Commit), nil
+	}
+
 	commitID, err := r.RevParse(rev, RevParseOptions{Timeout: opt.Timeout})
 	if err != nil {
 		return nil, err
-	}
-
-	cache, ok := r.cachedCommits.Get(commitID)
-	if ok {
-		log("Cached commit hit: %s", commitID)
-		return cache.(*Commit), nil
 	}
 
 	stdout, err := NewCommand("cat-file", "commit", commitID).RunInDirWithTimeout(opt.Timeout, r.path)
