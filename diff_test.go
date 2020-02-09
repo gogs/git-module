@@ -464,65 +464,114 @@ rename to run.sh`,
 			},
 		},
 		{
-			input: `diff --git a/.gitmodules b/.gitmodules
-new file mode 100644
-index 0000000..6abde17
---- /dev/null
-+++ b/.gitmodules
-@@ -0,0 +1,3 @@
-+[submodule "gogs/docs-api"]
-+	path = gogs/docs-api
-+	url = https://github.com/gogs/docs-api.git`,
+			input: `diff --git a/.travis.yml b/.travis.yml
+index 335db7ea..51d7543e 100644
+--- a/.travis.yml
++++ b/.travis.yml
+@@ -1,9 +1,6 @@
+ sudo: false
+ language: go
+ go:
+-  - 1.4.x
+-  - 1.5.x
+-  - 1.6.x
+   - 1.7.x
+   - 1.8.x
+   - 1.9.x
+@@ -12,6 +9,7 @@ go:
+   - 1.12.x
+   - 1.13.x
+ 
++install: go get -v ./...
+ script: 
+   - go get golang.org/x/tools/cmd/cover
+   - go get github.com/smartystreets/goconvey`,
 			maxFileLines: 2,
 			expDiff: &Diff{
 				files: []*DiffFile{
 					{
-						name:  ".gitmodules",
-						typ:   DiffFileAdd,
-						index: "6abde17",
+						name:  ".travis.yml",
+						typ:   DiffFileChange,
+						index: "51d7543e",
 						sections: []*DiffSection{
 							{
 								lines: []*DiffLine{
 									{
 										typ:       DiffLineSection,
-										content:   "@@ -0,0 +1,3 @@",
+										content:   "@@ -1,9 +1,6 @@",
 										leftLine:  0,
 										rightLine: 0,
 									},
 									{
-										typ:       DiffLineAdd,
-										content:   `+[submodule "gogs/docs-api"]`,
-										leftLine:  0,
+										typ:       DiffLinePlain,
+										content:   ` sudo: false`,
+										leftLine:  1,
 										rightLine: 1,
 									},
 									{
-										typ: DiffLineAdd,
-										content: `+	path = gogs/docs-api`,
-										leftLine:  0,
+										typ:       DiffLinePlain,
+										content:   ` language: go`,
+										leftLine:  2,
 										rightLine: 2,
 									},
 									{
-										typ: DiffLineAdd,
-										content: `+	url = https://github.com/gogs/docs-api.git`,
-										leftLine:  0,
+										typ:       DiffLinePlain,
+										content:   ` go:`,
+										leftLine:  3,
 										rightLine: 3,
 									},
+									{
+										typ:       DiffLineDelete,
+										content:   `-  - 1.4.x`,
+										leftLine:  4,
+										rightLine: 0,
+									},
+									{
+										typ:       DiffLineDelete,
+										content:   `-  - 1.5.x`,
+										leftLine:  5,
+										rightLine: 0,
+									},
+									{
+										typ:       DiffLineDelete,
+										content:   `-  - 1.6.x`,
+										leftLine:  6,
+										rightLine: 0,
+									},
+									{
+										typ:       DiffLinePlain,
+										content:   `   - 1.7.x`,
+										leftLine:  7,
+										rightLine: 4,
+									},
+									{
+										typ:       DiffLinePlain,
+										content:   `   - 1.8.x`,
+										leftLine:  8,
+										rightLine: 5,
+									},
+									{
+										typ:       DiffLinePlain,
+										content:   `   - 1.9.x`,
+										leftLine:  9,
+										rightLine: 6,
+									},
 								},
-								numAdditions: 3,
-								numDeletions: 0,
+								numAdditions: 0,
+								numDeletions: 3,
 							},
 						},
-						numAdditions: 3,
-						numDeletions: 0,
+						numAdditions: 0,
+						numDeletions: 3,
 						oldName:      "",
 						isBinary:     false,
 						isSubmodule:  false,
-						isIncomplete: false,
+						isIncomplete: true,
 					},
 				},
-				totalAdditions: 3,
-				totalDeletions: 0,
-				isIncomplete:   false,
+				totalAdditions: 0,
+				totalDeletions: 3,
+				isIncomplete:   true,
 			},
 		},
 		{
