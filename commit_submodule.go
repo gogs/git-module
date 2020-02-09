@@ -56,16 +56,17 @@ func (c *Commit) Submodules() (Submodules, error) {
 	return c.submodules, c.submodulesErr
 }
 
-// Submodule returns submodule by given name.
-func (c *Commit) Submodule(name string) (*Submodule, error) {
+// Submodule returns submodule by given name. It returns an ErrSubmoduleNotExist
+// if the path does not exist as a submodule.
+func (c *Commit) Submodule(path string) (*Submodule, error) {
 	mods, err := c.Submodules()
 	if err != nil {
 		return nil, err
 	}
 
-	m, has := mods.Get(name)
+	m, has := mods.Get(path)
 	if has {
 		return m.(*Submodule), nil
 	}
-	return nil, nil
+	return nil, ErrSubmoduleNotExist
 }

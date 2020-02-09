@@ -5,9 +5,12 @@
 package git
 
 import (
+	"errors"
 	"fmt"
 	"time"
 )
+
+var ErrSubmoduleNotExist = errors.New("submodule does not exist")
 
 type ErrExecTimeout struct {
 	Duration time.Duration
