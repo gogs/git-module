@@ -24,6 +24,7 @@ func (t *Tree) TreeEntry(subpath string, opts ...LsTreeOptions) (*TreeEntry, err
 	var err error
 	tree := t
 	for i, name := range paths {
+		// Reached end of the loop
 		if i == len(paths)-1 {
 			entries, err := tree.Entries(opts...)
 			if err != nil {
@@ -51,7 +52,7 @@ func (t *Tree) Blob(subpath string, opts ...LsTreeOptions) (*Blob, error) {
 		return nil, err
 	}
 
-	if !e.IsBlob() {
+	if e.IsBlob() {
 		return e.Blob(), nil
 	}
 

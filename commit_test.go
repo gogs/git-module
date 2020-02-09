@@ -554,3 +554,37 @@ func TestCommit_Ancestors(t *testing.T) {
 		})
 	}
 }
+
+func TestCommit_IsImageFile(t *testing.T) {
+	tests := []struct {
+		id     string
+		name   string
+		expVal bool
+	}{
+		{
+			id:     "4eaa8d4b05e731e950e2eaf9e8b92f522303ab41",
+			name:   "README.txt",
+			expVal: false,
+		},
+		{
+			id:     "4eaa8d4b05e731e950e2eaf9e8b92f522303ab41",
+			name:   "img/sourcegraph.png",
+			expVal: true,
+		},
+	}
+	for _, test := range tests {
+		t.Run("", func(t *testing.T) {
+			c, err := testrepo.CatFileCommit(test.id)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			isImage, err := c.IsImageFile(test.name)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			assert.Equal(t, test.expVal, isImage)
+		})
+	}
+}
