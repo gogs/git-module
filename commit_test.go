@@ -94,23 +94,25 @@ func TestCommit_CommitByPath(t *testing.T) {
 	}
 
 	tests := []struct {
-		path        string
+		opt         CommitByRevisionOptions
 		expCommitID string
 	}{
 		{
-			path:        "", // No path gets back to the commit itself
+			opt: CommitByRevisionOptions{
+				Path: "", // No path gets back to the commit itself
+			},
 			expCommitID: "435ffceb7ba576c937e922766e37d4f7abdcc122",
 		},
 		{
-			path:        "resources/labels.properties",
+			opt: CommitByRevisionOptions{
+				Path: "resources/labels.properties",
+			},
 			expCommitID: "755fd577edcfd9209d0ac072eed3b022cbe4d39b",
 		},
 	}
 	for _, test := range tests {
 		t.Run("", func(t *testing.T) {
-			cc, err := c.CommitByPath(CommitByRevisionOptions{
-				Path: test.path,
-			})
+			cc, err := c.CommitByPath(test.opt)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -118,6 +120,15 @@ func TestCommit_CommitByPath(t *testing.T) {
 			assert.Equal(t, test.expCommitID, cc.ID().String())
 		})
 	}
+}
+
+// commitsToIDs returns a list of IDs for given commits.
+func commitsToIDs(commits []*Commit) []string {
+	ids := make([]string, len(commits))
+	for i := range commits {
+		ids[i] = commits[i].ID().String()
+	}
+	return ids
 }
 
 func TestCommit_CommitsByPage(t *testing.T) {
@@ -130,13 +141,12 @@ func TestCommit_CommitsByPage(t *testing.T) {
 	tests := []struct {
 		page         int
 		size         int
-		path         string
+		opt          CommitsByPageOptions
 		expCommitIDs []string
 	}{
 		{
 			page: 0,
 			size: 2,
-			path: "",
 			expCommitIDs: []string{
 				"f5ed01959cffa4758ca0a49bf4c34b138d7eab0a",
 				"9cdb160ee4118035bf73c744e3bf72a1ba16484a",
@@ -145,7 +155,6 @@ func TestCommit_CommitsByPage(t *testing.T) {
 		{
 			page: 1,
 			size: 2,
-			path: "",
 			expCommitIDs: []string{
 				"f5ed01959cffa4758ca0a49bf4c34b138d7eab0a",
 				"9cdb160ee4118035bf73c744e3bf72a1ba16484a",
@@ -154,7 +163,6 @@ func TestCommit_CommitsByPage(t *testing.T) {
 		{
 			page: 2,
 			size: 2,
-			path: "",
 			expCommitIDs: []string{
 				"dc64fe4ab8618a5be491a9fca46f1585585ea44e",
 				"32c273781bab599b955ce7c59d92c39bedf35db0",
@@ -163,7 +171,6 @@ func TestCommit_CommitsByPage(t *testing.T) {
 		{
 			page: 3,
 			size: 2,
-			path: "",
 			expCommitIDs: []string{
 				"755fd577edcfd9209d0ac072eed3b022cbe4d39b",
 			},
@@ -171,14 +178,15 @@ func TestCommit_CommitsByPage(t *testing.T) {
 		{
 			page:         4,
 			size:         2,
-			path:         "",
 			expCommitIDs: []string{},
 		},
 
 		{
 			page: 2,
 			size: 2,
-			path: "src",
+			opt: CommitsByPageOptions{
+				Path: "src",
+			},
 			expCommitIDs: []string{
 				"755fd577edcfd9209d0ac072eed3b022cbe4d39b",
 			},
@@ -186,19 +194,106 @@ func TestCommit_CommitsByPage(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run("", func(t *testing.T) {
-			commits, err := c.CommitsByPage(test.page, test.size, CommitsByPageOptions{
-				Path: test.path,
-			})
+			commits, err := c.CommitsByPage(test.page, test.size, test.opt)
 			if err != nil {
 				t.Fatal(err)
 			}
 
-			ids := make([]string, len(commits))
-			for i := range commits {
-				ids[i] = commits[i].ID().String()
+			assert.Equal(t, test.expCommitIDs, commitsToIDs(commits))
+		})
+	}
+}
+
+func TestCommit_SearchCommits(t *testing.T) {
+	c, err := testrepo.CatFileCommit("2a52e96389d02209b451ae1ddf45d645b42d744c")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tests := []struct {
+		pattern      string
+		opt          SearchCommitsOptions
+		expCommitIDs []string
+	}{
+		{
+			pattern: "",
+			expCommitIDs: []string{
+				"2a52e96389d02209b451ae1ddf45d645b42d744c",
+				"57d0bf61e57cdacb309ebd1075257c6bd7e1da81",
+				"cb2d322bee073327e058143329d200024bd6b4c6",
+				"818f033c4ae7f26b2b29e904942fa79a5ccaadd0",
+				"369adba006a1bbf25e957a8622d2b919c994d035",
+				"2956e1d20897bf6ed509f6429d7f64bc4823fe33",
+				"333fd9bc94084c3e07e092e2bc9c22bab4476439",
+				"f5ed01959cffa4758ca0a49bf4c34b138d7eab0a",
+				"9cdb160ee4118035bf73c744e3bf72a1ba16484a",
+				"dc64fe4ab8618a5be491a9fca46f1585585ea44e",
+				"32c273781bab599b955ce7c59d92c39bedf35db0",
+				"755fd577edcfd9209d0ac072eed3b022cbe4d39b",
+			},
+		},
+		{
+			pattern: "",
+			opt: SearchCommitsOptions{
+				MaxCount: 3,
+			},
+			expCommitIDs: []string{
+				"2a52e96389d02209b451ae1ddf45d645b42d744c",
+				"57d0bf61e57cdacb309ebd1075257c6bd7e1da81",
+				"cb2d322bee073327e058143329d200024bd6b4c6",
+			},
+		},
+
+		{
+			pattern: "feature",
+			expCommitIDs: []string{
+				"2a52e96389d02209b451ae1ddf45d645b42d744c",
+				"cb2d322bee073327e058143329d200024bd6b4c6",
+			},
+		},
+		{
+			pattern: "feature",
+			opt: SearchCommitsOptions{
+				MaxCount: 1,
+			},
+			expCommitIDs: []string{
+				"2a52e96389d02209b451ae1ddf45d645b42d744c",
+			},
+		},
+
+		{
+			pattern: "add.*",
+			opt: SearchCommitsOptions{
+				Path: "src",
+			},
+			expCommitIDs: []string{
+				"cb2d322bee073327e058143329d200024bd6b4c6",
+				"818f033c4ae7f26b2b29e904942fa79a5ccaadd0",
+				"333fd9bc94084c3e07e092e2bc9c22bab4476439",
+				"32c273781bab599b955ce7c59d92c39bedf35db0",
+				"755fd577edcfd9209d0ac072eed3b022cbe4d39b",
+			},
+		},
+		{
+			pattern: "add.*",
+			opt: SearchCommitsOptions{
+				MaxCount: 2,
+				Path:     "src",
+			},
+			expCommitIDs: []string{
+				"cb2d322bee073327e058143329d200024bd6b4c6",
+				"818f033c4ae7f26b2b29e904942fa79a5ccaadd0",
+			},
+		},
+	}
+	for _, test := range tests {
+		t.Run("", func(t *testing.T) {
+			commits, err := c.SearchCommits(test.pattern, test.opt)
+			if err != nil {
+				t.Fatal(err)
 			}
 
-			assert.Equal(t, test.expCommitIDs, ids)
+			assert.Equal(t, test.expCommitIDs, commitsToIDs(commits))
 		})
 	}
 }
