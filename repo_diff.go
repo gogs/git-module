@@ -11,9 +11,9 @@ import (
 	"time"
 )
 
-// DiffRangeOptions contains optional arguments for parsing diff.
+// DiffOptions contains optional arguments for parsing diff.
 // Docs: https://git-scm.com/docs/git-diff#Documentation/git-diff.txt---full-index
-type DiffRangeOptions struct {
+type DiffOptions struct {
 	// The commit ID to used for computing diff between a range of commits (base, revision]. When not set,
 	// only computes diff for a single commit at revision.
 	Base string
@@ -22,8 +22,8 @@ type DiffRangeOptions struct {
 }
 
 // Diff returns a parsed diff object between given commits.
-func (r *Repository) Diff(rev string, maxLines, maxLineChars, maxFiles int, opts ...DiffRangeOptions) (*Diff, error) {
-	var opt DiffRangeOptions
+func (r *Repository) Diff(rev string, maxLines, maxLineChars, maxFiles int, opts ...DiffOptions) (*Diff, error) {
+	var opt DiffOptions
 	if len(opts) > 0 {
 		opt = opts[0]
 	}
@@ -47,11 +47,8 @@ func (r *Repository) Diff(rev string, maxLines, maxLineChars, maxFiles int, opts
 	}
 
 	stdout, w := io.Pipe()
-	done := make(chan error)
-	var diff *Diff
-	go func() {
-		diff = SteamParsePatch(stdout, done, maxLines, maxLineChars, maxFiles)
-	}()
+	done := make(chan SteamParsePatchResult)
+	go SteamParsePatch(stdout, done, maxLines, maxLineChars, maxFiles)
 
 	stderr := new(bytes.Buffer)
 	err = cmd.RunInDirPipelineWithTimeout(2*time.Minute, w, stderr, r.path)
@@ -60,7 +57,8 @@ func (r *Repository) Diff(rev string, maxLines, maxLineChars, maxFiles int, opts
 		return nil, concatenateError(err, stderr.String())
 	}
 
-	return diff, <-done
+	result := <-done
+	return result.Diff, result.Err
 }
 
 // RawDiffFormat is the format of a raw diff.
