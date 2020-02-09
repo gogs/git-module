@@ -310,7 +310,17 @@ func (r *Repository) DiffNameOnly(base, head string, opts ...DiffNameOnlyOptions
 	if err != nil {
 		return nil, err
 	}
-	return strings.Split(string(stdout), "\n"), nil
+
+	lines := bytes.Split(stdout, []byte("\n"))
+	names := make([]string, 0, len(lines)-1)
+	for i := range lines {
+		if len(lines[i]) == 0 {
+			continue
+		}
+
+		names = append(names, string(lines[i]))
+	}
+	return names, nil
 }
 
 // RevListCountOptions contains optional arguments for counting commits.

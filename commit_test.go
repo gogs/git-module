@@ -297,3 +297,167 @@ func TestCommit_SearchCommits(t *testing.T) {
 		})
 	}
 }
+
+func TestCommit_ShowNameStatus(t *testing.T) {
+	tests := []struct {
+		id        string
+		expStatus *NameStatus
+	}{
+		{
+			id: "755fd577edcfd9209d0ac072eed3b022cbe4d39b",
+			expStatus: &NameStatus{
+				Added: []string{
+					"README.txt",
+					"resources/labels.properties",
+					"src/Main.groovy",
+				},
+			},
+		},
+		{
+			id: "32c273781bab599b955ce7c59d92c39bedf35db0",
+			expStatus: &NameStatus{
+				Modified: []string{
+					"src/Main.groovy",
+				},
+			},
+		},
+		{
+			id: "dc64fe4ab8618a5be491a9fca46f1585585ea44e",
+			expStatus: &NameStatus{
+				Added: []string{
+					"src/Square.groovy",
+				},
+				Modified: []string{
+					"src/Main.groovy",
+				},
+			},
+		},
+		{
+			id: "978fb7f6388b49b532fbef8b856681cfa6fcaa0a",
+			expStatus: &NameStatus{
+				Removed: []string{
+					"fix.txt",
+				},
+			},
+		},
+	}
+	for _, test := range tests {
+		t.Run("", func(t *testing.T) {
+			c, err := testrepo.CatFileCommit(test.id)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			status, err := c.ShowNameStatus()
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			assert.Equal(t, test.expStatus, status)
+		})
+	}
+}
+
+func TestCommit_CommitsCount(t *testing.T) {
+	tests := []struct {
+		id       string
+		opt      RevListCountOptions
+		expCount int64
+	}{
+		{
+			id:       "755fd577edcfd9209d0ac072eed3b022cbe4d39b",
+			expCount: 1,
+		},
+		{
+			id:       "f5ed01959cffa4758ca0a49bf4c34b138d7eab0a",
+			expCount: 5,
+		},
+		{
+			id:       "978fb7f6388b49b532fbef8b856681cfa6fcaa0a",
+			expCount: 27,
+		},
+
+		{
+			id: "7c5ee6478d137417ae602140c615e33aed91887c",
+			opt: RevListCountOptions{
+				Path: "README.txt",
+			},
+			expCount: 3,
+		},
+		{
+			id: "7c5ee6478d137417ae602140c615e33aed91887c",
+			opt: RevListCountOptions{
+				Path: "resources",
+			},
+			expCount: 1,
+		},
+	}
+	for _, test := range tests {
+		t.Run("", func(t *testing.T) {
+			c, err := testrepo.CatFileCommit(test.id)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			count, err := c.CommitsCount(test.opt)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			assert.Equal(t, test.expCount, count)
+		})
+	}
+}
+
+func TestCommit_FilesChangedAfter(t *testing.T) {
+	tests := []struct {
+		id       string
+		after    string
+		opt      DiffNameOnlyOptions
+		expFiles []string
+	}{
+		{
+			id:       "978fb7f6388b49b532fbef8b856681cfa6fcaa0a",
+			after:    "ef7bebf8bdb1919d947afe46ab4b2fb4278039b3",
+			expFiles: []string{"fix.txt"},
+		},
+		{
+			id:       "978fb7f6388b49b532fbef8b856681cfa6fcaa0a",
+			after:    "45a30ea9afa413e226ca8614179c011d545ca883",
+			expFiles: []string{"fix.txt", "pom.xml", "src/test/java/com/github/AppTest.java"},
+		},
+
+		{
+			id:    "978fb7f6388b49b532fbef8b856681cfa6fcaa0a",
+			after: "45a30ea9afa413e226ca8614179c011d545ca883",
+			opt: DiffNameOnlyOptions{
+				Path: "src",
+			},
+			expFiles: []string{"src/test/java/com/github/AppTest.java"},
+		},
+
+		{
+			id:    "978fb7f6388b49b532fbef8b856681cfa6fcaa0a",
+			after: "45a30ea9afa413e226ca8614179c011d545ca883",
+			opt: DiffNameOnlyOptions{
+				Path: "resources",
+			},
+			expFiles: []string{},
+		},
+	}
+	for _, test := range tests {
+		t.Run("", func(t *testing.T) {
+			c, err := testrepo.CatFileCommit(test.id)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			files, err := c.FilesChangedAfter(test.after, test.opt)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			assert.Equal(t, test.expFiles, files)
+		})
+	}
+}

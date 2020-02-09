@@ -103,9 +103,9 @@ func (c *Commit) CommitsCount(opts ...RevListCountOptions) (int64, error) {
 	return c.repo.RevListCount([]string{c.id.String()}, opts...)
 }
 
-// FilesChangedSince returns a list of files changed since given commit ID.
-func (c *Commit) FilesChangedSince(commitID string, opts ...DiffNameOnlyOptions) ([]string, error) {
-	return c.repo.DiffNameOnly(commitID, c.id.String(), opts...)
+// FilesChangedSince returns a list of files changed after given commit ID.
+func (c *Commit) FilesChangedAfter(after string, opts ...DiffNameOnlyOptions) ([]string, error) {
+	return c.repo.DiffNameOnly(after, c.id.String(), opts...)
 }
 
 // CommitsAfter returns a list of commits after given commit ID up to this commit. The returned
