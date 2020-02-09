@@ -35,6 +35,7 @@ func TestDiffSection_Lines(t *testing.T) {
 	}
 
 	assert.Equal(t, lines, section.Lines())
+	assert.Equal(t, 1, section.NumLines())
 }
 
 func TestDiffSection_Line(t *testing.T) {
@@ -186,10 +187,10 @@ func TestDiff(t *testing.T) {
 	assert.False(t, diff.IsIncomplete())
 }
 
-func TestSteamParsePatch(t *testing.T) {
+func TestStreamParseDiff(t *testing.T) {
 	tests := []struct {
 		input        string
-		maxLines     int
+		maxFileLines int
 		maxLineChars int
 		maxFiles     int
 		expDiff      *Diff
@@ -245,6 +246,8 @@ index 0000000..6b08f76
 										rightLine: 3,
 									},
 								},
+								numAdditions: 3,
+								numDeletions: 0,
 							},
 						},
 						numAdditions: 3,
@@ -274,13 +277,15 @@ index 0000000..6b08f76
 										rightLine: 1,
 									},
 								},
+								numAdditions: 1,
+								numDeletions: 0,
 							},
 						},
 						numAdditions: 1,
 						numDeletions: 0,
 						oldName:      "",
 						isBinary:     false,
-						isSubmodule:  false,
+						isSubmodule:  true,
 						isIncomplete: false,
 					},
 				},
@@ -367,6 +372,8 @@ index ee791be..9997571 100644
 										rightLine: 7,
 									},
 								},
+								numAdditions: 1,
+								numDeletions: 1,
 							},
 						},
 						numAdditions: 1,
@@ -466,7 +473,7 @@ index 0000000..6abde17
 +[submodule "gogs/docs-api"]
 +	path = gogs/docs-api
 +	url = https://github.com/gogs/docs-api.git`,
-			maxLines: 2,
+			maxFileLines: 2,
 			expDiff: &Diff{
 				files: []*DiffFile{
 					{
@@ -494,20 +501,28 @@ index 0000000..6abde17
 										leftLine:  0,
 										rightLine: 2,
 									},
+									{
+										typ: DiffLineAdd,
+										content: `+	url = https://github.com/gogs/docs-api.git`,
+										leftLine:  0,
+										rightLine: 3,
+									},
 								},
+								numAdditions: 3,
+								numDeletions: 0,
 							},
 						},
-						numAdditions: 2,
+						numAdditions: 3,
 						numDeletions: 0,
 						oldName:      "",
 						isBinary:     false,
 						isSubmodule:  false,
-						isIncomplete: true,
+						isIncomplete: false,
 					},
 				},
-				totalAdditions: 2,
+				totalAdditions: 3,
 				totalDeletions: 0,
-				isIncomplete:   true,
+				isIncomplete:   false,
 			},
 		},
 		{
@@ -549,6 +564,8 @@ index 0000000..6abde17
 										rightLine: 2,
 									},
 								},
+								numAdditions: 2,
+								numDeletions: 0,
 							},
 						},
 						numAdditions: 2,
@@ -581,7 +598,7 @@ index 0000000..6b08f76
 +++ b/gogs/docs-api
 @@ -0,0 +1 @@
 +Subproject commit 6b08f76a5313fa3d26859515b30aa17a5faa2807`,
-			maxLines:     2,
+			maxFileLines: 2,
 			maxLineChars: 30,
 			maxFiles:     1,
 			expDiff: &Diff{
@@ -612,6 +629,8 @@ index 0000000..6b08f76
 										rightLine: 2,
 									},
 								},
+								numAdditions: 2,
+								numDeletions: 0,
 							},
 						},
 						numAdditions: 2,
@@ -631,7 +650,7 @@ index 0000000..6b08f76
 	for _, test := range tests {
 		t.Run("", func(t *testing.T) {
 			done := make(chan SteamParsePatchResult)
-			go SteamParsePatch(strings.NewReader(test.input), done, test.maxLines, test.maxLineChars, test.maxFiles)
+			go StreamParseDiff(strings.NewReader(test.input), done, test.maxFiles, test.maxFileLines, test.maxLineChars)
 			result := <-done
 			if result.Err != nil {
 				t.Fatal(result.Err)

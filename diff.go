@@ -6,6 +6,7 @@ package git
 
 import (
 	"bufio"
+	"bytes"
 	"errors"
 	"fmt"
 	"io"
@@ -67,11 +68,19 @@ func (l *DiffLine) Right() int {
 // DiffSection represents a section in diff.
 type DiffSection struct {
 	lines []*DiffLine
+
+	numAdditions int
+	numDeletions int
 }
 
 // Lines returns lines in the section.
 func (s *DiffSection) Lines() []*DiffLine {
 	return s.lines
+}
+
+// NumLines returns the number of lines in the section.
+func (s *DiffSection) NumLines() int {
+	return len(s.lines)
 }
 
 // Line returns a specific line by given type and line number in a section.
@@ -245,210 +254,294 @@ type SteamParsePatchResult struct {
 	Err  error
 }
 
-// SteamParsePatch parses the diff read from the given io.Reader. It does parse-on-read to minimize
-// the time spent on huge diffs. It accepts a channel to notify and send error (if any) to the caller
-// when the process is done.
-func SteamParsePatch(r io.Reader, done chan<- SteamParsePatchResult, maxLines, maxLineChars, maxFiles int) {
-	var (
-		diff = new(Diff)
+type diffParser struct {
+	*bufio.Reader
+	maxFiles     int
+	maxFileLines int
+	maxLineChars int
 
-		curFile    = new(DiffFile)
-		curSection = new(DiffSection)
+	// The next line that hasn't been processed. It is used to determine what kind of process should go in.
+	buffer []byte
+	isEOF  bool
+}
 
-		leftLine, rightLine int
-		curFileLineCount    int
-	)
-	input := bufio.NewReader(r)
-	isEOF := false
-	for !isEOF {
-		line, err := input.ReadString('\n')
-		if err != nil {
-			if err != io.EOF {
-				done <- SteamParsePatchResult{
-					Err: fmt.Errorf("read string: %v", err),
-				}
-				return
-			}
+func (p *diffParser) readLine() error {
+	if p.buffer != nil {
+		return nil
+	}
 
-			isEOF = true
+	var err error
+	p.buffer, err = p.ReadBytes('\n')
+	if err != nil {
+		if err != io.EOF {
+			return fmt.Errorf("read string: %v", err)
 		}
 
-		// Remove line break
-		if len(line) > 0 && line[len(line)-1] == '\n' {
-			line = line[:len(line)-1]
+		p.isEOF = true
+	}
+
+	// Remove line break
+	if len(p.buffer) > 0 && p.buffer[len(p.buffer)-1] == '\n' {
+		p.buffer = p.buffer[:len(p.buffer)-1]
+	}
+	return nil
+}
+
+var diffHead = []byte("diff --git ")
+
+func (p *diffParser) parseFileHeader() (*DiffFile, error) {
+	line := string(p.buffer)
+	p.buffer = nil
+
+	// Note: In case file name is surrounded by double quotes (it happens only in git-shell).
+	// e.g. diff --git "a/xxx" "b/xxx"
+	var middle int
+	hasQuote := line[len(diffHead)] == '"'
+	if hasQuote {
+		middle = strings.Index(line, ` "b/`)
+	} else {
+		middle = strings.Index(line, ` b/`)
+	}
+
+	beg := len(diffHead)
+	a := line[beg+2 : middle]
+	b := line[middle+3:]
+	if hasQuote {
+		a = string(UnescapeChars([]byte(a[1 : len(a)-1])))
+		b = string(UnescapeChars([]byte(b[1 : len(b)-1])))
+	}
+
+	file := &DiffFile{
+		name: a,
+		typ:  DiffFileChange,
+	}
+
+	// Check file diff type and submodule
+	var err error
+checkType:
+	for !p.isEOF {
+		if err = p.readLine(); err != nil {
+			return nil, err
 		}
 
-		if strings.HasPrefix(line, "+++ ") || strings.HasPrefix(line, "--- ") || len(line) == 0 {
+		line := string(p.buffer)
+		p.buffer = nil
+
+		if len(line) == 0 {
 			continue
 		}
 
-		if !curFile.isIncomplete {
-			// Diff line too large
-			if line[0] == ' ' || line[0] == '+' || line[0] == '-' {
-				if (maxLines > 0 && curFileLineCount > maxLines) ||
-					(maxLineChars > 0 && len(line) > maxLineChars) {
-					curFile.isIncomplete = true
-					diff.isIncomplete = true
-					continue
-				}
+		switch {
+		case strings.HasPrefix(line, "new file"):
+			file.typ = DiffFileAdd
+			file.isSubmodule = strings.HasSuffix(line, " 160000")
+		case strings.HasPrefix(line, "deleted"):
+			file.typ = DiffFileDelete
+			file.isSubmodule = strings.HasSuffix(line, " 160000")
+		case strings.HasPrefix(line, "index"): // e.g. index ee791be..9997571 100644
+			fields := strings.Fields(line[6:])
+			shas := strings.Split(fields[0], "..")
+			if len(shas) != 2 {
+				return nil, errors.New("malformed index: expect two SHAs in the form of <old>..<new>")
 			}
 
-			switch {
-			case line[0] == '@':
-				curSection = &DiffSection{
-					lines: []*DiffLine{
-						{
-							typ:     DiffLineSection,
-							content: line,
-						},
-					},
-				}
-				curFile.sections = append(curFile.sections, curSection)
-
-				// Parse line number, e.g. @@ -0,0 +1,3 @@
-				ss := strings.Split(line, "@@")
-				ranges := strings.Split(ss[1][1:], " ")
-				leftLine, _ = strconv.Atoi(strings.Split(ranges[0], ",")[0][1:])
-				if len(ranges) > 1 {
-					rightLine, _ = strconv.Atoi(strings.Split(ranges[1], ",")[0])
-				} else {
-					rightLine = leftLine
-				}
-				curFileLineCount++
-				continue
-			case line[0] == ' ':
-				curSection.lines = append(curSection.lines, &DiffLine{
-					typ:       DiffLinePlain,
-					content:   line,
-					leftLine:  leftLine,
-					rightLine: rightLine,
-				})
-				leftLine++
-				rightLine++
-				curFileLineCount++
-				continue
-			case line[0] == '+':
-				curSection.lines = append(curSection.lines, &DiffLine{
-					typ:       DiffLineAdd,
-					content:   line,
-					rightLine: rightLine,
-				})
-				curFile.numAdditions++
-				diff.totalAdditions++
-				rightLine++
-				curFileLineCount++
-				continue
-			case line[0] == '-':
-				curSection.lines = append(curSection.lines, &DiffLine{
-					typ:      DiffLineDelete,
-					content:  line,
-					leftLine: leftLine,
-				})
-				curFile.numDeletions++
-				diff.totalDeletions++
-				if leftLine > 0 {
-					leftLine++
-				}
-				curFileLineCount++
-				continue
-			case strings.HasPrefix(line, "Binary"):
-				curFile.isBinary = true
-				continue
+			if file.IsDeleted() {
+				file.index = shas[0]
+			} else {
+				file.index = shas[1]
 			}
+			break checkType
+		case strings.HasPrefix(line, "similarity index 100%"):
+			file.typ = DiffFileRename
+			file.oldName = a
+			file.name = b
+			break checkType
+		case strings.HasPrefix(line, "old mode"):
+			break checkType
+		}
+	}
+
+	return file, nil
+}
+
+func (p *diffParser) parseSection() (_ *DiffSection, isIncomplete bool, _ error) {
+	line := string(p.buffer)
+	p.buffer = nil
+
+	section := &DiffSection{
+		lines: []*DiffLine{
+			{
+				typ:     DiffLineSection,
+				content: line,
+			},
+		},
+	}
+
+	// Parse line number, e.g. @@ -0,0 +1,3 @@
+	var leftLine, rightLine int
+	ss := strings.Split(line, "@@")
+	ranges := strings.Split(ss[1][1:], " ")
+	leftLine, _ = strconv.Atoi(strings.Split(ranges[0], ",")[0][1:])
+	if len(ranges) > 1 {
+		rightLine, _ = strconv.Atoi(strings.Split(ranges[1], ",")[0])
+	} else {
+		rightLine = leftLine
+	}
+
+	var err error
+	for !p.isEOF {
+		if err = p.readLine(); err != nil {
+			return nil, false, err
 		}
 
-		// Get new file
-		const diffHead = "diff --git "
-		if strings.HasPrefix(line, diffHead) {
-			if maxFiles > 0 && len(diff.files) >= maxFiles {
-				diff.isIncomplete = true
-				_, _ = io.Copy(ioutil.Discard, r)
-				break
-			}
+		if len(p.buffer) == 0 {
+			p.buffer = nil
+			continue
+		}
 
-			var middle int
+		// Make sure we're still in the section. If not, we're done with this section.
+		if p.buffer[0] != ' ' &&
+			p.buffer[0] != '+' &&
+			p.buffer[0] != '-' {
+			return section, false, nil
+		}
 
-			// Note: In case file name is surrounded by double quotes (it happens only in git-shell).
-			// e.g. diff --git "a/xxx" "b/xxx"
-			hasQuote := line[len(diffHead)] == '"'
-			if hasQuote {
-				middle = strings.Index(line, ` "b/`)
-			} else {
-				middle = strings.Index(line, " b/")
-			}
+		line := string(p.buffer)
+		p.buffer = nil
 
-			beg := len(diffHead)
-			a := line[beg+2 : middle]
-			b := line[middle+3:]
-			if hasQuote {
-				a = string(UnescapeChars([]byte(a[1 : len(a)-1])))
-				b = string(UnescapeChars([]byte(b[1 : len(b)-1])))
-			}
+		// Too many characters in a single diff line
+		if p.maxLineChars > 0 && len(line) > p.maxLineChars {
+			return section, true, nil
+		}
 
-			curFile = &DiffFile{
-				name: a,
-				typ:  DiffFileChange,
-			}
-			diff.files = append(diff.files, curFile)
-			curFileLineCount = 0
-
-			// Check file diff type and submodule
-		checkType:
-			for !isEOF {
-				line, err := input.ReadString('\n')
-				if err != nil {
-					if err != io.EOF {
-						done <- SteamParsePatchResult{
-							Err: fmt.Errorf("read string: %v", err),
-						}
-						return
-					}
-
-					isEOF = true
-				}
-
-				// Remove line break
-				if len(line) > 0 && line[len(line)-1] == '\n' {
-					line = line[:len(line)-1]
-				}
-
-				switch {
-				case strings.HasPrefix(line, "new file"):
-					curFile.typ = DiffFileAdd
-					curFile.isSubmodule = strings.HasSuffix(line, " 160000\n")
-				case strings.HasPrefix(line, "deleted"):
-					curFile.typ = DiffFileDelete
-					curFile.isSubmodule = strings.HasSuffix(line, " 160000\n")
-				case strings.HasPrefix(line, "index"): // e.g. index ee791be..9997571 100644
-					fields := strings.Fields(line[6:])
-					shas := strings.Split(fields[0], "..")
-					if len(shas) != 2 {
-						done <- SteamParsePatchResult{
-							Err: errors.New("malformed index: expect two SHAs in the form of <old>..<new>"),
-						}
-						return
-					}
-
-					if curFile.IsDeleted() {
-						curFile.index = shas[0]
-					} else {
-						curFile.index = shas[1]
-					}
-					break checkType
-				case strings.HasPrefix(line, "similarity index 100%"):
-					curFile.typ = DiffFileRename
-					curFile.oldName = curFile.name
-					curFile.name = b
-					break checkType
-				case strings.HasPrefix(line, "old mode"):
-					break checkType
-				}
+		switch line[0] {
+		case ' ':
+			section.lines = append(section.lines, &DiffLine{
+				typ:       DiffLinePlain,
+				content:   line,
+				leftLine:  leftLine,
+				rightLine: rightLine,
+			})
+			leftLine++
+			rightLine++
+		case '+':
+			section.lines = append(section.lines, &DiffLine{
+				typ:       DiffLineAdd,
+				content:   line,
+				rightLine: rightLine,
+			})
+			section.numAdditions++
+			rightLine++
+		case '-':
+			section.lines = append(section.lines, &DiffLine{
+				typ:      DiffLineDelete,
+				content:  line,
+				leftLine: leftLine,
+			})
+			section.numDeletions++
+			if leftLine > 0 {
+				leftLine++
 			}
 		}
 	}
 
+	return section, false, nil
+}
+
+func (p *diffParser) parse() (*Diff, error) {
+	diff := new(Diff)
+	file := new(DiffFile)
+	currentFileLines := 0
+
+	var err error
+	for !p.isEOF {
+		if err = p.readLine(); err != nil {
+			return nil, err
+		}
+
+		if len(p.buffer) == 0 ||
+			bytes.HasPrefix(p.buffer, []byte("+++ ")) ||
+			bytes.HasPrefix(p.buffer, []byte("--- ")) {
+			p.buffer = nil
+			continue
+		}
+
+		// Found new file
+		if bytes.HasPrefix(p.buffer, diffHead) {
+			// Check if reached maximum number of files
+			if p.maxFiles > 0 && len(diff.files) >= p.maxFiles {
+				diff.isIncomplete = true
+				_, _ = io.Copy(ioutil.Discard, p)
+				break
+			}
+
+			file, err = p.parseFileHeader()
+			if err != nil {
+				return nil, err
+			}
+			diff.files = append(diff.files, file)
+
+			currentFileLines = 0
+			continue
+		}
+
+		if file == nil || file.isIncomplete {
+			p.buffer = nil
+			continue
+		}
+
+		if bytes.HasPrefix(p.buffer, []byte("Binary")) {
+			p.buffer = nil
+			file.isBinary = true
+			continue
+		}
+
+		// Loop until we found section header
+		if p.buffer[0] != '@' {
+			p.buffer = nil
+			continue
+		}
+
+		// Too many diff lines for the file
+		if p.maxFileLines > 0 && currentFileLines > p.maxFileLines {
+			file.isIncomplete = true
+			diff.isIncomplete = true
+			continue
+		}
+
+		section, isIncomplete, err := p.parseSection()
+		if err != nil {
+			return nil, err
+		}
+		file.sections = append(file.sections, section)
+		file.numAdditions += section.numAdditions
+		file.numDeletions += section.numDeletions
+		diff.totalAdditions += section.numAdditions
+		diff.totalDeletions += section.numDeletions
+		currentFileLines += section.NumLines()
+		if isIncomplete {
+			file.isIncomplete = true
+			diff.isIncomplete = true
+		}
+	}
+
+	return diff, nil
+}
+
+// StreamParseDiff parses the diff read from the given io.Reader. It does parse-on-read to minimize
+// the time spent on huge diffs. It accepts a channel to notify and send error (if any) to the caller
+// when the process is done. Therefore, this method should be called in a goroutine asynchronously.
+func StreamParseDiff(r io.Reader, done chan<- SteamParsePatchResult, maxFiles, maxFileLines, maxLineChars int) {
+	p := &diffParser{
+		Reader:       bufio.NewReader(r),
+		maxFiles:     maxFiles,
+		maxFileLines: maxFileLines,
+		maxLineChars: maxLineChars,
+	}
+	diff, err := p.parse()
 	done <- SteamParsePatchResult{
 		Diff: diff,
+		Err:  err,
 	}
 	return
 }
