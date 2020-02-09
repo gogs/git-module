@@ -5,6 +5,9 @@
 package git
 
 import (
+	"bytes"
+	"io"
+	"io/ioutil"
 	"net/http"
 	"strings"
 	"sync"
@@ -103,9 +106,9 @@ func (c *Commit) CommitsCount(opts ...RevListCountOptions) (int64, error) {
 	return c.repo.RevListCount([]string{c.id.String()}, opts...)
 }
 
-// FilesChangedSince returns a list of files changed since given commit ID.
-func (c *Commit) FilesChangedSince(commitID string, opts ...DiffNameOnlyOptions) ([]string, error) {
-	return c.repo.DiffNameOnly(commitID, c.id.String(), opts...)
+// FilesChangedSince returns a list of files changed after given commit ID.
+func (c *Commit) FilesChangedAfter(after string, opts ...DiffNameOnlyOptions) ([]string, error) {
+	return c.repo.DiffNameOnly(after, c.id.String(), opts...)
 }
 
 // CommitsAfter returns a list of commits after given commit ID up to this commit. The returned
@@ -116,28 +119,59 @@ func (c *Commit) CommitsAfter(after string, opts ...RevListOptions) ([]*Commit, 
 
 // Ancestors returns a list of ancestors of this commit in reverse chronological order.
 func (c *Commit) Ancestors(opts ...LogOptions) ([]*Commit, error) {
-	return c.repo.Log(c.id.String(), opts...)
-}
-
-func isImageFile(data []byte) (string, bool) {
-	contentType := http.DetectContentType(data)
-	if strings.Contains(contentType, "image/") {
-		return contentType, true
+	if c.ParentsCount() == 0 {
+		return []*Commit{}, nil
 	}
-	return contentType, false
+
+	var opt LogOptions
+	if len(opts) > 0 {
+		opt = opts[0]
+	}
+
+	opt.Skip++
+
+	return c.repo.Log(c.id.String(), opt)
 }
 
-// IsImageFile returns true if the commit is a image blob.
-func (c *Commit) IsImageFile(name string) bool {
+type limitWriter struct {
+	W io.Writer
+	N int64
+}
+
+func (w *limitWriter) Write(p []byte) (int, error) {
+	if w.N <= 0 {
+		return len(p), nil
+	}
+
+	limit := int64(len(p))
+	if limit > w.N {
+		limit = w.N
+	}
+	n, err := w.W.Write(p[:limit])
+	w.N -= int64(n)
+
+	// Prevent "short write" error
+	return len(p), err
+}
+
+// IsImageFile returns true if the commit is an image blob.
+func (c *Commit) IsImageFile(name string) (bool, error) {
 	blob, err := c.Blob(name)
 	if err != nil {
-		return false
+		return false, err
 	}
 
-	p, err := blob.Bytes()
-	if err != nil {
-		return false
+	buf := new(bytes.Buffer)
+	buf.Grow(512)
+	stdout := &limitWriter{
+		W: buf,
+		N: int64(buf.Cap()),
 	}
-	_, isImage := isImageFile(p)
-	return isImage
+
+	err = blob.Pipeline(stdout, ioutil.Discard)
+	if err != nil {
+		return false, err
+	}
+
+	return strings.Contains(http.DetectContentType(buf.Bytes()), "image/"), nil
 }
