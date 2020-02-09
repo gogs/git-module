@@ -15,6 +15,17 @@ const (
 	RefsTags  = "refs/tags/"
 )
 
+// RefShortName returns short name of heads or tags. Other references will retrun original string.
+func RefShortName(ref string) string {
+	if strings.HasPrefix(ref, RefsHeads) {
+		return ref[len(RefsHeads):]
+	} else if strings.HasPrefix(ref, RefsTags) {
+		return ref[len(RefsTags):]
+	}
+
+	return ref
+}
+
 // Reference contains information of a Git reference.
 type Reference struct {
 	ID      string

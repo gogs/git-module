@@ -67,6 +67,15 @@ func LsRemote(opts ...LsRemoteOptions) ([]*Reference, error) {
 	return refs, nil
 }
 
+// IsURLAccessible returns true if given remote URL is accessible via Git.
+func IsURLAccessible(timeout time.Duration, url string) bool {
+	_, err := LsRemote(LsRemoteOptions{
+		URL:     url,
+		Timeout: timeout,
+	})
+	return err == nil
+}
+
 // AddRemoteOptions contains options to add a remote address.
 type AddRemoteOptions struct {
 	// Indicates whether to execute git fetch after the remote information is set up.
