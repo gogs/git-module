@@ -1,4 +1,4 @@
-sudo: false
+os: linux
 language: go
 go:
   - 1.9.x
