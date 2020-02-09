@@ -42,7 +42,7 @@ func (t *Tree) TreeEntry(subpath string, opts ...LsTreeOptions) (*TreeEntry, err
 			}
 		}
 	}
-	return nil, ErrRevisionNotExist{"", subpath}
+	return nil, ErrRevisionNotExist
 }
 
 // Blob returns the blob object by given subpath of the tree.
@@ -56,5 +56,5 @@ func (t *Tree) Blob(subpath string, opts ...LsTreeOptions) (*Blob, error) {
 		return e.Blob(), nil
 	}
 
-	return nil, ErrRevisionNotExist{"", subpath}
+	return nil, ErrRevisionNotExist
 }

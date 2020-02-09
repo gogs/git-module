@@ -110,7 +110,7 @@ func (r *Repository) LsTree(rev string, opts ...LsTreeOptions) (*Tree, error) {
 
 	stdout, err := NewCommand("ls-tree", rev).RunInDirWithTimeout(opt.Timeout, r.path)
 	if err != nil {
-		return nil, ErrRevisionNotExist{rev, ""}
+		return nil, ErrRevisionNotExist
 	}
 
 	t.entries, err = parseTree(t, stdout)

@@ -204,7 +204,7 @@ func (es Entries) CommitsInfoWithCustomConcurrency(timeout time.Duration, commit
 					Timeout: timeout,
 				})
 				if err != nil {
-					cinfo.err = fmt.Errorf("CommitByPath (%s/%s): %v", treePath, es[i].Name(), err)
+					cinfo.err = fmt.Errorf("get commit by path (%s/%s): %v", treePath, es[i].Name(), err)
 				} else {
 					cinfo.infos = []interface{}{es[i], c}
 				}
@@ -218,8 +218,8 @@ func (es Entries) CommitsInfoWithCustomConcurrency(timeout time.Duration, commit
 		go func(i int) {
 			cinfo := commitInfo{entryName: es[i].Name()}
 			sm, err := commit.Submodule(path.Join(treePath, es[i].Name()))
-			if err != nil && !IsErrRevesionNotExist(err) {
-				cinfo.err = fmt.Errorf("GetSubModule (%s/%s): %v", treePath, es[i].Name(), err)
+			if err != nil && err != ErrSubmoduleNotExist {
+				cinfo.err = fmt.Errorf("get submodule (%s/%s): %v", treePath, es[i].Name(), err)
 				revChan <- cinfo
 				return
 			}
@@ -234,7 +234,7 @@ func (es Entries) CommitsInfoWithCustomConcurrency(timeout time.Duration, commit
 				Timeout: timeout,
 			})
 			if err != nil {
-				cinfo.err = fmt.Errorf("CommitByPath (%s/%s): %v", treePath, es[i].Name(), err)
+				cinfo.err = fmt.Errorf("get commit by path (%s/%s): %v", treePath, es[i].Name(), err)
 			} else {
 				cinfo.infos = []interface{}{
 					es[i],

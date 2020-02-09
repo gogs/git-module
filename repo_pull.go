@@ -26,7 +26,7 @@ func (r *Repository) MergeBase(base, head string, opts ...MergeBaseOptions) (str
 	stdout, err := NewCommand("merge-base", base, head).RunInDirWithTimeout(opt.Timeout, r.path)
 	if err != nil {
 		if strings.Contains(err.Error(), "exit status 1") {
-			return "", ErrNoMergeBase{}
+			return "", ErrNoMergeBase
 		}
 		return "", err
 	}

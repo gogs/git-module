@@ -58,8 +58,7 @@ func TestCommit_Parent(t *testing.T) {
 	t.Run("Parent", func(t *testing.T) {
 		t.Run("no such parent", func(t *testing.T) {
 			_, err := c.Parent(c.ParentsCount() + 1)
-			assert.NotNil(t, err)
-			assert.Equal(t, `revision does not exist [rev: , path: ]`, err.Error())
+			assert.Equal(t, ErrParentNotExist, err)
 		})
 
 		tests := []struct {

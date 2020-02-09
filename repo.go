@@ -430,7 +430,7 @@ func (r *Repository) RevParse(rev string, opts ...RevParseOptions) (string, erro
 	commitID, err := NewCommand("rev-parse", rev).RunInDirWithTimeout(opt.Timeout, r.path)
 	if err != nil {
 		if strings.Contains(err.Error(), "exit status 128") {
-			return "", ErrRevisionNotExist{rev, ""}
+			return "", ErrRevisionNotExist
 		}
 		return "", err
 	}

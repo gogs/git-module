@@ -196,7 +196,7 @@ func (r *Repository) CommitByRevision(rev string, opts ...CommitByRevisionOption
 	if err != nil {
 		return nil, err
 	} else if len(commits) == 0 {
-		return nil, ErrRevisionNotExist{rev, opt.Path}
+		return nil, ErrRevisionNotExist
 	}
 	return commits[0], nil
 }

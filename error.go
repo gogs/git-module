@@ -6,46 +6,12 @@ package git
 
 import (
 	"errors"
-	"fmt"
-	"time"
 )
 
-var ErrSubmoduleNotExist = errors.New("submodule does not exist")
-
-type ErrExecTimeout struct {
-	Duration time.Duration
-}
-
-func IsErrExecTimeout(err error) bool {
-	_, ok := err.(ErrExecTimeout)
-	return ok
-}
-
-func (err ErrExecTimeout) Error() string {
-	return fmt.Sprintf("execution timed out [duration: %v]", err.Duration)
-}
-
-type ErrRevisionNotExist struct {
-	Rev  string
-	Path string
-}
-
-func IsErrRevesionNotExist(err error) bool {
-	_, ok := err.(ErrRevisionNotExist)
-	return ok
-}
-
-func (err ErrRevisionNotExist) Error() string {
-	return fmt.Sprintf("revision does not exist [rev: %s, path: %s]", err.Rev, err.Path)
-}
-
-type ErrNoMergeBase struct{}
-
-func IsErrNoMergeBase(err error) bool {
-	_, ok := err.(ErrNoMergeBase)
-	return ok
-}
-
-func (err ErrNoMergeBase) Error() string {
-	return "no merge based found"
-}
+var (
+	ErrParentNotExist    = errors.New("parent does not exist")
+	ErrSubmoduleNotExist = errors.New("submodule does not exist")
+	ErrRevisionNotExist  = errors.New("revision does not exist")
+	ErrExecTimeout       = errors.New("execution was timed out")
+	ErrNoMergeBase       = errors.New("no merge based was found")
+)

@@ -60,10 +60,10 @@ func (c *Commit) ParentsCount() int {
 }
 
 // ParentID returns the SHA-1 hash of the n-th parent (0-based) of this commit.
-// It returns ErrRevisionNotExist if no such parent exists.
+// It returns an ErrParentNotExist if no such parent exists.
 func (c *Commit) ParentID(n int) (*SHA1, error) {
 	if n >= len(c.parents) {
-		return nil, ErrRevisionNotExist{"", ""}
+		return nil, ErrParentNotExist
 	}
 	return c.parents[n], nil
 }

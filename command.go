@@ -84,7 +84,8 @@ func (w *limitDualWriter) Write(p []byte) (int, error) {
 // RunInDirPipelineWithTimeout executes the command in given directory and timeout duration.
 // It pipes stdout and stderr to supplied io.Writer. DefaultTimeout will be used if the timeout
 // duration is less than time.Nanosecond (i.e. less than or equal to 0).
-func (c *Command) RunInDirPipelineWithTimeout(timeout time.Duration, stdout, stderr io.Writer, dir string) error {
+// It returns an ErrExecTimeout if the execution was timed out.
+func (c *Command) RunInDirPipelineWithTimeout(timeout time.Duration, stdout, stderr io.Writer, dir string) (err error) {
 	if timeout < time.Nanosecond {
 		timeout = DefaultTimeout
 	}
@@ -109,7 +110,12 @@ func (c *Command) RunInDirPipelineWithTimeout(timeout time.Duration, stdout, std
 	}()
 
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
-	defer cancel()
+	defer func() {
+		cancel()
+		if err == context.DeadlineExceeded {
+			err = ErrExecTimeout
+		}
+	}()
 
 	cmd := exec.CommandContext(ctx, c.name, c.args...)
 	if c.envs != nil {
@@ -118,7 +124,7 @@ func (c *Command) RunInDirPipelineWithTimeout(timeout time.Duration, stdout, std
 	cmd.Dir = dir
 	cmd.Stdout = w
 	cmd.Stderr = stderr
-	if err := cmd.Start(); err != nil {
+	if err = cmd.Start(); err != nil {
 		return err
 	}
 
@@ -136,8 +142,8 @@ func (c *Command) RunInDirPipelineWithTimeout(timeout time.Duration, stdout, std
 		}
 
 		<-result
-		return ErrExecTimeout{timeout}
-	case err := <-result:
+		return ErrExecTimeout
+	case err = <-result:
 		return err
 	}
 }
