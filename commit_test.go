@@ -445,7 +445,6 @@ func TestCommit_FilesChangedAfter(t *testing.T) {
 			},
 			expFiles: []string{"src/test/java/com/github/AppTest.java"},
 		},
-
 		{
 			id:    "978fb7f6388b49b532fbef8b856681cfa6fcaa0a",
 			after: "45a30ea9afa413e226ca8614179c011d545ca883",
