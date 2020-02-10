@@ -1,7 +1,9 @@
 package git
 
 import (
+	"io/ioutil"
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -317,5 +319,165 @@ func TestRepository_Move(t *testing.T) {
 				t.Fatal(err)
 			}
 		})
+	}
+}
+
+func TestRepository_Add(t *testing.T) {
+	path := tempPath()
+	defer func() {
+		_ = os.RemoveAll(path)
+	}()
+
+	if err := Clone(testrepo.Path(), path); err != nil {
+		t.Fatal(err)
+	}
+
+	r, err := Open(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Generate a file
+	fpath := filepath.Join(path, "TESTFILE")
+	err = ioutil.WriteFile(fpath, []byte("something"), 0600)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Make sure it does not blow up
+	if err := r.Add(AddOptions{
+		All:       true,
+		Pathsepcs: []string{"TESTFILE"},
+	}); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestRepository_Commit(t *testing.T) {
+	path := tempPath()
+	defer func() {
+		_ = os.RemoveAll(path)
+	}()
+
+	if err := Clone(testrepo.Path(), path); err != nil {
+		t.Fatal(err)
+	}
+
+	r, err := Open(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	committer := &Signature{
+		Name:  "alice",
+		Email: "alice@example.com",
+	}
+	author := &Signature{
+		Name:  "bob",
+		Email: "bob@example.com",
+	}
+	message := "Add a file"
+
+	t.Run("nothing to commit", func(t *testing.T) {
+		if err = r.Commit(committer, message, CommitOptions{
+			Author: author,
+		}); err != nil {
+			t.Fatal(err)
+		}
+	})
+
+	// Generate a file and add to index
+	fpath := filepath.Join(path, "TESTFILE")
+	err = ioutil.WriteFile(fpath, []byte("something"), 0600)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := r.Add(AddOptions{
+		All: true,
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	// Make sure it does not blow up
+	if err = r.Commit(committer, message, CommitOptions{
+		Author: author,
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	// Verify the result
+	c, err := r.CatFileCommit("master")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	assert.Equal(t, committer.Name, c.Committer().Name)
+	assert.Equal(t, committer.Email, c.Committer().Email)
+	assert.Equal(t, author.Name, c.Author().Name)
+	assert.Equal(t, author.Email, c.Author().Email)
+	assert.Equal(t, message+"\n", c.Message())
+}
+
+func TestRepository_RevParse(t *testing.T) {
+	tests := []struct {
+		rev    string
+		expID  string
+		expErr error
+	}{
+		{
+			rev:    "4e59b72",
+			expID:  "4e59b72440188e7c2578299fc28ea425fbe9aece",
+			expErr: nil,
+		},
+		{
+			rev:    "release-1.0",
+			expID:  "0eedd79eba4394bbef888c804e899731644367fe",
+			expErr: nil,
+		},
+		{
+			rev:    "RELEASE_1.0",
+			expID:  "2a52e96389d02209b451ae1ddf45d645b42d744c",
+			expErr: nil,
+		},
+		{
+			rev:    "refs/heads/release-1.0",
+			expID:  "0eedd79eba4394bbef888c804e899731644367fe",
+			expErr: nil,
+		},
+		{
+			rev:    "refs/tags/RELEASE_1.0",
+			expID:  "2a52e96389d02209b451ae1ddf45d645b42d744c",
+			expErr: nil,
+		},
+
+		{
+			rev:    "refs/tags/404",
+			expID:  "",
+			expErr: ErrRevisionNotExist,
+		},
+	}
+	for _, test := range tests {
+		t.Run("", func(t *testing.T) {
+			id, err := testrepo.RevParse(test.rev)
+			assert.Equal(t, test.expErr, err)
+			assert.Equal(t, test.expID, id)
+		})
+	}
+}
+
+func TestRepository_CountObjects(t *testing.T) {
+	// Make sure it does not blow up
+	_, err := testrepo.CountObjects()
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestRepository_Fsck(t *testing.T) {
+	// Make sure it does not blow up
+	err := testrepo.Fsck()
+	if err != nil {
+		t.Fatal(err)
 	}
 }
