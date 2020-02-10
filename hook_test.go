@@ -3,16 +3,13 @@ package git
 import (
 	"io/ioutil"
 	"os"
-	"path/filepath"
-	"strconv"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 )
 
 func TestHook(t *testing.T) {
-	path := filepath.Join(os.TempDir(), strconv.Itoa(int(time.Now().Unix())))
+	path := tempPath()
 	h := &Hook{
 		name:     HookPreReceive,
 		path:     path,
@@ -27,7 +24,7 @@ func TestHook(t *testing.T) {
 }
 
 func TestHook_Update(t *testing.T) {
-	path := filepath.Join(os.TempDir(), strconv.Itoa(int(time.Now().Unix())))
+	path := tempPath()
 	defer func() {
 		_ = os.Remove(path)
 	}()

@@ -10,6 +10,10 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func tempPath() string {
+	return filepath.Join(os.TempDir(), strconv.Itoa(int(time.Now().UnixNano())))
+}
+
 func TestCommit_CreateArchive(t *testing.T) {
 	for _, format := range []ArchiveFormat{
 		ArchiveZip,
@@ -21,7 +25,7 @@ func TestCommit_CreateArchive(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			dst := filepath.Join(os.TempDir(), strconv.Itoa(int(time.Now().Unix())))
+			dst := tempPath()
 			defer func() {
 				_ = os.Remove(dst)
 			}()

@@ -67,13 +67,16 @@ func Init(path string, opts ...InitOptions) error {
 		opt = opts[0]
 	}
 
-	_ = os.MkdirAll(path, os.ModePerm)
+	err := os.MkdirAll(path, os.ModePerm)
+	if err != nil {
+		return err
+	}
 
 	cmd := NewCommand("init")
 	if opt.Bare {
 		cmd.AddArgs("--bare")
 	}
-	_, err := cmd.RunInDirWithTimeout(opt.Timeout, path)
+	_, err = cmd.RunInDirWithTimeout(opt.Timeout, path)
 	return err
 }
 
