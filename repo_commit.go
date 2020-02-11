@@ -161,8 +161,9 @@ func (r *Repository) Log(rev string, opts ...LogOptions) ([]*Commit, error) {
 	if opt.RegexpIgnoreCase {
 		cmd.AddArgs("--regexp-ignore-case")
 	}
+	cmd.AddArgs("--")
 	if opt.Path != "" {
-		cmd.AddArgs("--", escapePath(opt.Path))
+		cmd.AddArgs(escapePath(opt.Path))
 	}
 
 	stdout, err := cmd.RunInDirWithTimeout(opt.Timeout, r.path)
@@ -194,6 +195,9 @@ func (r *Repository) CommitByRevision(rev string, opts ...CommitByRevisionOption
 		Timeout:  opt.Timeout,
 	})
 	if err != nil {
+		if strings.Contains(err.Error(), "bad revision") {
+			return nil, ErrRevisionNotExist
+		}
 		return nil, err
 	} else if len(commits) == 0 {
 		return nil, ErrRevisionNotExist
@@ -302,8 +306,9 @@ func (r *Repository) DiffNameOnly(base, head string, opts ...DiffNameOnlyOptions
 	} else {
 		cmd.AddArgs(base, head)
 	}
+	cmd.AddArgs("--")
 	if opt.Path != "" {
-		cmd.AddArgs("--", escapePath(opt.Path))
+		cmd.AddArgs(escapePath(opt.Path))
 	}
 
 	stdout, err := cmd.RunInDirWithTimeout(opt.Timeout, r.path)
@@ -345,8 +350,9 @@ func (r *Repository) RevListCount(refspecs []string, opts ...RevListCountOptions
 
 	cmd := NewCommand("rev-list", "--count")
 	cmd.AddArgs(refspecs...)
+	cmd.AddArgs("--")
 	if opt.Path != "" {
-		cmd.AddArgs("--", escapePath(opt.Path))
+		cmd.AddArgs(escapePath(opt.Path))
 	}
 
 	stdout, err := cmd.RunInDirWithTimeout(opt.Timeout, r.path)
@@ -358,7 +364,7 @@ func (r *Repository) RevListCount(refspecs []string, opts ...RevListCountOptions
 }
 
 // RevListOptions contains optional arguments for listing commits.
-// Docs: https://git-scm.com/docs/git-cat-file#Documentation/git-cat-file.txt-lttypegt
+// Docs: https://git-scm.com/docs/git-rev-list
 type RevListOptions struct {
 	// The relative path of the repository.
 	Path string
@@ -379,8 +385,9 @@ func (r *Repository) RevList(refspecs []string, opts ...RevListOptions) ([]*Comm
 
 	cmd := NewCommand("rev-list")
 	cmd.AddArgs(refspecs...)
+	cmd.AddArgs("--")
 	if opt.Path != "" {
-		cmd.AddArgs("--", escapePath(opt.Path))
+		cmd.AddArgs(escapePath(opt.Path))
 	}
 
 	stdout, err := cmd.RunInDirWithTimeout(opt.Timeout, r.path)
