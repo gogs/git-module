@@ -468,7 +468,7 @@ func TestRepository_RevParse(t *testing.T) {
 
 func TestRepository_CountObjects(t *testing.T) {
 	// Make sure it does not blow up
-	_, err := testrepo.CountObjects()
+	_, err := testrepo.CountObjects(CountObjectsOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -476,7 +476,7 @@ func TestRepository_CountObjects(t *testing.T) {
 
 func TestRepository_Fsck(t *testing.T) {
 	// Make sure it does not blow up
-	err := testrepo.Fsck()
+	err := testrepo.Fsck(FsckOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}

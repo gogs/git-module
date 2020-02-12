@@ -33,6 +33,14 @@ func Test_escapePath(t *testing.T) {
 	}
 }
 
+func TestRepository_CatFileCommit(t *testing.T) {
+	t.Run("invalid revision", func(t *testing.T) {
+		c, err := testrepo.CatFileCommit("bad_revision")
+		assert.Equal(t, ErrRevisionNotExist, err)
+		assert.Nil(t, c)
+	})
+}
+
 func TestRepository_Log(t *testing.T) {
 	tests := []struct {
 		rev          string
@@ -70,30 +78,30 @@ func TestRepository_Log(t *testing.T) {
 }
 
 func TestRepository_CommitByRevision(t *testing.T) {
+	t.Run("invalid revision", func(t *testing.T) {
+		c, err := testrepo.CommitByRevision("bad_revision")
+		assert.Equal(t, ErrRevisionNotExist, err)
+		assert.Nil(t, c)
+	})
+
 	tests := []struct {
-		rev    string
-		opt    CommitByRevisionOptions
-		expID  string
-		expErr error
+		rev   string
+		opt   CommitByRevisionOptions
+		expID string
 	}{
 		{
-			rev:    "4e59b72",
-			expID:  "4e59b72440188e7c2578299fc28ea425fbe9aece",
-			expErr: nil,
-		},
-		{
-			rev:    "404",
-			expID:  "",
-			expErr: ErrRevisionNotExist,
+			rev:   "4e59b72",
+			expID: "4e59b72440188e7c2578299fc28ea425fbe9aece",
 		},
 	}
 	for _, test := range tests {
 		t.Run("", func(t *testing.T) {
 			c, err := testrepo.CommitByRevision(test.rev, test.opt)
-			assert.Equal(t, test.expErr, err)
-			if c != nil {
-				assert.Equal(t, test.expID, c.ID().String())
+			if err != nil {
+				t.Fatal(err)
 			}
+
+			assert.Equal(t, test.expID, c.ID().String())
 		})
 	}
 }
@@ -182,11 +190,16 @@ func TestRepository_DiffNameOnly(t *testing.T) {
 }
 
 func TestRepository_RevListCount(t *testing.T) {
+	t.Run("no refspecs", func(t *testing.T) {
+		count, err := testrepo.RevListCount([]string{})
+		assert.Equal(t, errors.New("must have at least one refspec"), err)
+		assert.Zero(t, count)
+	})
+
 	tests := []struct {
 		refspecs []string
 		opt      RevListCountOptions
 		expCount int64
-		expErr   error
 	}{
 		{
 			refspecs: []string{"755fd577edcfd9209d0ac072eed3b022cbe4d39b"},
@@ -215,28 +228,30 @@ func TestRepository_RevListCount(t *testing.T) {
 			},
 			expCount: 1,
 		},
-
-		{
-			refspecs: []string{},
-			expCount: 0,
-			expErr:   errors.New("must have at least one refspec"),
-		},
 	}
 	for _, test := range tests {
 		t.Run("", func(t *testing.T) {
 			count, err := testrepo.RevListCount(test.refspecs, test.opt)
-			assert.Equal(t, test.expErr, err)
+			if err != nil {
+				t.Fatal(err)
+			}
+
 			assert.Equal(t, test.expCount, count)
 		})
 	}
 }
 
 func TestRepository_RevList(t *testing.T) {
+	t.Run("no refspecs", func(t *testing.T) {
+		commits, err := testrepo.RevList([]string{})
+		assert.Equal(t, errors.New("must have at least one refspec"), err)
+		assert.Nil(t, commits)
+	})
+
 	tests := []struct {
 		refspecs     []string
 		opt          RevListOptions
 		expCommitIDs []string
-		expErr       error
 	}{
 		{
 			refspecs: []string{"45a30ea9afa413e226ca8614179c011d545ca883...978fb7f6388b49b532fbef8b856681cfa6fcaa0a"},
@@ -255,17 +270,14 @@ func TestRepository_RevList(t *testing.T) {
 				"ebbbf773431ba07510251bb03f9525c7bab2b13a",
 			},
 		},
-
-		{
-			refspecs:     []string{},
-			expCommitIDs: []string{},
-			expErr:       errors.New("must have at least one refspec"),
-		},
 	}
 	for _, test := range tests {
 		t.Run("", func(t *testing.T) {
 			commits, err := testrepo.RevList(test.refspecs, test.opt)
-			assert.Equal(t, test.expErr, err)
+			if err != nil {
+				t.Fatal(err)
+			}
+
 			assert.Equal(t, test.expCommitIDs, commitsToIDs(commits))
 		})
 	}

@@ -54,10 +54,8 @@ func TestDiffSection_Line(t *testing.T) {
 	section := &DiffSection{
 		lines: []*DiffLine{
 			{
-				typ:       DiffLineSection,
-				content:   "@@ -1,7 +1,7 @@",
-				leftLine:  0,
-				rightLine: 0,
+				typ:     DiffLineSection,
+				content: "@@ -1,7 +1,7 @@",
 			},
 			{
 				typ:       DiffLinePlain,
@@ -109,10 +107,8 @@ func TestDiffFile(t *testing.T) {
 		{
 			lines: []*DiffLine{
 				{
-					typ:       DiffLineSection,
-					content:   "@@ -0,0 +1,3 @@",
-					leftLine:  0,
-					rightLine: 0,
+					typ:     DiffLineSection,
+					content: "@@ -0,0 +1,3 @@",
 				},
 				{
 					typ:       DiffLineAdd,
@@ -222,10 +218,8 @@ index 0000000..6b08f76
 							{
 								lines: []*DiffLine{
 									{
-										typ:       DiffLineSection,
-										content:   "@@ -0,0 +1,3 @@",
-										leftLine:  0,
-										rightLine: 0,
+										typ:     DiffLineSection,
+										content: "@@ -0,0 +1,3 @@",
 									},
 									{
 										typ:       DiffLineAdd,
@@ -265,10 +259,8 @@ index 0000000..6b08f76
 							{
 								lines: []*DiffLine{
 									{
-										typ:       DiffLineSection,
-										content:   "@@ -0,0 +1 @@",
-										leftLine:  0,
-										rightLine: 0,
+										typ:     DiffLineSection,
+										content: "@@ -0,0 +1 @@",
 									},
 									{
 										typ:       DiffLineAdd,
@@ -318,10 +310,8 @@ index ee791be..9997571 100644
 							{
 								lines: []*DiffLine{
 									{
-										typ:       DiffLineSection,
-										content:   "@@ -1,7 +1,7 @@",
-										leftLine:  0,
-										rightLine: 0,
+										typ:     DiffLineSection,
+										content: "@@ -1,7 +1,7 @@",
 									},
 									{
 										typ:       DiffLinePlain,
@@ -497,10 +487,8 @@ index 335db7ea..51d7543e 100644
 							{
 								lines: []*DiffLine{
 									{
-										typ:       DiffLineSection,
-										content:   "@@ -1,9 +1,6 @@",
-										leftLine:  0,
-										rightLine: 0,
+										typ:     DiffLineSection,
+										content: "@@ -1,9 +1,6 @@",
 									},
 									{
 										typ:       DiffLinePlain,
@@ -595,10 +583,8 @@ index 0000000..6abde17
 							{
 								lines: []*DiffLine{
 									{
-										typ:       DiffLineSection,
-										content:   "@@ -0,0 +1,3 @@",
-										leftLine:  0,
-										rightLine: 0,
+										typ:     DiffLineSection,
+										content: "@@ -0,0 +1,3 @@",
 									},
 									{
 										typ:       DiffLineAdd,
@@ -660,10 +646,8 @@ index 0000000..6b08f76
 							{
 								lines: []*DiffLine{
 									{
-										typ:       DiffLineSection,
-										content:   "@@ -0,0 +1,3 @@",
-										leftLine:  0,
-										rightLine: 0,
+										typ:     DiffLineSection,
+										content: "@@ -0,0 +1,3 @@",
 									},
 									{
 										typ:       DiffLineAdd,

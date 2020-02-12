@@ -51,7 +51,7 @@ func (r *Repository) Diff(rev string, maxFiles, maxFileLines, maxLineChars int, 
 	go StreamParseDiff(stdout, done, maxFiles, maxFileLines, maxLineChars)
 
 	stderr := new(bytes.Buffer)
-	err = cmd.RunInDirPipelineWithTimeout(2*time.Minute, w, stderr, r.path)
+	err = cmd.RunInDirPipelineWithTimeout(opt.Timeout, w, stderr, r.path)
 	_ = w.Close() // Close writer to exit parsing goroutine
 	if err != nil {
 		return nil, concatenateError(err, stderr.String())

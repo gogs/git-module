@@ -310,6 +310,7 @@ func TestCommit_SearchCommits(t *testing.T) {
 func TestCommit_ShowNameStatus(t *testing.T) {
 	tests := []struct {
 		id        string
+		opt       ShowNameStatusOptions
 		expStatus *NameStatus
 	}{
 		{
@@ -357,7 +358,7 @@ func TestCommit_ShowNameStatus(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			status, err := c.ShowNameStatus()
+			status, err := c.ShowNameStatus(test.opt)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -554,6 +555,17 @@ func TestCommit_Ancestors(t *testing.T) {
 }
 
 func TestCommit_IsImageFile(t *testing.T) {
+	t.Run("not a blob", func(t *testing.T) {
+		c, err := testrepo.CatFileCommit("4eaa8d4b05e731e950e2eaf9e8b92f522303ab41")
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		isImage, err := c.IsImageFile("img")
+		assert.Equal(t, ErrRevisionNotExist, err)
+		assert.False(t, isImage)
+	})
+
 	tests := []struct {
 		id     string
 		name   string
