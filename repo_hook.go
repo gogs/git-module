@@ -8,16 +8,26 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
+	"path/filepath"
 )
 
 // DefaultHooksDir is the default directory for Git hooks.
 const DefaultHooksDir = "hooks"
 
+// NewHook creates and returns a new hook with given name. Update method must be called
+// to actually save the hook to disk.
+func (r *Repository) NewHook(name HookName) *Hook {
+	return &Hook{
+		name: name,
+		path: filepath.Join(r.path, DefaultHooksDir, string(name)),
+	}
+}
+
 // Hook returns a Git hook by given name in the repository. It returns an os.ErrNotExist
 // if both active and sample hook do not exist.
 func (r *Repository) Hook(name HookName) (*Hook, error) {
 	// 1. Check if there is an active hook.
-	fpath := path.Join(r.path, DefaultHooksDir)
+	fpath := filepath.Join(r.path, DefaultHooksDir, string(name))
 	if isFile(fpath) {
 		p, err := ioutil.ReadFile(fpath)
 		if err != nil {
@@ -31,9 +41,9 @@ func (r *Repository) Hook(name HookName) (*Hook, error) {
 	}
 
 	// 2. Check if a sample file exists.
-	fpath = path.Join(r.path, DefaultHooksDir, string(name)) + ".sample"
-	if isFile(fpath) {
-		p, err := ioutil.ReadFile(fpath)
+	spath := fpath + ".sample"
+	if isFile(spath) {
+		p, err := ioutil.ReadFile(spath)
 		if err != nil {
 			return nil, err
 		}

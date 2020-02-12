@@ -57,6 +57,13 @@ func (h *Hook) Content() string {
 func (h *Hook) Update(content string) error {
 	h.content = strings.TrimSpace(content)
 	h.content = strings.Replace(h.content, "\r", "", -1)
-	_ = os.MkdirAll(path.Dir(h.path), os.ModePerm)
-	return ioutil.WriteFile(h.path, []byte(h.content), os.ModePerm)
+
+	if err := os.MkdirAll(path.Dir(h.path), os.ModePerm); err != nil {
+		return err
+	} else if err = ioutil.WriteFile(h.path, []byte(h.content), os.ModePerm); err != nil {
+		return err
+	}
+
+	h.isSample = false
+	return nil
 }
