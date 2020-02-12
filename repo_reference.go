@@ -58,7 +58,7 @@ func (r *Repository) ShowRefVerify(ref string, opts ...ShowRefVerifyOptions) (st
 	return strings.Split(string(stdout), " ")[0], nil
 }
 
-// HasBranch returns true if given branch exists in the repository.
+// HasReference returns true if given reference exists in the repository.
 func (r *Repository) HasReference(ref string, opts ...ShowRefVerifyOptions) bool {
 	_, err := r.ShowRefVerify(ref, opts...)
 	return err == nil
@@ -125,8 +125,8 @@ func (r *Repository) ShowRef(opts ...ShowRefOptions) ([]*Reference, error) {
 	if opt.Tags {
 		cmd.AddArgs("--tags")
 	}
+	cmd.AddArgs("--")
 	if len(opt.Patterns) > 0 {
-		cmd.AddArgs("--")
 		cmd.AddArgs(opt.Patterns...)
 	}
 

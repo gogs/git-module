@@ -89,20 +89,34 @@ func TestClone(t *testing.T) {
 	}
 }
 
-func TestRepository_Fetch(t *testing.T) {
+func setupTempRepo() (_ *Repository, cleanup func(), err error) {
 	path := tempPath()
-	defer func() {
+	cleanup = func() {
 		_ = os.RemoveAll(path)
+	}
+	defer func() {
+		if err != nil {
+			cleanup()
+		}
 	}()
 
-	if err := Clone(testrepo.Path(), path); err != nil {
-		t.Fatal(err)
+	if err = Clone(testrepo.Path(), path); err != nil {
+		return nil, cleanup, err
 	}
 
 	r, err := Open(path)
 	if err != nil {
+		return nil, cleanup, err
+	}
+	return r, cleanup, nil
+}
+
+func TestRepository_Fetch(t *testing.T) {
+	r, cleanup, err := setupTempRepo()
+	if err != nil {
 		t.Fatal(err)
 	}
+	defer cleanup()
 
 	tests := []struct {
 		opt FetchOptions
@@ -127,19 +141,11 @@ func TestRepository_Fetch(t *testing.T) {
 }
 
 func TestRepository_Pull(t *testing.T) {
-	path := tempPath()
-	defer func() {
-		_ = os.RemoveAll(path)
-	}()
-
-	if err := Clone(testrepo.Path(), path); err != nil {
-		t.Fatal(err)
-	}
-
-	r, err := Open(path)
+	r, cleanup, err := setupTempRepo()
 	if err != nil {
 		t.Fatal(err)
 	}
+	defer cleanup()
 
 	tests := []struct {
 		opt PullOptions
@@ -175,19 +181,11 @@ func TestRepository_Pull(t *testing.T) {
 }
 
 func TestRepository_Push(t *testing.T) {
-	path := tempPath()
-	defer func() {
-		_ = os.RemoveAll(path)
-	}()
-
-	if err := Clone(testrepo.Path(), path); err != nil {
-		t.Fatal(err)
-	}
-
-	r, err := Open(path)
+	r, cleanup, err := setupTempRepo()
 	if err != nil {
 		t.Fatal(err)
 	}
+	defer cleanup()
 
 	tests := []struct {
 		remote string
@@ -211,19 +209,11 @@ func TestRepository_Push(t *testing.T) {
 }
 
 func TestRepository_Checkout(t *testing.T) {
-	path := tempPath()
-	defer func() {
-		_ = os.RemoveAll(path)
-	}()
-
-	if err := Clone(testrepo.Path(), path); err != nil {
-		t.Fatal(err)
-	}
-
-	r, err := Open(path)
+	r, cleanup, err := setupTempRepo()
 	if err != nil {
 		t.Fatal(err)
 	}
+	defer cleanup()
 
 	tests := []struct {
 		branch string
@@ -251,19 +241,11 @@ func TestRepository_Checkout(t *testing.T) {
 }
 
 func TestRepository_Reset(t *testing.T) {
-	path := tempPath()
-	defer func() {
-		_ = os.RemoveAll(path)
-	}()
-
-	if err := Clone(testrepo.Path(), path); err != nil {
-		t.Fatal(err)
-	}
-
-	r, err := Open(path)
+	r, cleanup, err := setupTempRepo()
 	if err != nil {
 		t.Fatal(err)
 	}
+	defer cleanup()
 
 	tests := []struct {
 		rev string
@@ -287,19 +269,11 @@ func TestRepository_Reset(t *testing.T) {
 }
 
 func TestRepository_Move(t *testing.T) {
-	path := tempPath()
-	defer func() {
-		_ = os.RemoveAll(path)
-	}()
-
-	if err := Clone(testrepo.Path(), path); err != nil {
-		t.Fatal(err)
-	}
-
-	r, err := Open(path)
+	r, cleanup, err := setupTempRepo()
 	if err != nil {
 		t.Fatal(err)
 	}
+	defer cleanup()
 
 	tests := []struct {
 		src string
@@ -323,22 +297,14 @@ func TestRepository_Move(t *testing.T) {
 }
 
 func TestRepository_Add(t *testing.T) {
-	path := tempPath()
-	defer func() {
-		_ = os.RemoveAll(path)
-	}()
-
-	if err := Clone(testrepo.Path(), path); err != nil {
-		t.Fatal(err)
-	}
-
-	r, err := Open(path)
+	r, cleanup, err := setupTempRepo()
 	if err != nil {
 		t.Fatal(err)
 	}
+	defer cleanup()
 
 	// Generate a file
-	fpath := filepath.Join(path, "TESTFILE")
+	fpath := filepath.Join(r.Path(), "TESTFILE")
 	err = ioutil.WriteFile(fpath, []byte("something"), 0600)
 	if err != nil {
 		t.Fatal(err)
@@ -354,19 +320,11 @@ func TestRepository_Add(t *testing.T) {
 }
 
 func TestRepository_Commit(t *testing.T) {
-	path := tempPath()
-	defer func() {
-		_ = os.RemoveAll(path)
-	}()
-
-	if err := Clone(testrepo.Path(), path); err != nil {
-		t.Fatal(err)
-	}
-
-	r, err := Open(path)
+	r, cleanup, err := setupTempRepo()
 	if err != nil {
 		t.Fatal(err)
 	}
+	defer cleanup()
 
 	committer := &Signature{
 		Name:  "alice",
@@ -387,7 +345,7 @@ func TestRepository_Commit(t *testing.T) {
 	})
 
 	// Generate a file and add to index
-	fpath := filepath.Join(path, "TESTFILE")
+	fpath := filepath.Join(r.Path(), "TESTFILE")
 	err = ioutil.WriteFile(fpath, []byte("something"), 0600)
 	if err != nil {
 		t.Fatal(err)
