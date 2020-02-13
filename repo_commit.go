@@ -32,7 +32,7 @@ loop:
 				if err != nil {
 					return nil, err
 				}
-				commit.Tree.id = id
+				commit.Tree = &Tree{id: id}
 			case "parent":
 				// A commit can have one or more parents
 				id, err := NewIDFromString(string(line[spacepos+1:]))

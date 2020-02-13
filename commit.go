@@ -21,7 +21,7 @@ type Commit struct {
 	committer *Signature
 	message   string
 
-	Tree
+	*Tree
 
 	submodules     Submodules
 	submodulesOnce sync.Once

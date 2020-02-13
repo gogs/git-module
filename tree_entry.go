@@ -224,11 +224,6 @@ func (es Entries) CommitsInfoWithCustomConcurrency(timeout time.Duration, commit
 				return
 			}
 
-			smURL := ""
-			if sm != nil {
-				smURL = sm.url
-			}
-
 			c, err := commit.CommitByPath(CommitByRevisionOptions{
 				Path:    path.Join(treePath, es[i].Name()),
 				Timeout: timeout,
@@ -238,10 +233,10 @@ func (es Entries) CommitsInfoWithCustomConcurrency(timeout time.Duration, commit
 			} else {
 				cinfo.infos = []interface{}{
 					es[i],
-					&SubmoduleFile{
-						Commit: c,
-						refURL: smURL,
-						refID:  es[i].id.String(),
+					&SubmoduleEntry{
+						id:        es[i].id,
+						Submodule: sm,
+						Commit:    c,
 					},
 				}
 			}
