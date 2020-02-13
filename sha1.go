@@ -6,7 +6,7 @@ package git
 
 import (
 	"encoding/hex"
-	"fmt"
+	"errors"
 	"strings"
 	"sync"
 )
@@ -26,20 +26,9 @@ type SHA1 struct {
 func (s *SHA1) Equal(s2 interface{}) bool {
 	switch v := s2.(type) {
 	case string:
-		if len(v) != 40 {
-			return false
-		}
 		return v == s.String()
-	case []byte:
-		if len(v) != 20 {
-			return false
-		}
-		for i := range v {
-			if s.bytes[i] != v[i] {
-				return false
-			}
-		}
-		return true
+	case [20]byte:
+		return v == s.bytes
 	case *SHA1:
 		return v.bytes == s.bytes
 	}
@@ -72,7 +61,7 @@ func MustID(b []byte) *SHA1 {
 // NewID returns a new SHA1 from a [20]byte array.
 func NewID(b []byte) (*SHA1, error) {
 	if len(b) != 20 {
-		return nil, fmt.Errorf("length must be 20: %v", b)
+		return nil, errors.New("length must be 20")
 	}
 	return MustID(b), nil
 }
@@ -87,7 +76,7 @@ func MustIDFromString(s string) *SHA1 {
 func NewIDFromString(s string) (*SHA1, error) {
 	s = strings.TrimSpace(s)
 	if len(s) != 40 {
-		return nil, fmt.Errorf("length must be 40: %s", s)
+		return nil, errors.New("length must be 40")
 	}
 	b, err := hex.DecodeString(s)
 	if err != nil {
