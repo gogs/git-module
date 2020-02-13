@@ -104,8 +104,7 @@ func TestRepository_ShowRef(t *testing.T) {
 					Refspec: "refs/heads/release-1.0",
 				},
 			},
-		},
-		{
+		}, {
 			opt: ShowRefOptions{
 				Tags:     true,
 				Patterns: []string{"v1.0.0"},

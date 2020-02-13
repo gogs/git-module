@@ -19,16 +19,16 @@ type LsRemoteOptions struct {
 	Tags bool
 	// Indicates whether to not show peeled tags or pseudorefs.
 	Refs bool
-	// The URL of the remote repository.
-	URL string
+	// The list of patterns to filter results.
+	Patterns []string
 	// The timeout duration before giving up. The default timeout duration will be used when not supplied.
 	Timeout time.Duration
 }
 
 // LsRemote returns a list references in the remote repository.
-func LsRemote(opts ...LsRemoteOptions) ([]*Reference, error) {
+func LsRemote(url string, opts ...LsRemoteOptions) ([]*Reference, error) {
 	var opt LsRemoteOptions
-	if len(opts) > 1 {
+	if len(opts) > 0 {
 		opt = opts[0]
 	}
 
@@ -42,8 +42,9 @@ func LsRemote(opts ...LsRemoteOptions) ([]*Reference, error) {
 	if opt.Refs {
 		cmd.AddArgs("--refs")
 	}
-	if opt.URL != "" {
-		cmd.AddArgs(opt.URL)
+	cmd.AddArgs(url)
+	if len(opt.Patterns) > 0 {
+		cmd.AddArgs(opt.Patterns...)
 	}
 
 	stdout, err := cmd.RunWithTimeout(opt.Timeout)
@@ -69,14 +70,15 @@ func LsRemote(opts ...LsRemoteOptions) ([]*Reference, error) {
 
 // IsURLAccessible returns true if given remote URL is accessible via Git.
 func IsURLAccessible(timeout time.Duration, url string) bool {
-	_, err := LsRemote(LsRemoteOptions{
-		URL:     url,
-		Timeout: timeout,
+	_, err := LsRemote(url, LsRemoteOptions{
+		Patterns: []string{"HEAD"},
+		Timeout:  timeout,
 	})
 	return err == nil
 }
 
 // AddRemoteOptions contains options to add a remote address.
+// Docs: https://git-scm.com/docs/git-remote#Documentation/git-remote.txt-emaddem
 type AddRemoteOptions struct {
 	// Indicates whether to execute git fetch after the remote information is set up.
 	Fetch bool
@@ -89,7 +91,7 @@ type AddRemoteOptions struct {
 // AddRemote adds a new remote to the repository.
 func (r *Repository) AddRemote(name, url string, opts ...AddRemoteOptions) error {
 	var opt AddRemoteOptions
-	if len(opts) > 1 {
+	if len(opts) > 0 {
 		opt = opts[0]
 	}
 
@@ -115,12 +117,15 @@ type RemoveRemoteOptions struct {
 // RemoveRemote removes a remote from the repository.
 func (r *Repository) RemoveRemote(name string, opts ...RemoveRemoteOptions) error {
 	var opt RemoveRemoteOptions
-	if len(opts) > 1 {
+	if len(opts) > 0 {
 		opt = opts[0]
 	}
 
 	_, err := NewCommand("remote", "remove", name).RunInDirWithTimeout(opt.Timeout, r.path)
-	if err != nil && !strings.Contains(err.Error(), "fatal: No such remote") {
+	if err != nil {
+		if strings.Contains(err.Error(), "fatal: No such remote") {
+			return ErrRemoteNotExist
+		}
 		return err
 	}
 	return nil

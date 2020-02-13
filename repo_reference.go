@@ -58,7 +58,8 @@ func (r *Repository) ShowRefVerify(ref string, opts ...ShowRefVerifyOptions) (st
 	return strings.Split(string(stdout), " ")[0], nil
 }
 
-// HasReference returns true if given reference exists in the repository.
+// HasReference returns true if given reference exists in the repository. The reference must be
+// given in full path, e.g. refs/heads/master
 func (r *Repository) HasReference(ref string, opts ...ShowRefVerifyOptions) bool {
 	_, err := r.ShowRefVerify(ref, opts...)
 	return err == nil

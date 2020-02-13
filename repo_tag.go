@@ -6,6 +6,7 @@ package git
 
 import (
 	"bytes"
+	"fmt"
 	"strings"
 	"time"
 
@@ -92,6 +93,8 @@ func (r *Repository) getTag(timeout time.Duration, id *SHA1) (*Tag, error) {
 
 		tag.id = id
 		tag.repo = r
+	default:
+		return nil, fmt.Errorf("unsupported tag type: %s", ObjectType(typ))
 	}
 
 	r.cachedTags.Set(id.String(), tag)
