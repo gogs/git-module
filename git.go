@@ -40,6 +40,7 @@ func log(format string, args ...interface{}) {
 
 var (
 	// gitVersion stores the Git binary version.
+	// NOTE: To check Git version should call BinVersion not this global variable.
 	gitVersion     string
 	gitVersionOnce sync.Once
 	gitVersionErr  error

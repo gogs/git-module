@@ -35,8 +35,6 @@ l:
 				}
 				tag.commitID = id
 			case "type":
-				// A commit can have one or more parents
-				tag.typ = ObjectType(line[spacepos+1:])
 			case "tagger":
 				sig, err := parseSignature(line[spacepos+1:])
 				if err != nil {
@@ -86,11 +84,11 @@ func (r *Repository) getTag(timeout time.Duration, id *SHA1) (*Tag, error) {
 			return nil, err
 		}
 
-		tag, err := parseTag(data)
+		tag, err = parseTag(data)
 		if err != nil {
 			return nil, err
 		}
-
+		tag.typ = ObjectTag
 		tag.id = id
 		tag.repo = r
 	default:
@@ -139,22 +137,27 @@ func (r *Repository) Tag(refspec string, opts ...TagOptions) (*Tag, error) {
 	return tag, nil
 }
 
-// TagListOptions contains optional arguments for listing tags.
+// TagsOptions contains optional arguments for listing tags.
 // Docs: https://git-scm.com/docs/git-tag#Documentation/git-tag.txt---list
-type TagListOptions struct {
+type TagsOptions struct {
 	// The timeout duration before giving up. The default timeout duration will be used when not supplied.
 	Timeout time.Duration
 }
 
-// TagList returns a list of tags in the repository.
-func (r *Repository) TagList(opts ...TagListOptions) ([]string, error) {
-	var opt TagListOptions
+// Tags returns a list of tags in the repository.
+func (r *Repository) Tags(opts ...TagsOptions) ([]string, error) {
+	var opt TagsOptions
 	if len(opts) > 0 {
 		opt = opts[0]
 	}
 
+	version, err := BinVersion()
+	if err != nil {
+		return nil, err
+	}
+
 	cmd := NewCommand("tag", "--list")
-	if goversion.Compare(gitVersion, "2.4.9", ">=") {
+	if goversion.Compare(version, "2.4.9", ">=") {
 		cmd.AddArgs("--sort=-creatordate")
 	}
 
@@ -166,7 +169,7 @@ func (r *Repository) TagList(opts ...TagListOptions) ([]string, error) {
 	tags := strings.Split(string(stdout), "\n")
 	tags = tags[:len(tags)-1]
 
-	if goversion.Compare(gitVersion, "2.4.9", "<") {
+	if goversion.Compare(version, "2.4.9", "<") {
 		goversion.Sort(tags)
 
 		// Reverse order
