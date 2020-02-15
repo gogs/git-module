@@ -135,13 +135,13 @@ func (c *Command) RunInDirPipelineWithTimeout(timeout time.Duration, stdout, std
 
 	select {
 	case <-ctx.Done():
+		<-result
 		if cmd.Process != nil && cmd.ProcessState != nil && !cmd.ProcessState.Exited() {
 			if err := cmd.Process.Kill(); err != nil {
 				return fmt.Errorf("kill process: %v", err)
 			}
 		}
 
-		<-result
 		return ErrExecTimeout
 	case err = <-result:
 		return err

@@ -57,6 +57,9 @@ func TestSetPrefix(t *testing.T) {
 }
 
 func Test_log(t *testing.T) {
+	old := logOutput
+	defer SetOutput(old)
+
 	tests := []struct {
 		format    string
 		args      []interface{}
