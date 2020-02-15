@@ -17,7 +17,8 @@ type DiffOptions struct {
 	// The commit ID to used for computing diff between a range of commits (base, revision]. When not set,
 	// only computes diff for a single commit at revision.
 	Base string
-	// The timeout duration before giving up. The default timeout duration will be used when not supplied.
+	// The timeout duration before giving up for each shell command execution.
+	// The default timeout duration will be used when not supplied.
 	Timeout time.Duration
 }
 
@@ -72,7 +73,8 @@ const (
 // RawDiffOptions contains optional arguments for dumpping a raw diff.
 // Docs: https://git-scm.com/docs/git-format-patch
 type RawDiffOptions struct {
-	// The timeout duration before giving up. The default timeout duration will be used when not supplied.
+	// The timeout duration before giving up for each shell command execution.
+	// The default timeout duration will be used when not supplied.
 	Timeout time.Duration
 }
 
@@ -117,7 +119,8 @@ func (r *Repository) RawDiff(rev string, diffType RawDiffFormat, w io.Writer, op
 
 // DiffBinaryOptions contains optional arguments for producing binary patch.
 type DiffBinaryOptions struct {
-	// The timeout duration before giving up. The default timeout duration will be used when not supplied.
+	// The timeout duration before giving up for each shell command execution.
+	// The default timeout duration will be used when not supplied.
 	Timeout time.Duration
 }
 

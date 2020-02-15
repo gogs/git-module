@@ -87,7 +87,8 @@ func parseTree(t *Tree, data []byte) ([]*TreeEntry, error) {
 // LsTreeOptions contains optional arguments for listing trees.
 // Docs: https://git-scm.com/docs/git-ls-tree
 type LsTreeOptions struct {
-	// The timeout duration before giving up. The default timeout duration will be used when not supplied.
+	// The timeout duration before giving up for each shell command execution.
+	// The default timeout duration will be used when not supplied.
 	Timeout time.Duration
 }
 

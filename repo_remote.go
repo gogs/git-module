@@ -21,7 +21,8 @@ type LsRemoteOptions struct {
 	Refs bool
 	// The list of patterns to filter results.
 	Patterns []string
-	// The timeout duration before giving up. The default timeout duration will be used when not supplied.
+	// The timeout duration before giving up for each shell command execution.
+	// The default timeout duration will be used when not supplied.
 	Timeout time.Duration
 }
 
@@ -84,7 +85,8 @@ type AddRemoteOptions struct {
 	Fetch bool
 	// Indicates whether to add remote as mirror with --mirror=fetch.
 	MirrorFetch bool
-	// The timeout duration before giving up. The default timeout duration will be used when not supplied.
+	// The timeout duration before giving up for each shell command execution.
+	// The default timeout duration will be used when not supplied.
 	Timeout time.Duration
 }
 
@@ -110,7 +112,8 @@ func (r *Repository) AddRemote(name, url string, opts ...AddRemoteOptions) error
 // RemoveRemoteOptions contains arguments for removing a remote from the repository.
 // Docs: https://git-scm.com/docs/git-remote#Documentation/git-remote.txt-emremoveem
 type RemoveRemoteOptions struct {
-	// The timeout duration before giving up. The default timeout duration will be used when not supplied.
+	// The timeout duration before giving up for each shell command execution.
+	// The default timeout duration will be used when not supplied.
 	Timeout time.Duration
 }
 

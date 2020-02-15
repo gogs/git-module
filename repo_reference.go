@@ -35,7 +35,8 @@ type Reference struct {
 // ShowRefVerifyOptions contains optional arguments for verifying a reference.
 // Docs: https://git-scm.com/docs/git-show-ref#Documentation/git-show-ref.txt---verify
 type ShowRefVerifyOptions struct {
-	// The timeout duration before giving up. The default timeout duration will be used when not supplied.
+	// The timeout duration before giving up for each shell command execution.
+	// The default timeout duration will be used when not supplied.
 	Timeout time.Duration
 }
 
@@ -71,7 +72,8 @@ type SymbolicRefOptions struct {
 	Name string
 	// The name of the reference. When set, it will be used to update the symbolic ref.
 	Ref string
-	// The timeout duration before giving up. The default timeout duration will be used when not supplied.
+	// The timeout duration before giving up for each shell command execution.
+	// The default timeout duration will be used when not supplied.
 	Timeout time.Duration
 }
 
@@ -108,7 +110,8 @@ type ShowRefOptions struct {
 	Tags bool
 	// The list of patterns to filter results.
 	Patterns []string
-	// The timeout duration before giving up. The default timeout duration will be used when not supplied.
+	// The timeout duration before giving up for each shell command execution.
+	// The default timeout duration will be used when not supplied.
 	Timeout time.Duration
 }
 
@@ -156,7 +159,8 @@ func (r *Repository) ShowRef(opts ...ShowRefOptions) ([]*Reference, error) {
 type DeleteBranchOptions struct {
 	// Indicates whether to force delete the branch.
 	Force bool
-	// The timeout duration before giving up. The default timeout duration will be used when not supplied.
+	// The timeout duration before giving up for each shell command execution.
+	// The default timeout duration will be used when not supplied.
 	Timeout time.Duration
 }
 

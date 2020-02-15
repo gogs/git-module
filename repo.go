@@ -56,7 +56,8 @@ func (r *Repository) parsePrettyFormatLogToList(timeout time.Duration, logs []by
 type InitOptions struct {
 	// Indicates whether the repository should be initialized in bare format.
 	Bare bool
-	// The timeout duration before giving up. The default timeout duration will be used when not supplied.
+	// The timeout duration before giving up for each shell command execution.
+	// The default timeout duration will be used when not supplied.
 	Timeout time.Duration
 }
 
@@ -108,7 +109,8 @@ type CloneOptions struct {
 	Quiet bool
 	// The branch to checkout for the working tree when Bare=false.
 	Branch string
-	// The timeout duration before giving up. The default timeout duration will be used when not supplied.
+	// The timeout duration before giving up for each shell command execution.
+	// The default timeout duration will be used when not supplied.
 	Timeout time.Duration
 }
 
@@ -147,7 +149,8 @@ func Clone(url, dst string, opts ...CloneOptions) error {
 type FetchOptions struct {
 	// Indicates whether to prune during fetching.
 	Prune bool
-	// The timeout duration before giving up. The default timeout duration will be used when not supplied.
+	// The timeout duration before giving up for each shell command execution.
+	// The default timeout duration will be used when not supplied.
 	Timeout time.Duration
 }
 
@@ -178,7 +181,8 @@ type PullOptions struct {
 	Remote string
 	// The branch to pull updates from when All=false and Remote is supplied.
 	Branch string
-	// The timeout duration before giving up. The default timeout duration will be used when not supplied.
+	// The timeout duration before giving up for each shell command execution.
+	// The default timeout duration will be used when not supplied.
 	Timeout time.Duration
 }
 
@@ -212,7 +216,8 @@ func (r *Repository) Pull(opts ...PullOptions) error {
 type PushOptions struct {
 	// The environment variables set for the push.
 	Envs []string
-	// The timeout duration before giving up. The default timeout duration will be used when not supplied.
+	// The timeout duration before giving up for each shell command execution.
+	// The default timeout duration will be used when not supplied.
 	Timeout time.Duration
 }
 
@@ -232,7 +237,8 @@ func (r *Repository) Push(remote, branch string, opts ...PushOptions) error {
 type CheckoutOptions struct {
 	// The base branch if checks out to a new branch.
 	BaseBranch string
-	// The timeout duration before giving up. The default timeout duration will be used when not supplied.
+	// The timeout duration before giving up for each shell command execution.
+	// The default timeout duration will be used when not supplied.
 	Timeout time.Duration
 }
 
@@ -261,7 +267,8 @@ func (r *Repository) Checkout(branch string, opts ...CheckoutOptions) error {
 type ResetOptions struct {
 	// Indicates whether to perform a hard reset.
 	Hard bool
-	// The timeout duration before giving up. The default timeout duration will be used when not supplied.
+	// The timeout duration before giving up for each shell command execution.
+	// The default timeout duration will be used when not supplied.
 	Timeout time.Duration
 }
 
@@ -284,7 +291,8 @@ func (r *Repository) Reset(rev string, opts ...ResetOptions) error {
 // MoveOptions contains optional arguments for moving a file, a directory, or a symlink.
 // Docs: https://git-scm.com/docs/git-mv
 type MoveOptions struct {
-	// The timeout duration before giving up. The default timeout duration will be used when not supplied.
+	// The timeout duration before giving up for each shell command execution.
+	// The default timeout duration will be used when not supplied.
 	Timeout time.Duration
 }
 
@@ -306,7 +314,8 @@ type AddOptions struct {
 	All bool
 	// The specific pathspecs to be added to index.
 	Pathsepcs []string
-	// The timeout duration before giving up. The default timeout duration will be used when not supplied.
+	// The timeout duration before giving up for each shell command execution.
+	// The default timeout duration will be used when not supplied.
 	Timeout time.Duration
 }
 
@@ -334,7 +343,8 @@ func (r *Repository) Add(opts ...AddOptions) error {
 type CommitOptions struct {
 	// Author is the author of the changes if that's not the same as committer.
 	Author *Signature
-	// The timeout duration before giving up. The default timeout duration will be used when not supplied.
+	// The timeout duration before giving up for each shell command execution.
+	// The default timeout duration will be used when not supplied.
 	Timeout time.Duration
 }
 
@@ -371,7 +381,8 @@ type NameStatus struct {
 // ShowNameStatusOptions contains optional arguments for showing name status.
 // Docs: https://git-scm.com/docs/git-show#Documentation/git-show.txt---name-status
 type ShowNameStatusOptions struct {
-	// The timeout duration before giving up. The default timeout duration will be used when not supplied.
+	// The timeout duration before giving up for each shell command execution.
+	// The default timeout duration will be used when not supplied.
 	Timeout time.Duration
 }
 
@@ -419,7 +430,8 @@ func (r *Repository) ShowNameStatus(commitID string, opts ...ShowNameStatusOptio
 // RevParseOptions contains optional arguments for parsing revision.
 // Docs: https://git-scm.com/docs/git-rev-parse
 type RevParseOptions struct {
-	// The timeout duration before giving up. The default timeout duration will be used when not supplied.
+	// The timeout duration before giving up for each shell command execution.
+	// The default timeout duration will be used when not supplied.
 	Timeout time.Duration
 }
 
@@ -455,7 +467,8 @@ type CountObject struct {
 // CountObjectsOptions contains optional arguments for counting objects.
 // Docs: https://git-scm.com/docs/git-count-objects
 type CountObjectsOptions struct {
-	// The timeout duration before giving up. The default timeout duration will be used when not supplied.
+	// The timeout duration before giving up for each shell command execution.
+	// The default timeout duration will be used when not supplied.
 	Timeout time.Duration
 }
 
@@ -504,7 +517,8 @@ func (r *Repository) CountObjects(opts ...CountObjectsOptions) (*CountObject, er
 // FsckOptions contains optional arguments for verifying the objects.
 // Docs: https://git-scm.com/docs/git-fsck
 type FsckOptions struct {
-	// The timeout duration before giving up. The default timeout duration will be used when not supplied.
+	// The timeout duration before giving up for each shell command execution.
+	// The default timeout duration will be used when not supplied.
 	Timeout time.Duration
 }
 

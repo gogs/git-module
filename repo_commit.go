@@ -67,7 +67,8 @@ loop:
 // CatFileCommitOptions contains optional arguments for verifying the objects.
 // Docs: https://git-scm.com/docs/git-cat-file#Documentation/git-cat-file.txt-lttypegt
 type CatFileCommitOptions struct {
-	// The timeout duration before giving up. The default timeout duration will be used when not supplied.
+	// The timeout duration before giving up for each shell command execution.
+	// The default timeout duration will be used when not supplied.
 	Timeout time.Duration
 }
 
@@ -121,7 +122,8 @@ type LogOptions struct {
 	RegexpIgnoreCase bool
 	// The relative path of the repository.
 	Path string
-	// The timeout duration before giving up. The default timeout duration will be used when not supplied.
+	// The timeout duration before giving up for each shell command execution.
+	// The default timeout duration will be used when not supplied.
 	Timeout time.Duration
 }
 
@@ -178,7 +180,8 @@ func (r *Repository) Log(rev string, opts ...LogOptions) ([]*Commit, error) {
 type CommitByRevisionOptions struct {
 	// The relative path of the repository.
 	Path string
-	// The timeout duration before giving up. The default timeout duration will be used when not supplied.
+	// The timeout duration before giving up for each shell command execution.
+	// The default timeout duration will be used when not supplied.
 	Timeout time.Duration
 }
 
@@ -210,7 +213,8 @@ func (r *Repository) CommitByRevision(rev string, opts ...CommitByRevisionOption
 type CommitsByPageOptions struct {
 	// The relative path of the repository.
 	Path string
-	// The timeout duration before giving up. The default timeout duration will be used when not supplied.
+	// The timeout duration before giving up for each shell command execution.
+	// The default timeout duration will be used when not supplied.
 	Timeout time.Duration
 }
 
@@ -237,7 +241,8 @@ type SearchCommitsOptions struct {
 	MaxCount int
 	// The relative path of the repository.
 	Path string
-	// The timeout duration before giving up. The default timeout duration will be used when not supplied.
+	// The timeout duration before giving up for each shell command execution.
+	// The default timeout duration will be used when not supplied.
 	Timeout time.Duration
 }
 
@@ -263,7 +268,8 @@ func (r *Repository) SearchCommits(rev, pattern string, opts ...SearchCommitsOpt
 type CommitsSinceOptions struct {
 	// The relative path of the repository.
 	Path string
-	// The timeout duration before giving up. The default timeout duration will be used when not supplied.
+	// The timeout duration before giving up for each shell command execution.
+	// The default timeout duration will be used when not supplied.
 	Timeout time.Duration
 }
 
@@ -289,7 +295,8 @@ type DiffNameOnlyOptions struct {
 	NeedsMergeBase bool
 	// The relative path of the repository.
 	Path string
-	// The timeout duration before giving up. The default timeout duration will be used when not supplied.
+	// The timeout duration before giving up for each shell command execution.
+	// The default timeout duration will be used when not supplied.
 	Timeout time.Duration
 }
 
@@ -333,7 +340,8 @@ func (r *Repository) DiffNameOnly(base, head string, opts ...DiffNameOnlyOptions
 type RevListCountOptions struct {
 	// The relative path of the repository.
 	Path string
-	// The timeout duration before giving up. The default timeout duration will be used when not supplied.
+	// The timeout duration before giving up for each shell command execution.
+	// The default timeout duration will be used when not supplied.
 	Timeout time.Duration
 }
 
@@ -368,7 +376,8 @@ func (r *Repository) RevListCount(refspecs []string, opts ...RevListCountOptions
 type RevListOptions struct {
 	// The relative path of the repository.
 	Path string
-	// The timeout duration before giving up. The default timeout duration will be used when not supplied.
+	// The timeout duration before giving up for each shell command execution.
+	// The default timeout duration will be used when not supplied.
 	Timeout time.Duration
 }
 
@@ -401,7 +410,8 @@ func (r *Repository) RevList(refspecs []string, opts ...RevListOptions) ([]*Comm
 type LatestCommitTimeOptions struct {
 	// To get the latest commit time of the branch. When not set, it checks all branches.
 	Branch string
-	// The timeout duration before giving up. The default timeout duration will be used when not supplied.
+	// The timeout duration before giving up for each shell command execution.
+	// The default timeout duration will be used when not supplied.
 	Timeout time.Duration
 }
 
