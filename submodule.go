@@ -19,16 +19,3 @@ func (s *Submodule) Name() string {
 func (s *Submodule) URL() string {
 	return s.url
 }
-
-// SubmoduleEntry is an tree entry in submodule type.
-type SubmoduleEntry struct {
-	id *SHA1
-
-	*Submodule
-	*Commit
-}
-
-// ID returns the ID of the submodule file.
-func (f *SubmoduleEntry) ID() *SHA1 {
-	return f.id
-}

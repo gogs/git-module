@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -38,6 +39,11 @@ type TreeEntry struct {
 
 	size     int64
 	sizeOnce sync.Once
+}
+
+// Mode returns the entry mode if the tree entry.
+func (e *TreeEntry) Mode() EntryMode {
+	return e.mode
 }
 
 // IsTree returns tree if the entry itself is another tree (i.e. a directory).
@@ -104,9 +110,10 @@ func (e *TreeEntry) Blob() *Blob {
 	}
 }
 
+// Entries is a sortable list of tree entries.
 type Entries []*TreeEntry
 
-var sorter = []func(t1, t2 *TreeEntry) bool{
+var sorters = []func(t1, t2 *TreeEntry) bool{
 	func(t1, t2 *TreeEntry) bool {
 		return (t1.IsTree() || t1.IsCommit()) && !t2.IsTree() && !t2.IsCommit()
 	},
@@ -120,138 +127,145 @@ func (es Entries) Swap(i, j int) { es[i], es[j] = es[j], es[i] }
 func (es Entries) Less(i, j int) bool {
 	t1, t2 := es[i], es[j]
 	var k int
-	for k = 0; k < len(sorter)-1; k++ {
-		sort := sorter[k]
+	for k = 0; k < len(sorters)-1; k++ {
+		sorter := sorters[k]
 		switch {
-		case sort(t1, t2):
+		case sorter(t1, t2):
 			return true
-		case sort(t2, t1):
+		case sorter(t2, t1):
 			return false
 		}
 	}
-	return sorter[k](t1, t2)
+	return sorters[k](t1, t2)
 }
 
 func (es Entries) Sort() {
 	sort.Sort(es)
 }
 
-var defaultConcurrency = runtime.NumCPU()
-
-type commitInfo struct {
-	entryName string
-	infos     []interface{}
-	err       error
+// EntryCommitInfo contains a tree entry with its commit information.
+type EntryCommitInfo struct {
+	entry     *TreeEntry
+	commit    *Commit
+	submodule *Submodule
 }
 
-// CommitsInfo takes advantages of concurrency to speed up getting information
-// of all commits that are corresponding to these entries. This method will automatically
-// choose the right number of goroutine (concurrency) to use related of the host CPU.
-func (es Entries) CommitsInfo(timeout time.Duration, commit *Commit, treePath string) ([][]interface{}, error) {
-	return es.CommitsInfoWithCustomConcurrency(timeout, commit, treePath, 0)
+// CommitsInfoOptions contains optional arguments for getting commits information.
+type CommitsInfoOptions struct {
+	// The relative path of the repository.
+	Path string
+	// The maximum number of goroutines to be used for getting commits information.
+	// When not set (i.e. <=0), runtime.GOMAXPROCS is used to determine the value.
+	MaxConcurrency int
+	// The timeout duration before giving up for each shell command execution.
+	// The default timeout duration will be used when not supplied.
+	Timeout time.Duration
 }
 
-// CommitsInfoWithCustomConcurrency takes advantages of concurrency to speed up getting information
-// of all commits that are corresponding to these entries. If the given maxConcurrency is negative or
-// equal to zero: the right number of goroutine (concurrency) to use will be choosen related of the
-// host CPU.
-func (es Entries) CommitsInfoWithCustomConcurrency(timeout time.Duration, commit *Commit, treePath string, maxConcurrency int) ([][]interface{}, error) {
+var defaultConcurrency = runtime.GOMAXPROCS(0)
+
+// CommitsInfo returns a list of commit information for these tree entries in the state of
+// given commit and subpath. It takes advantages of concurrency to speed up the process.
+// The returned list has the same number of items as tree entries, so the caller can access
+// them via slice indices.
+func (es Entries) CommitsInfo(commit *Commit, opts ...CommitsInfoOptions) ([]*EntryCommitInfo, error) {
 	if len(es) == 0 {
-		return nil, nil
+		return []*EntryCommitInfo{}, nil
 	}
 
-	if maxConcurrency <= 0 {
-		maxConcurrency = defaultConcurrency
+	var opt CommitsInfoOptions
+	if len(opts) > 0 {
+		opt = opts[0]
 	}
 
-	// Length of taskChan determines how many goroutines (subprocesses) can run at the same time.
-	// The length of revChan should be same as taskChan so goroutines whoever finished job can
-	// exit as early as possible, only store data inside channel.
-	taskChan := make(chan bool, maxConcurrency)
-	revChan := make(chan commitInfo, maxConcurrency)
-	doneChan := make(chan error)
+	if opt.MaxConcurrency <= 0 {
+		opt.MaxConcurrency = defaultConcurrency
+	}
 
-	// Receive loop will exit when it collects same number of data pieces as tree entries.
-	// It notifies doneChan before exits or notify early with possible error.
-	infoMap := make(map[string][]interface{}, len(es))
+	// Length of bucket determines how many goroutines (subprocesses) can run at the same time.
+	bucket := make(chan struct{}, opt.MaxConcurrency)
+	results := make(chan *EntryCommitInfo, len(es))
+	errs := make(chan error, 1)
+
+	var errored int64
+	hasErrored := func() bool {
+		return atomic.LoadInt64(&errored) != 0
+	}
+	// Only count for the first error, discard the rest
+	setError := func(err error) {
+		if !atomic.CompareAndSwapInt64(&errored, 0, 1) {
+			return
+		}
+		errs <- err
+	}
+
+	var wg sync.WaitGroup
+	wg.Add(len(es))
 	go func() {
-		i := 0
-		for info := range revChan {
-			if info.err != nil {
-				doneChan <- info.err
+		for i, e := range es {
+			// Shrink down the counter and exit when there is an error
+			if hasErrored() {
+				wg.Add(i - len(es))
 				return
 			}
 
-			infoMap[info.entryName] = info.infos
-			i++
-			if i == len(es) {
-				break
-			}
-		}
-		doneChan <- nil
-	}()
+			// Block until there is an empty slot to control the maximum concurrency
+			bucket <- struct{}{}
 
-	for i := range es {
-		// When taskChan is idle (or has empty slots), put operation will not block.
-		// However when taskChan is full, code will block and wait any running goroutines to finish.
-		taskChan <- true
+			go func(e *TreeEntry) {
+				defer func() {
+					wg.Done()
+					<-bucket
+				}()
 
-		if es[i].typ != ObjectCommit {
-			go func(i int) {
-				cinfo := commitInfo{entryName: es[i].Name()}
-				c, err := commit.CommitByPath(CommitByRevisionOptions{
-					Path:    path.Join(treePath, es[i].Name()),
-					Timeout: timeout,
+				// Avoid expensive operations if has errored
+				if hasErrored() {
+					return
+				}
+
+				info := &EntryCommitInfo{
+					entry: e,
+				}
+				epath := path.Join(opt.Path, e.Name())
+
+				var err error
+				info.commit, err = commit.CommitByPath(CommitByRevisionOptions{
+					Path:    epath,
+					Timeout: opt.Timeout,
 				})
 				if err != nil {
-					cinfo.err = fmt.Errorf("get commit by path (%s/%s): %v", treePath, es[i].Name(), err)
-				} else {
-					cinfo.infos = []interface{}{es[i], c}
+					setError(fmt.Errorf("get commit by path %q: %v", epath, err))
+					return
 				}
-				revChan <- cinfo
-				<-taskChan // Clear one slot from taskChan to allow new goroutines to start.
-			}(i)
-			continue
+
+				// Get extra information for submodules
+				if e.IsCommit() {
+					info.submodule, err = commit.Submodule(epath)
+					if err != nil {
+						setError(fmt.Errorf("get submodule %q: %v", epath, err))
+						return
+					}
+				}
+
+				results <- info
+			}(e)
 		}
+	}()
 
-		// Handle submodule
-		go func(i int) {
-			cinfo := commitInfo{entryName: es[i].Name()}
-			sm, err := commit.Submodule(path.Join(treePath, es[i].Name()))
-			if err != nil && err != ErrSubmoduleNotExist {
-				cinfo.err = fmt.Errorf("get submodule (%s/%s): %v", treePath, es[i].Name(), err)
-				revChan <- cinfo
-				return
-			}
-
-			c, err := commit.CommitByPath(CommitByRevisionOptions{
-				Path:    path.Join(treePath, es[i].Name()),
-				Timeout: timeout,
-			})
-			if err != nil {
-				cinfo.err = fmt.Errorf("get commit by path (%s/%s): %v", treePath, es[i].Name(), err)
-			} else {
-				cinfo.infos = []interface{}{
-					es[i],
-					&SubmoduleEntry{
-						id:        es[i].id,
-						Submodule: sm,
-						Commit:    c,
-					},
-				}
-			}
-			revChan <- cinfo
-			<-taskChan
-		}(i)
+	wg.Wait()
+	if hasErrored() {
+		return nil, <-errs
 	}
 
-	if err := <-doneChan; err != nil {
-		return nil, err
+	close(results)
+	infos := make(map[[20]byte]*EntryCommitInfo, len(es))
+	for info := range results {
+		infos[info.entry.id.bytes] = info
 	}
 
-	commitsInfo := make([][]interface{}, len(es))
-	for i := 0; i < len(es); i++ {
-		commitsInfo[i] = infoMap[es[i].Name()]
+	commitsInfo := make([]*EntryCommitInfo, len(es))
+	for i, e := range es {
+		commitsInfo[i] = infos[e.id.bytes]
 	}
 	return commitsInfo, nil
 }
