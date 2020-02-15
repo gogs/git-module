@@ -4,7 +4,7 @@
 
 Package git-module is a Go module for Git access through shell commands.
 
-⚠️ v1 is currently untable, please use [the latest tagged version 0.8.3](https://github.com/gogs/git-module/releases/tag/v0.8.3) ⚠️
+⚠️ v1 is currently in beta, please use [the tagged version 0.8.3](https://github.com/gogs/git-module/releases/tag/v0.8.3) ⚠️
 
 ## Requirements
 
