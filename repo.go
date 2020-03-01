@@ -386,8 +386,8 @@ type ShowNameStatusOptions struct {
 	Timeout time.Duration
 }
 
-// ShowNameStatus returns name status of given commit of the repository.
-func (r *Repository) ShowNameStatus(commitID string, opts ...ShowNameStatusOptions) (*NameStatus, error) {
+// RepoShowNameStatus returns name status of given revision of the repository in given path.
+func RepoShowNameStatus(repoPath, rev string, opts ...ShowNameStatusOptions) (*NameStatus, error) {
 	var opt ShowNameStatusOptions
 	if len(opts) > 0 {
 		opt = opts[0]
@@ -417,7 +417,7 @@ func (r *Repository) ShowNameStatus(commitID string, opts ...ShowNameStatusOptio
 	}()
 
 	stderr := new(bytes.Buffer)
-	err := NewCommand("show", "--name-status", "--pretty=format:''", commitID).RunInDirPipelineWithTimeout(opt.Timeout, w, stderr, r.path)
+	err := NewCommand("show", "--name-status", "--pretty=format:''", rev).RunInDirPipelineWithTimeout(opt.Timeout, w, stderr, repoPath)
 	_ = w.Close() // Close writer to exit parsing goroutine
 	if err != nil {
 		return nil, concatenateError(err, stderr.String())
@@ -425,6 +425,11 @@ func (r *Repository) ShowNameStatus(commitID string, opts ...ShowNameStatusOptio
 
 	<-done
 	return fileStatus, nil
+}
+
+// ShowNameStatus returns name status of given revision of the repository.
+func (r *Repository) ShowNameStatus(rev string, opts ...ShowNameStatusOptions) (*NameStatus, error) {
+	return RepoShowNameStatus(r.path, rev, opts...)
 }
 
 // RevParseOptions contains optional arguments for parsing revision.
@@ -472,14 +477,14 @@ type CountObjectsOptions struct {
 	Timeout time.Duration
 }
 
-// CountObjects returns disk usage report of the repository.
-func (r *Repository) CountObjects(opts ...CountObjectsOptions) (*CountObject, error) {
+// RepoCountObjects returns disk usage report of the repository in given path.
+func RepoCountObjects(repoPath string, opts ...CountObjectsOptions) (*CountObject, error) {
 	var opt CountObjectsOptions
 	if len(opts) > 0 {
 		opt = opts[0]
 	}
 
-	stdout, err := NewCommand("count-objects", "-v").RunInDirWithTimeout(opt.Timeout, r.path)
+	stdout, err := NewCommand("count-objects", "-v").RunInDirWithTimeout(opt.Timeout, repoPath)
 	if err != nil {
 		return nil, err
 	}
@@ -512,6 +517,11 @@ func (r *Repository) CountObjects(opts ...CountObjectsOptions) (*CountObject, er
 	}
 
 	return countObject, nil
+}
+
+// CountObjects returns disk usage report of the repository.
+func (r *Repository) CountObjects(opts ...CountObjectsOptions) (*CountObject, error) {
+	return RepoCountObjects(r.path, opts...)
 }
 
 // FsckOptions contains optional arguments for verifying the objects.

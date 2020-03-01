@@ -11,129 +11,110 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestDiffLine(t *testing.T) {
-	line := &DiffLine{
-		typ:       DiffLineAdd,
-		content:   "a line",
-		leftLine:  1,
-		rightLine: 10,
-	}
-
-	assert.Equal(t, DiffLineAdd, line.Type())
-	assert.Equal(t, "a line", line.Content())
-	assert.Equal(t, 1, line.Left())
-	assert.Equal(t, 10, line.Right())
-}
-
-func TestDiffSection_Lines(t *testing.T) {
-	lines := []*DiffLine{
-		{
-			typ:       DiffLineAdd,
-			content:   "a line",
-			leftLine:  1,
-			rightLine: 10,
+func TestDiffSection_NumLines(t *testing.T) {
+	section := &DiffSection{
+		Lines: []*DiffLine{
+			{
+				Type:      DiffLineAdd,
+				Content:   "a line",
+				LeftLine:  1,
+				RightLine: 10,
+			},
 		},
 	}
-	section := &DiffSection{
-		lines: lines,
-	}
 
-	assert.Equal(t, lines, section.Lines())
 	assert.Equal(t, 1, section.NumLines())
 }
 
 func TestDiffSection_Line(t *testing.T) {
 	lineDelete := &DiffLine{
-		typ:       DiffLineDelete,
-		content:   `-  <groupId>com.ambientideas</groupId>`,
-		leftLine:  4,
-		rightLine: 0,
+		Type:      DiffLineDelete,
+		Content:   `-  <groupId>com.ambientideas</groupId>`,
+		LeftLine:  4,
+		RightLine: 0,
 	}
 	lineAdd := &DiffLine{
-		typ:       DiffLineAdd,
-		content:   `+  <groupId>com.github</groupId>`,
-		leftLine:  0,
-		rightLine: 4,
+		Type:      DiffLineAdd,
+		Content:   `+  <groupId>com.github</groupId>`,
+		LeftLine:  0,
+		RightLine: 4,
 	}
 	section := &DiffSection{
-		lines: []*DiffLine{
+		Lines: []*DiffLine{
 			{
-				typ:     DiffLineSection,
-				content: "@@ -1,7 +1,7 @@",
+				Type:    DiffLineSection,
+				Content: "@@ -1,7 +1,7 @@",
 			},
 			{
-				typ:       DiffLinePlain,
-				content:   ` <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"`,
-				leftLine:  1,
-				rightLine: 1,
+				Type:      DiffLinePlain,
+				Content:   ` <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"`,
+				LeftLine:  1,
+				RightLine: 1,
 			},
 			{
-				typ:       DiffLinePlain,
-				content:   `   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">`,
-				leftLine:  2,
-				rightLine: 2,
+				Type:      DiffLinePlain,
+				Content:   `   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">`,
+				LeftLine:  2,
+				RightLine: 2,
 			},
 			{
-				typ:       DiffLinePlain,
-				content:   `   <modelVersion>4.0.0</modelVersion>`,
-				leftLine:  3,
-				rightLine: 3,
+				Type:      DiffLinePlain,
+				Content:   `   <modelVersion>4.0.0</modelVersion>`,
+				LeftLine:  3,
+				RightLine: 3,
 			},
 			lineDelete,
 			lineAdd,
 			{
-				typ:       DiffLinePlain,
-				content:   `   <artifactId>egitdemo</artifactId>`,
-				leftLine:  5,
-				rightLine: 5,
+				Type:      DiffLinePlain,
+				Content:   `   <artifactId>egitdemo</artifactId>`,
+				LeftLine:  5,
+				RightLine: 5,
 			},
 			{
-				typ:       DiffLinePlain,
-				content:   `   <packaging>jar</packaging>`,
-				leftLine:  6,
-				rightLine: 6,
+				Type:      DiffLinePlain,
+				Content:   `   <packaging>jar</packaging>`,
+				LeftLine:  6,
+				RightLine: 6,
 			},
 			{
-				typ:       DiffLinePlain,
-				content:   `   <version>1.0-SNAPSHOT</version>`,
-				leftLine:  7,
-				rightLine: 7,
+				Type:      DiffLinePlain,
+				Content:   `   <version>1.0-SNAPSHOT</version>`,
+				LeftLine:  7,
+				RightLine: 7,
 			},
 		},
 	}
 
-	assert.Equal(t, lineDelete, section.Line(lineDelete.Type(), 4))
-	assert.Equal(t, lineAdd, section.Line(lineAdd.Type(), 4))
+	assert.Equal(t, lineDelete, section.Line(lineDelete.Type, 4))
+	assert.Equal(t, lineAdd, section.Line(lineAdd.Type, 4))
 }
 
 func TestDiffFile(t *testing.T) {
-	sections := []*DiffSection{
-		{
-			lines: []*DiffLine{
-				{
-					typ:     DiffLineSection,
-					content: "@@ -0,0 +1,3 @@",
-				},
-				{
-					typ:       DiffLineAdd,
-					content:   `+[submodule "gogs/docs-api"]`,
-					leftLine:  0,
-					rightLine: 1,
-				},
-				{
-					typ: DiffLineAdd,
-					content: `+	path = gogs/docs-api`,
-					leftLine:  0,
-					rightLine: 2,
+	file := &DiffFile{
+		Name:  ".gitmodules",
+		Type:  DiffFileAdd,
+		Index: "6abde17",
+		Sections: []*DiffSection{
+			{
+				Lines: []*DiffLine{
+					{
+						Type:    DiffLineSection,
+						Content: "@@ -0,0 +1,3 @@",
+					}, {
+						Type:      DiffLineAdd,
+						Content:   `+[submodule "gogs/docs-api"]`,
+						LeftLine:  0,
+						RightLine: 1,
+					}, {
+						Type: DiffLineAdd,
+						Content: `+	path = gogs/docs-api`,
+						LeftLine:  0,
+						RightLine: 2,
+					},
 				},
 			},
 		},
-	}
-	file := &DiffFile{
-		name:         ".gitmodules",
-		typ:          DiffFileAdd,
-		index:        "6abde17",
-		sections:     sections,
 		numAdditions: 2,
 		numDeletions: 0,
 		oldName:      "",
@@ -142,10 +123,6 @@ func TestDiffFile(t *testing.T) {
 		isIncomplete: true,
 	}
 
-	assert.Equal(t, ".gitmodules", file.Name())
-	assert.Equal(t, DiffFileAdd, file.Type())
-	assert.Equal(t, "6abde17", file.Index())
-	assert.Equal(t, sections, file.Sections())
 	assert.Equal(t, 1, file.NumSections())
 	assert.Equal(t, 2, file.NumAdditions())
 	assert.Equal(t, 0, file.NumDeletions())
@@ -159,28 +136,26 @@ func TestDiffFile(t *testing.T) {
 }
 
 func TestDiff(t *testing.T) {
-	files := []*DiffFile{
-		{
-			name:         "run.sh",
-			typ:          DiffFileRename,
-			index:        "",
-			sections:     nil,
-			numAdditions: 0,
-			numDeletions: 0,
-			oldName:      "runme.sh",
-			isBinary:     false,
-			isSubmodule:  false,
-			isIncomplete: false,
-		},
-	}
 	diff := &Diff{
-		files:          files,
+		Files: []*DiffFile{
+			{
+				Name:         "run.sh",
+				Type:         DiffFileRename,
+				Index:        "",
+				Sections:     nil,
+				numAdditions: 0,
+				numDeletions: 0,
+				oldName:      "runme.sh",
+				isBinary:     false,
+				isSubmodule:  false,
+				isIncomplete: false,
+			},
+		},
 		totalAdditions: 10,
 		totalDeletions: 20,
 		isIncomplete:   false,
 	}
 
-	assert.Equal(t, files, diff.Files())
 	assert.Equal(t, 1, diff.NumFiles())
 	assert.Equal(t, 10, diff.TotalAdditions())
 	assert.Equal(t, 20, diff.TotalDeletions())
@@ -213,35 +188,35 @@ index 0000000..6b08f76
 @@ -0,0 +1 @@
 +Subproject commit 6b08f76a5313fa3d26859515b30aa17a5faa2807`,
 			expDiff: &Diff{
-				files: []*DiffFile{
+				Files: []*DiffFile{
 					{
-						name:  ".gitmodules",
-						typ:   DiffFileAdd,
-						index: "6abde17",
-						sections: []*DiffSection{
+						Name:  ".gitmodules",
+						Type:  DiffFileAdd,
+						Index: "6abde17",
+						Sections: []*DiffSection{
 							{
-								lines: []*DiffLine{
+								Lines: []*DiffLine{
 									{
-										typ:     DiffLineSection,
-										content: "@@ -0,0 +1,3 @@",
+										Type:    DiffLineSection,
+										Content: "@@ -0,0 +1,3 @@",
 									},
 									{
-										typ:       DiffLineAdd,
-										content:   `+[submodule "gogs/docs-api"]`,
-										leftLine:  0,
-										rightLine: 1,
+										Type:      DiffLineAdd,
+										Content:   `+[submodule "gogs/docs-api"]`,
+										LeftLine:  0,
+										RightLine: 1,
 									},
 									{
-										typ: DiffLineAdd,
-										content: `+	path = gogs/docs-api`,
-										leftLine:  0,
-										rightLine: 2,
+										Type: DiffLineAdd,
+										Content: `+	path = gogs/docs-api`,
+										LeftLine:  0,
+										RightLine: 2,
 									},
 									{
-										typ: DiffLineAdd,
-										content: `+	url = https://github.com/gogs/docs-api.git`,
-										leftLine:  0,
-										rightLine: 3,
+										Type: DiffLineAdd,
+										Content: `+	url = https://github.com/gogs/docs-api.git`,
+										LeftLine:  0,
+										RightLine: 3,
 									},
 								},
 								numAdditions: 3,
@@ -256,21 +231,21 @@ index 0000000..6b08f76
 						isIncomplete: false,
 					},
 					{
-						name:  "gogs/docs-api",
-						typ:   DiffFileAdd,
-						index: "6b08f76",
-						sections: []*DiffSection{
+						Name:  "gogs/docs-api",
+						Type:  DiffFileAdd,
+						Index: "6b08f76",
+						Sections: []*DiffSection{
 							{
-								lines: []*DiffLine{
+								Lines: []*DiffLine{
 									{
-										typ:     DiffLineSection,
-										content: "@@ -0,0 +1 @@",
+										Type:    DiffLineSection,
+										Content: "@@ -0,0 +1 @@",
 									},
 									{
-										typ:       DiffLineAdd,
-										content:   `+Subproject commit 6b08f76a5313fa3d26859515b30aa17a5faa2807`,
-										leftLine:  0,
-										rightLine: 1,
+										Type:      DiffLineAdd,
+										Content:   `+Subproject commit 6b08f76a5313fa3d26859515b30aa17a5faa2807`,
+										LeftLine:  0,
+										RightLine: 1,
 									},
 								},
 								numAdditions: 1,
@@ -305,65 +280,65 @@ index ee791be..9997571 100644
    <packaging>jar</packaging>
    <version>1.0-SNAPSHOT</version>`,
 			expDiff: &Diff{
-				files: []*DiffFile{
+				Files: []*DiffFile{
 					{
-						name:  "pom.xml",
-						typ:   DiffFileChange,
-						index: "9997571",
-						sections: []*DiffSection{
+						Name:  "pom.xml",
+						Type:  DiffFileChange,
+						Index: "9997571",
+						Sections: []*DiffSection{
 							{
-								lines: []*DiffLine{
+								Lines: []*DiffLine{
 									{
-										typ:     DiffLineSection,
-										content: "@@ -1,7 +1,7 @@",
+										Type:    DiffLineSection,
+										Content: "@@ -1,7 +1,7 @@",
 									},
 									{
-										typ:       DiffLinePlain,
-										content:   ` <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"`,
-										leftLine:  1,
-										rightLine: 1,
+										Type:      DiffLinePlain,
+										Content:   ` <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"`,
+										LeftLine:  1,
+										RightLine: 1,
 									},
 									{
-										typ:       DiffLinePlain,
-										content:   `   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">`,
-										leftLine:  2,
-										rightLine: 2,
+										Type:      DiffLinePlain,
+										Content:   `   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">`,
+										LeftLine:  2,
+										RightLine: 2,
 									},
 									{
-										typ:       DiffLinePlain,
-										content:   `   <modelVersion>4.0.0</modelVersion>`,
-										leftLine:  3,
-										rightLine: 3,
+										Type:      DiffLinePlain,
+										Content:   `   <modelVersion>4.0.0</modelVersion>`,
+										LeftLine:  3,
+										RightLine: 3,
 									},
 									{
-										typ:       DiffLineDelete,
-										content:   `-  <groupId>com.ambientideas</groupId>`,
-										leftLine:  4,
-										rightLine: 0,
+										Type:      DiffLineDelete,
+										Content:   `-  <groupId>com.ambientideas</groupId>`,
+										LeftLine:  4,
+										RightLine: 0,
 									},
 									{
-										typ:       DiffLineAdd,
-										content:   `+  <groupId>com.github</groupId>`,
-										leftLine:  0,
-										rightLine: 4,
+										Type:      DiffLineAdd,
+										Content:   `+  <groupId>com.github</groupId>`,
+										LeftLine:  0,
+										RightLine: 4,
 									},
 									{
-										typ:       DiffLinePlain,
-										content:   `   <artifactId>egitdemo</artifactId>`,
-										leftLine:  5,
-										rightLine: 5,
+										Type:      DiffLinePlain,
+										Content:   `   <artifactId>egitdemo</artifactId>`,
+										LeftLine:  5,
+										RightLine: 5,
 									},
 									{
-										typ:       DiffLinePlain,
-										content:   `   <packaging>jar</packaging>`,
-										leftLine:  6,
-										rightLine: 6,
+										Type:      DiffLinePlain,
+										Content:   `   <packaging>jar</packaging>`,
+										LeftLine:  6,
+										RightLine: 6,
 									},
 									{
-										typ:       DiffLinePlain,
-										content:   `   <version>1.0-SNAPSHOT</version>`,
-										leftLine:  7,
-										rightLine: 7,
+										Type:      DiffLinePlain,
+										Content:   `   <version>1.0-SNAPSHOT</version>`,
+										LeftLine:  7,
+										RightLine: 7,
 									},
 								},
 								numAdditions: 1,
@@ -389,12 +364,12 @@ new file mode 100644
 index 0000000..2ce9188
 Binary files /dev/null and b/img/sourcegraph.png differ`,
 			expDiff: &Diff{
-				files: []*DiffFile{
+				Files: []*DiffFile{
 					{
-						name:         "img/sourcegraph.png",
-						typ:          DiffFileAdd,
-						index:        "2ce9188",
-						sections:     nil,
+						Name:         "img/sourcegraph.png",
+						Type:         DiffFileAdd,
+						Index:        "2ce9188",
+						Sections:     nil,
 						numAdditions: 0,
 						numDeletions: 0,
 						oldName:      "",
@@ -413,12 +388,12 @@ Binary files /dev/null and b/img/sourcegraph.png differ`,
 deleted file mode 100644
 index e69de29..0000000`,
 			expDiff: &Diff{
-				files: []*DiffFile{
+				Files: []*DiffFile{
 					{
-						name:         "fix.txt",
-						typ:          DiffFileDelete,
-						index:        "e69de29",
-						sections:     nil,
+						Name:         "fix.txt",
+						Type:         DiffFileDelete,
+						Index:        "e69de29",
+						Sections:     nil,
 						numAdditions: 0,
 						numDeletions: 0,
 						oldName:      "",
@@ -438,12 +413,12 @@ similarity index 100%
 rename from runme.sh
 rename to run.sh`,
 			expDiff: &Diff{
-				files: []*DiffFile{
+				Files: []*DiffFile{
 					{
-						name:         "run.sh",
-						typ:          DiffFileRename,
-						index:        "",
-						sections:     nil,
+						Name:         "run.sh",
+						Type:         DiffFileRename,
+						Index:        "",
+						Sections:     nil,
 						numAdditions: 0,
 						numDeletions: 0,
 						oldName:      "runme.sh",
@@ -482,71 +457,71 @@ index 335db7ea..51d7543e 100644
    - go get github.com/smartystreets/goconvey`,
 			maxFileLines: 2,
 			expDiff: &Diff{
-				files: []*DiffFile{
+				Files: []*DiffFile{
 					{
-						name:  ".travis.yml",
-						typ:   DiffFileChange,
-						index: "51d7543e",
-						sections: []*DiffSection{
+						Name:  ".travis.yml",
+						Type:  DiffFileChange,
+						Index: "51d7543e",
+						Sections: []*DiffSection{
 							{
-								lines: []*DiffLine{
+								Lines: []*DiffLine{
 									{
-										typ:     DiffLineSection,
-										content: "@@ -1,9 +1,6 @@",
+										Type:    DiffLineSection,
+										Content: "@@ -1,9 +1,6 @@",
 									},
 									{
-										typ:       DiffLinePlain,
-										content:   ` sudo: false`,
-										leftLine:  1,
-										rightLine: 1,
+										Type:      DiffLinePlain,
+										Content:   ` sudo: false`,
+										LeftLine:  1,
+										RightLine: 1,
 									},
 									{
-										typ:       DiffLinePlain,
-										content:   ` language: go`,
-										leftLine:  2,
-										rightLine: 2,
+										Type:      DiffLinePlain,
+										Content:   ` language: go`,
+										LeftLine:  2,
+										RightLine: 2,
 									},
 									{
-										typ:       DiffLinePlain,
-										content:   ` go:`,
-										leftLine:  3,
-										rightLine: 3,
+										Type:      DiffLinePlain,
+										Content:   ` go:`,
+										LeftLine:  3,
+										RightLine: 3,
 									},
 									{
-										typ:       DiffLineDelete,
-										content:   `-  - 1.4.x`,
-										leftLine:  4,
-										rightLine: 0,
+										Type:      DiffLineDelete,
+										Content:   `-  - 1.4.x`,
+										LeftLine:  4,
+										RightLine: 0,
 									},
 									{
-										typ:       DiffLineDelete,
-										content:   `-  - 1.5.x`,
-										leftLine:  5,
-										rightLine: 0,
+										Type:      DiffLineDelete,
+										Content:   `-  - 1.5.x`,
+										LeftLine:  5,
+										RightLine: 0,
 									},
 									{
-										typ:       DiffLineDelete,
-										content:   `-  - 1.6.x`,
-										leftLine:  6,
-										rightLine: 0,
+										Type:      DiffLineDelete,
+										Content:   `-  - 1.6.x`,
+										LeftLine:  6,
+										RightLine: 0,
 									},
 									{
-										typ:       DiffLinePlain,
-										content:   `   - 1.7.x`,
-										leftLine:  7,
-										rightLine: 4,
+										Type:      DiffLinePlain,
+										Content:   `   - 1.7.x`,
+										LeftLine:  7,
+										RightLine: 4,
 									},
 									{
-										typ:       DiffLinePlain,
-										content:   `   - 1.8.x`,
-										leftLine:  8,
-										rightLine: 5,
+										Type:      DiffLinePlain,
+										Content:   `   - 1.8.x`,
+										LeftLine:  8,
+										RightLine: 5,
 									},
 									{
-										typ:       DiffLinePlain,
-										content:   `   - 1.9.x`,
-										leftLine:  9,
-										rightLine: 6,
+										Type:      DiffLinePlain,
+										Content:   `   - 1.9.x`,
+										LeftLine:  9,
+										RightLine: 6,
 									},
 								},
 								numAdditions: 0,
@@ -578,29 +553,29 @@ index 0000000..6abde17
 +	url = https://github.com/gogs/docs-api.git`,
 			maxLineChars: 30,
 			expDiff: &Diff{
-				files: []*DiffFile{
+				Files: []*DiffFile{
 					{
-						name:  ".gitmodules",
-						typ:   DiffFileAdd,
-						index: "6abde17",
-						sections: []*DiffSection{
+						Name:  ".gitmodules",
+						Type:  DiffFileAdd,
+						Index: "6abde17",
+						Sections: []*DiffSection{
 							{
-								lines: []*DiffLine{
+								Lines: []*DiffLine{
 									{
-										typ:     DiffLineSection,
-										content: "@@ -0,0 +1,3 @@",
+										Type:    DiffLineSection,
+										Content: "@@ -0,0 +1,3 @@",
 									},
 									{
-										typ:       DiffLineAdd,
-										content:   `+[submodule "gogs/docs-api"]`,
-										leftLine:  0,
-										rightLine: 1,
+										Type:      DiffLineAdd,
+										Content:   `+[submodule "gogs/docs-api"]`,
+										LeftLine:  0,
+										RightLine: 1,
 									},
 									{
-										typ: DiffLineAdd,
-										content: `+	path = gogs/docs-api`,
-										leftLine:  0,
-										rightLine: 2,
+										Type: DiffLineAdd,
+										Content: `+	path = gogs/docs-api`,
+										LeftLine:  0,
+										RightLine: 2,
 									},
 								},
 								numAdditions: 2,
@@ -641,29 +616,29 @@ index 0000000..6b08f76
 			maxLineChars: 30,
 			maxFiles:     1,
 			expDiff: &Diff{
-				files: []*DiffFile{
+				Files: []*DiffFile{
 					{
-						name:  ".gitmodules",
-						typ:   DiffFileAdd,
-						index: "6abde17",
-						sections: []*DiffSection{
+						Name:  ".gitmodules",
+						Type:  DiffFileAdd,
+						Index: "6abde17",
+						Sections: []*DiffSection{
 							{
-								lines: []*DiffLine{
+								Lines: []*DiffLine{
 									{
-										typ:     DiffLineSection,
-										content: "@@ -0,0 +1,3 @@",
+										Type:    DiffLineSection,
+										Content: "@@ -0,0 +1,3 @@",
 									},
 									{
-										typ:       DiffLineAdd,
-										content:   `+[submodule "gogs/docs-api"]`,
-										leftLine:  0,
-										rightLine: 1,
+										Type:      DiffLineAdd,
+										Content:   `+[submodule "gogs/docs-api"]`,
+										LeftLine:  0,
+										RightLine: 1,
 									},
 									{
-										typ: DiffLineAdd,
-										content: `+	path = gogs/docs-api`,
-										leftLine:  0,
-										rightLine: 2,
+										Type: DiffLineAdd,
+										Content: `+	path = gogs/docs-api`,
+										LeftLine:  0,
+										RightLine: 2,
 									},
 								},
 								numAdditions: 2,
@@ -686,7 +661,7 @@ index 0000000..6b08f76
 	}
 	for _, test := range tests {
 		t.Run("", func(t *testing.T) {
-			done := make(chan SteamParsePatchResult)
+			done := make(chan SteamParseDiffResult)
 			go StreamParseDiff(strings.NewReader(test.input), done, test.maxFiles, test.maxFileLines, test.maxLineChars)
 			result := <-done
 			if result.Err != nil {

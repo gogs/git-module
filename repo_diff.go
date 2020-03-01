@@ -22,7 +22,7 @@ type DiffOptions struct {
 	Timeout time.Duration
 }
 
-// Diff returns a parsed diff object between given commits.
+// Diff returns a parsed diff object between given commits of the repository.
 func (r *Repository) Diff(rev string, maxFiles, maxFileLines, maxLineChars int, opts ...DiffOptions) (*Diff, error) {
 	var opt DiffOptions
 	if len(opts) > 0 {
@@ -48,7 +48,7 @@ func (r *Repository) Diff(rev string, maxFiles, maxFileLines, maxLineChars int, 
 	}
 
 	stdout, w := io.Pipe()
-	done := make(chan SteamParsePatchResult)
+	done := make(chan SteamParseDiffResult)
 	go StreamParseDiff(stdout, done, maxFiles, maxFileLines, maxLineChars)
 
 	stderr := new(bytes.Buffer)

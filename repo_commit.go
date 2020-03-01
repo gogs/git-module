@@ -72,8 +72,8 @@ type CatFileCommitOptions struct {
 	Timeout time.Duration
 }
 
-// CatFileCommit returns the commit corresponding to the given revision. The revision could be
-// a commit ID or refspec.
+// CatFileCommit returns the commit corresponding to the given revision of the repository.
+// The revision could be a commit ID or refspec.
 func (r *Repository) CatFileCommit(rev string, opts ...CatFileCommitOptions) (*Commit, error) {
 	var opt CatFileCommitOptions
 	if len(opts) > 0 {

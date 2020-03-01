@@ -39,48 +39,23 @@ const (
 
 // DiffLine represents a line in diff.
 type DiffLine struct {
-	typ       DiffLineType
-	content   string
-	leftLine  int
-	rightLine int
-}
-
-// Type returns the type of the line.
-func (l *DiffLine) Type() DiffLineType {
-	return l.typ
-}
-
-// Content returns the content of the line.
-func (l *DiffLine) Content() string {
-	return l.content
-}
-
-// Left returns the left line number.
-func (l *DiffLine) Left() int {
-	return l.leftLine
-}
-
-// Right returns the right line number.
-func (l *DiffLine) Right() int {
-	return l.rightLine
+	Type      DiffLineType // The type of the line
+	Content   string       // The content of the line
+	LeftLine  int          // The left line number
+	RightLine int          // The right line number
 }
 
 // DiffSection represents a section in diff.
 type DiffSection struct {
-	lines []*DiffLine
+	Lines []*DiffLine // lines in the section
 
 	numAdditions int
 	numDeletions int
 }
 
-// Lines returns lines in the section.
-func (s *DiffSection) Lines() []*DiffLine {
-	return s.lines
-}
-
 // NumLines returns the number of lines in the section.
 func (s *DiffSection) NumLines() int {
-	return len(s.lines)
+	return len(s.Lines)
 }
 
 // Line returns a specific line by given type and line number in a section.
@@ -93,8 +68,8 @@ func (s *DiffSection) Line(typ DiffLineType, line int) *DiffLine {
 	)
 
 loop:
-	for _, diffLine := range s.lines {
-		switch diffLine.typ {
+	for _, diffLine := range s.Lines {
+		switch diffLine.Type {
 		case DiffLineAdd:
 			addCount++
 		case DiffLineDelete:
@@ -103,18 +78,18 @@ loop:
 			if matchedDiffLine != nil {
 				break loop
 			}
-			difference = diffLine.rightLine - diffLine.leftLine
+			difference = diffLine.RightLine - diffLine.LeftLine
 			addCount = 0
 			delCount = 0
 		}
 
 		switch typ {
 		case DiffLineDelete:
-			if diffLine.rightLine == 0 && diffLine.leftLine == line-difference {
+			if diffLine.RightLine == 0 && diffLine.LeftLine == line-difference {
 				matchedDiffLine = diffLine
 			}
 		case DiffLineAdd:
-			if diffLine.leftLine == 0 && diffLine.rightLine == line+difference {
+			if diffLine.LeftLine == 0 && diffLine.RightLine == line+difference {
 				matchedDiffLine = diffLine
 			}
 		}
@@ -128,10 +103,15 @@ loop:
 
 // DiffFile represents a file in diff.
 type DiffFile struct {
-	name     string
-	typ      DiffFileType
-	index    string // Changed/New: new SHA; Deleted: old SHA
-	sections []*DiffSection
+	// The name of the file.
+	Name string
+	// The type of the file.
+	Type DiffFileType
+	// The index (SHA1 hash) of the file. For a changed/new file, it is the new SHA,
+	// and for a deleted file it is the old SHA.
+	Index string
+	// The sections in the file.
+	Sections []*DiffSection
 
 	numAdditions int
 	numDeletions int
@@ -143,29 +123,9 @@ type DiffFile struct {
 	isIncomplete bool
 }
 
-// Name returns the name of the file.
-func (f *DiffFile) Name() string {
-	return f.name
-}
-
-// Type returns the type of the file.
-func (f *DiffFile) Type() DiffFileType {
-	return f.typ
-}
-
-// Index returns the index (SHA1 hash) of the file.
-func (f *DiffFile) Index() string {
-	return f.index
-}
-
-// Sections returns the sections in the file.
-func (f *DiffFile) Sections() []*DiffSection {
-	return f.sections
-}
-
 // NumSections returns the number of sections in the file.
 func (f *DiffFile) NumSections() int {
-	return len(f.sections)
+	return len(f.Sections)
 }
 
 // NumAdditions returns the number of additions in the file.
@@ -180,17 +140,17 @@ func (f *DiffFile) NumDeletions() int {
 
 // IsCreated returns true if the file is newly created.
 func (f *DiffFile) IsCreated() bool {
-	return f.typ == DiffFileAdd
+	return f.Type == DiffFileAdd
 }
 
 // IsDeleted returns true if the file has been deleted.
 func (f *DiffFile) IsDeleted() bool {
-	return f.typ == DiffFileDelete
+	return f.Type == DiffFileDelete
 }
 
 // IsRenamed returns true if the file has been renamed.
 func (f *DiffFile) IsRenamed() bool {
-	return f.typ == DiffFileRename
+	return f.Type == DiffFileRename
 }
 
 // OldName returns previous name before renaming.
@@ -215,7 +175,7 @@ func (f *DiffFile) IsIncomplete() bool {
 
 // Diff represents a Git diff.
 type Diff struct {
-	files []*DiffFile
+	Files []*DiffFile // The files in the diff
 
 	totalAdditions int
 	totalDeletions int
@@ -223,14 +183,9 @@ type Diff struct {
 	isIncomplete bool
 }
 
-// Files returns the files in the diff.
-func (d *Diff) Files() []*DiffFile {
-	return d.files
-}
-
 // NumFiles returns the number of files in the diff.
 func (d *Diff) NumFiles() int {
-	return len(d.files)
+	return len(d.Files)
 }
 
 // TotalAdditions returns the total additions in the diff.
@@ -248,8 +203,8 @@ func (d *Diff) IsIncomplete() bool {
 	return d.isIncomplete
 }
 
-// SteamParsePatchResult contains results of stream parsing a patch.
-type SteamParsePatchResult struct {
+// SteamParseDiffResult contains results of streaming parsing a diff.
+type SteamParseDiffResult struct {
 	Diff *Diff
 	Err  error
 }
@@ -312,8 +267,8 @@ func (p *diffParser) parseFileHeader() (*DiffFile, error) {
 	}
 
 	file := &DiffFile{
-		name: a,
-		typ:  DiffFileChange,
+		Name: a,
+		Type: DiffFileChange,
 	}
 
 	// Check file diff type and submodule
@@ -333,10 +288,10 @@ checkType:
 
 		switch {
 		case strings.HasPrefix(line, "new file"):
-			file.typ = DiffFileAdd
+			file.Type = DiffFileAdd
 			file.isSubmodule = strings.HasSuffix(line, " 160000")
 		case strings.HasPrefix(line, "deleted"):
-			file.typ = DiffFileDelete
+			file.Type = DiffFileDelete
 			file.isSubmodule = strings.HasSuffix(line, " 160000")
 		case strings.HasPrefix(line, "index"): // e.g. index ee791be..9997571 100644
 			fields := strings.Fields(line[6:])
@@ -346,15 +301,15 @@ checkType:
 			}
 
 			if file.IsDeleted() {
-				file.index = shas[0]
+				file.Index = shas[0]
 			} else {
-				file.index = shas[1]
+				file.Index = shas[1]
 			}
 			break checkType
 		case strings.HasPrefix(line, "similarity index 100%"):
-			file.typ = DiffFileRename
+			file.Type = DiffFileRename
 			file.oldName = a
-			file.name = b
+			file.Name = b
 			break checkType
 		case strings.HasPrefix(line, "old mode"):
 			break checkType
@@ -369,10 +324,10 @@ func (p *diffParser) parseSection() (_ *DiffSection, isIncomplete bool, _ error)
 	p.buffer = nil
 
 	section := &DiffSection{
-		lines: []*DiffLine{
+		Lines: []*DiffLine{
 			{
-				typ:     DiffLineSection,
-				content: line,
+				Type:    DiffLineSection,
+				Content: line,
 			},
 		},
 	}
@@ -416,27 +371,27 @@ func (p *diffParser) parseSection() (_ *DiffSection, isIncomplete bool, _ error)
 
 		switch line[0] {
 		case ' ':
-			section.lines = append(section.lines, &DiffLine{
-				typ:       DiffLinePlain,
-				content:   line,
-				leftLine:  leftLine,
-				rightLine: rightLine,
+			section.Lines = append(section.Lines, &DiffLine{
+				Type:      DiffLinePlain,
+				Content:   line,
+				LeftLine:  leftLine,
+				RightLine: rightLine,
 			})
 			leftLine++
 			rightLine++
 		case '+':
-			section.lines = append(section.lines, &DiffLine{
-				typ:       DiffLineAdd,
-				content:   line,
-				rightLine: rightLine,
+			section.Lines = append(section.Lines, &DiffLine{
+				Type:      DiffLineAdd,
+				Content:   line,
+				RightLine: rightLine,
 			})
 			section.numAdditions++
 			rightLine++
 		case '-':
-			section.lines = append(section.lines, &DiffLine{
-				typ:      DiffLineDelete,
-				content:  line,
-				leftLine: leftLine,
+			section.Lines = append(section.Lines, &DiffLine{
+				Type:     DiffLineDelete,
+				Content:  line,
+				LeftLine: leftLine,
 			})
 			section.numDeletions++
 			if leftLine > 0 {
@@ -469,7 +424,7 @@ func (p *diffParser) parse() (*Diff, error) {
 		// Found new file
 		if bytes.HasPrefix(p.buffer, diffHead) {
 			// Check if reached maximum number of files
-			if p.maxFiles > 0 && len(diff.files) >= p.maxFiles {
+			if p.maxFiles > 0 && len(diff.Files) >= p.maxFiles {
 				diff.isIncomplete = true
 				_, _ = io.Copy(ioutil.Discard, p)
 				break
@@ -479,7 +434,7 @@ func (p *diffParser) parse() (*Diff, error) {
 			if err != nil {
 				return nil, err
 			}
-			diff.files = append(diff.files, file)
+			diff.Files = append(diff.Files, file)
 
 			currentFileLines = 0
 			continue
@@ -513,7 +468,7 @@ func (p *diffParser) parse() (*Diff, error) {
 		if err != nil {
 			return nil, err
 		}
-		file.sections = append(file.sections, section)
+		file.Sections = append(file.Sections, section)
 		file.numAdditions += section.numAdditions
 		file.numDeletions += section.numDeletions
 		diff.totalAdditions += section.numAdditions
@@ -531,7 +486,7 @@ func (p *diffParser) parse() (*Diff, error) {
 // StreamParseDiff parses the diff read from the given io.Reader. It does parse-on-read to minimize
 // the time spent on huge diffs. It accepts a channel to notify and send error (if any) to the caller
 // when the process is done. Therefore, this method should be called in a goroutine asynchronously.
-func StreamParseDiff(r io.Reader, done chan<- SteamParsePatchResult, maxFiles, maxFileLines, maxLineChars int) {
+func StreamParseDiff(r io.Reader, done chan<- SteamParseDiffResult, maxFiles, maxFileLines, maxLineChars int) {
 	p := &diffParser{
 		Reader:       bufio.NewReader(r),
 		maxFiles:     maxFiles,
@@ -539,7 +494,7 @@ func StreamParseDiff(r io.Reader, done chan<- SteamParsePatchResult, maxFiles, m
 		maxLineChars: maxLineChars,
 	}
 	diff, err := p.parse()
-	done <- SteamParsePatchResult{
+	done <- SteamParseDiffResult{
 		Diff: diff,
 		Err:  err,
 	}
