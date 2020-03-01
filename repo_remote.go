@@ -69,7 +69,8 @@ func LsRemote(url string, opts ...LsRemoteOptions) ([]*Reference, error) {
 	return refs, nil
 }
 
-// IsURLAccessible returns true if given remote URL is accessible via Git.
+// IsURLAccessible returns true if given remote URL is accessible via Git
+// within given timeout.
 func IsURLAccessible(timeout time.Duration, url string) bool {
 	_, err := LsRemote(url, LsRemoteOptions{
 		Patterns: []string{"HEAD"},
@@ -90,8 +91,8 @@ type AddRemoteOptions struct {
 	Timeout time.Duration
 }
 
-// AddRemote adds a new remote to the repository.
-func (r *Repository) AddRemote(name, url string, opts ...AddRemoteOptions) error {
+// AddRemote adds a new remote to the repository in given path.
+func RepoAddRemote(repoPath, name, url string, opts ...AddRemoteOptions) error {
 	var opt AddRemoteOptions
 	if len(opts) > 0 {
 		opt = opts[0]
@@ -105,8 +106,13 @@ func (r *Repository) AddRemote(name, url string, opts ...AddRemoteOptions) error
 		cmd.AddArgs("--mirror=fetch")
 	}
 
-	_, err := cmd.AddArgs(name, url).RunInDirWithTimeout(opt.Timeout, r.path)
+	_, err := cmd.AddArgs(name, url).RunInDirWithTimeout(opt.Timeout, repoPath)
 	return err
+}
+
+// AddRemote adds a new remote to the repository.
+func (r *Repository) AddRemote(name, url string, opts ...AddRemoteOptions) error {
+	return RepoAddRemote(r.path, name, url, opts...)
 }
 
 // RemoveRemoteOptions contains arguments for removing a remote from the repository.
@@ -117,14 +123,14 @@ type RemoveRemoteOptions struct {
 	Timeout time.Duration
 }
 
-// RemoveRemote removes a remote from the repository.
-func (r *Repository) RemoveRemote(name string, opts ...RemoveRemoteOptions) error {
+// RemoveRemote removes a remote from the repository in given path.
+func RepoRemoveRemote(repoPath, name string, opts ...RemoveRemoteOptions) error {
 	var opt RemoveRemoteOptions
 	if len(opts) > 0 {
 		opt = opts[0]
 	}
 
-	_, err := NewCommand("remote", "remove", name).RunInDirWithTimeout(opt.Timeout, r.path)
+	_, err := NewCommand("remote", "remove", name).RunInDirWithTimeout(opt.Timeout, repoPath)
 	if err != nil {
 		if strings.Contains(err.Error(), "fatal: No such remote") {
 			return ErrRemoteNotExist
@@ -132,4 +138,9 @@ func (r *Repository) RemoveRemote(name string, opts ...RemoveRemoteOptions) erro
 		return err
 	}
 	return nil
+}
+
+// RemoveRemote removes a remote from the repository.
+func (r *Repository) RemoveRemote(name string, opts ...RemoveRemoteOptions) error {
+	return RepoRemoveRemote(r.path, name, opts...)
 }

@@ -19,7 +19,7 @@ type objectCache struct {
 
 func newObjectCache() *objectCache {
 	return &objectCache{
-		cache: make(map[string]interface{}, 10),
+		cache: make(map[string]interface{}),
 	}
 }
 
