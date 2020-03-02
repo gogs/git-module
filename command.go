@@ -118,7 +118,7 @@ func (c *Command) RunInDirPipelineWithTimeout(timeout time.Duration, stdout, std
 	}()
 
 	cmd := exec.CommandContext(ctx, c.name, c.args...)
-	if c.envs != nil {
+	if len(c.envs) > 0 {
 		cmd.Env = append(os.Environ(), c.envs...)
 	}
 	cmd.Dir = dir

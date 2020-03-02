@@ -221,15 +221,23 @@ type PushOptions struct {
 	Timeout time.Duration
 }
 
-// Push pushs local changes to given remote and branch for the repository.
-func (r *Repository) Push(remote, branch string, opts ...PushOptions) error {
+// RepoPush pushs local changes to given remote and branch for the repository
+// in given path.
+func RepoPush(repoPath, remote, branch string, opts ...PushOptions) error {
 	var opt PushOptions
 	if len(opts) > 0 {
 		opt = opts[0]
 	}
 
-	_, err := NewCommand("push", remote, branch).AddEnvs(opt.Envs...).RunInDirWithTimeout(opt.Timeout, r.path)
+	_, err := NewCommand("push", remote, branch).
+		AddEnvs(opt.Envs...).
+		RunInDirWithTimeout(opt.Timeout, repoPath)
 	return err
+}
+
+// Push pushs local changes to given remote and branch for the repository.
+func (r *Repository) Push(remote, branch string, opts ...PushOptions) error {
+	return RepoPush(r.path, remote, branch, opts...)
 }
 
 // CheckoutOptions contains optional arguments for checking out to a branch.
@@ -242,8 +250,8 @@ type CheckoutOptions struct {
 	Timeout time.Duration
 }
 
-// Checkout checks out to given branch for the repository.
-func (r *Repository) Checkout(branch string, opts ...CheckoutOptions) error {
+// Checkout checks out to given branch for the repository in given path.
+func RepoCheckout(repoPath, branch string, opts ...CheckoutOptions) error {
 	var opt CheckoutOptions
 	if len(opts) > 0 {
 		opt = opts[0]
@@ -258,8 +266,13 @@ func (r *Repository) Checkout(branch string, opts ...CheckoutOptions) error {
 		cmd.AddArgs(opt.BaseBranch)
 	}
 
-	_, err := cmd.RunInDirWithTimeout(opt.Timeout, r.path)
+	_, err := cmd.RunInDirWithTimeout(opt.Timeout, repoPath)
 	return err
+}
+
+// Checkout checks out to given branch for the repository.
+func (r *Repository) Checkout(branch string, opts ...CheckoutOptions) error {
+	return RepoCheckout(r.path, branch, opts...)
 }
 
 // ResetOptions contains optional arguments for resetting a branch.
@@ -272,8 +285,8 @@ type ResetOptions struct {
 	Timeout time.Duration
 }
 
-// Reset resets working tree to given revision for the repository.
-func (r *Repository) Reset(rev string, opts ...ResetOptions) error {
+// RepoReset resets working tree to given revision for the repository in given path.
+func RepoReset(repoPath, rev string, opts ...ResetOptions) error {
 	var opt ResetOptions
 	if len(opts) > 0 {
 		opt = opts[0]
@@ -284,8 +297,13 @@ func (r *Repository) Reset(rev string, opts ...ResetOptions) error {
 		cmd.AddArgs("--hard")
 	}
 
-	_, err := cmd.AddArgs(rev).RunInDir(r.path)
+	_, err := cmd.AddArgs(rev).RunInDir(repoPath)
 	return err
+}
+
+// Reset resets working tree to given revision for the repository.
+func (r *Repository) Reset(rev string, opts ...ResetOptions) error {
+	return RepoReset(r.path, rev, opts...)
 }
 
 // MoveOptions contains optional arguments for moving a file, a directory, or a symlink.
@@ -296,15 +314,22 @@ type MoveOptions struct {
 	Timeout time.Duration
 }
 
-// Move moves a file, a directory, or a symlink file or directory from source to destination.
-func (r *Repository) Move(src, dst string, opts ...MoveOptions) error {
+// RepoMove moves a file, a directory, or a symlink file or directory from source to
+// destination for the repository in given path.
+func RepoMove(repoPath, src, dst string, opts ...MoveOptions) error {
 	var opt MoveOptions
 	if len(opts) > 0 {
 		opt = opts[0]
 	}
 
-	_, err := NewCommand("mv", src, dst).RunInDirWithTimeout(opt.Timeout, r.path)
+	_, err := NewCommand("mv", src, dst).RunInDirWithTimeout(opt.Timeout, repoPath)
 	return err
+}
+
+// Move moves a file, a directory, or a symlink file or directory from source to destination
+// for the repository.
+func (r *Repository) Move(src, dst string, opts ...MoveOptions) error {
+	return RepoMove(r.path, src, dst, opts...)
 }
 
 // AddOptions contains optional arguments for adding local changes.
@@ -319,8 +344,8 @@ type AddOptions struct {
 	Timeout time.Duration
 }
 
-// Add adds local changes to index for the repository.
-func (r *Repository) Add(opts ...AddOptions) error {
+// RepoAdd adds local changes to index for the repository in given path.
+func RepoAdd(repoPath string, opts ...AddOptions) error {
 	var opt AddOptions
 	if len(opts) > 0 {
 		opt = opts[0]
@@ -334,8 +359,13 @@ func (r *Repository) Add(opts ...AddOptions) error {
 		cmd.AddArgs("--")
 		cmd.AddArgs(opt.Pathsepcs...)
 	}
-	_, err := cmd.RunInDirWithTimeout(opt.Timeout, r.path)
+	_, err := cmd.RunInDirWithTimeout(opt.Timeout, repoPath)
 	return err
+}
+
+// Add adds local changes to index for the repository.
+func (r *Repository) Add(opts ...AddOptions) error {
+	return RepoAdd(r.path, opts...)
 }
 
 // CommitOptions contains optional arguments to commit changes.
@@ -348,8 +378,9 @@ type CommitOptions struct {
 	Timeout time.Duration
 }
 
-// Commit commits local changes with given author, committer and message for the repository.
-func (r *Repository) Commit(committer *Signature, message string, opts ...CommitOptions) error {
+// RepoCommit commits local changes with given author, committer and message for the
+// repository in given path.
+func RepoCommit(repoPath string, committer *Signature, message string, opts ...CommitOptions) error {
 	var opt CommitOptions
 	if len(opts) > 0 {
 		opt = opts[0]
@@ -363,12 +394,17 @@ func (r *Repository) Commit(committer *Signature, message string, opts ...Commit
 	}
 	cmd.AddArgs("-m", message)
 
-	_, err := cmd.RunInDirWithTimeout(opt.Timeout, r.path)
+	_, err := cmd.RunInDirWithTimeout(opt.Timeout, repoPath)
 	// No stderr but exit status 1 means nothing to commit.
 	if err != nil && err.Error() == "exit status 1" {
 		return nil
 	}
 	return err
+}
+
+// Commit commits local changes with given author, committer and message for the repository.
+func (r *Repository) Commit(committer *Signature, message string, opts ...CommitOptions) error {
+	return RepoCommit(r.path, committer, message, opts...)
 }
 
 // NameStatus contains name status of a commit.
