@@ -527,18 +527,30 @@ func (r *Repository) CountObjects(opts ...CountObjectsOptions) (*CountObject, er
 // FsckOptions contains optional arguments for verifying the objects.
 // Docs: https://git-scm.com/docs/git-fsck
 type FsckOptions struct {
+	// The additional arguments to be applied.
+	Args []string
 	// The timeout duration before giving up for each shell command execution.
 	// The default timeout duration will be used when not supplied.
 	Timeout time.Duration
 }
 
-// Fsck verifies the connectivity and validity of the objects in the database for the repository.
-func (r *Repository) Fsck(opts ...FsckOptions) error {
+// RepoFsck verifies the connectivity and validity of the objects in the database for the
+// repository in given path.
+func RepoFsck(repoPath string, opts ...FsckOptions) error {
 	var opt FsckOptions
 	if len(opts) > 0 {
 		opt = opts[0]
 	}
 
-	_, err := NewCommand("fsck").RunInDirWithTimeout(opt.Timeout, r.path)
+	cmd := NewCommand("fsck")
+	if len(opt.Args) > 0 {
+		cmd.AddArgs(opt.Args...)
+	}
+	_, err := cmd.RunInDirWithTimeout(opt.Timeout, repoPath)
 	return err
+}
+
+// Fsck verifies the connectivity and validity of the objects in the database for the repository.
+func (r *Repository) Fsck(opts ...FsckOptions) error {
+	return RepoFsck(r.path, opts...)
 }
