@@ -106,7 +106,8 @@ func (r *Repository) HasTag(tag string, opts ...ShowRefVerifyOptions) bool {
 type SymbolicRefOptions struct {
 	// The name of the symbolic ref. When not set, default ref "HEAD" is used.
 	Name string
-	// The name of the reference. When set, it will be used to update the symbolic ref.
+	// The name of the reference, e.g. "refs/heads/master". When set, it will
+	// be used to update the symbolic ref.
 	Ref string
 	// The timeout duration before giving up for each shell command execution.
 	// The default timeout duration will be used when not supplied.

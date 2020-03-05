@@ -107,7 +107,7 @@ type TagOptions struct {
 	Timeout time.Duration
 }
 
-// Tag returns a Git tag by given refspec.
+// Tag returns a Git tag by given refspec, e.g. "refs/tags/v1.0.0".
 func (r *Repository) Tag(refspec string, opts ...TagOptions) (*Tag, error) {
 	var opt TagOptions
 	if len(opts) > 0 {
@@ -146,8 +146,8 @@ type TagsOptions struct {
 	Timeout time.Duration
 }
 
-// Tags returns a list of tags in the repository.
-func (r *Repository) Tags(opts ...TagsOptions) ([]string, error) {
+// RepoTags returns a list of tags of the repository in given path.
+func RepoTags(repoPath string, opts ...TagsOptions) ([]string, error) {
 	var opt TagsOptions
 	if len(opts) > 0 {
 		opt = opts[0]
@@ -163,7 +163,7 @@ func (r *Repository) Tags(opts ...TagsOptions) ([]string, error) {
 		cmd.AddArgs("--sort=-creatordate")
 	}
 
-	stdout, err := cmd.RunInDirWithTimeout(opt.Timeout, r.path)
+	stdout, err := cmd.RunInDirWithTimeout(opt.Timeout, repoPath)
 	if err != nil {
 		return nil, err
 	}
@@ -182,6 +182,11 @@ func (r *Repository) Tags(opts ...TagsOptions) ([]string, error) {
 	}
 
 	return tags, nil
+}
+
+// Tags returns a list of tags of the repository.
+func (r *Repository) Tags(opts ...TagsOptions) ([]string, error) {
+	return RepoTags(r.path, opts...)
 }
 
 // CreateTagOptions contains optional arguments for creating a tag.
