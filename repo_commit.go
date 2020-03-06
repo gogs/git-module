@@ -7,6 +7,7 @@ package git
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -139,8 +140,19 @@ func escapePath(path string) string {
 	return path
 }
 
-// Log returns a list of commits in the state of given revision. The returned list is in reverse
-// chronological order.
+// RepoLog returns a list of commits in the state of given revision of the repository
+// in given path. The returned list is in reverse chronological order.
+func RepoLog(repoPath, rev string, opts ...LogOptions) ([]*Commit, error) {
+	r, err := Open(repoPath)
+	if err != nil {
+		return nil, fmt.Errorf("open: %v", err)
+	}
+
+	return r.Log(rev, opts...)
+}
+
+// Log returns a list of commits in the state of given revision of the repository.
+// The returned list is in reverse chronological order.
 func (r *Repository) Log(rev string, opts ...LogOptions) ([]*Commit, error) {
 	var opt LogOptions
 	if len(opts) > 0 {
@@ -300,8 +312,9 @@ type DiffNameOnlyOptions struct {
 	Timeout time.Duration
 }
 
-// DiffNameOnly returns a list of changed files between base and head revisions of the repository.
-func (r *Repository) DiffNameOnly(base, head string, opts ...DiffNameOnlyOptions) ([]string, error) {
+// RepoDiffNameOnly returns a list of changed files between base and head revisions of
+// the repository in given path.
+func RepoDiffNameOnly(repoPath, base, head string, opts ...DiffNameOnlyOptions) ([]string, error) {
 	var opt DiffNameOnlyOptions
 	if len(opts) > 0 {
 		opt = opts[0]
@@ -318,7 +331,7 @@ func (r *Repository) DiffNameOnly(base, head string, opts ...DiffNameOnlyOptions
 		cmd.AddArgs(escapePath(opt.Path))
 	}
 
-	stdout, err := cmd.RunInDirWithTimeout(opt.Timeout, r.path)
+	stdout, err := cmd.RunInDirWithTimeout(opt.Timeout, repoPath)
 	if err != nil {
 		return nil, err
 	}
@@ -333,6 +346,12 @@ func (r *Repository) DiffNameOnly(base, head string, opts ...DiffNameOnlyOptions
 		names = append(names, string(lines[i]))
 	}
 	return names, nil
+}
+
+// DiffNameOnly returns a list of changed files between base and head revisions of the
+// repository.
+func (r *Repository) DiffNameOnly(base, head string, opts ...DiffNameOnlyOptions) ([]string, error) {
+	return RepoDiffNameOnly(r.path, base, head, opts...)
 }
 
 // RevListCountOptions contains optional arguments for counting commits.

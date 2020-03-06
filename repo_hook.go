@@ -7,7 +7,6 @@ package git
 import (
 	"io/ioutil"
 	"os"
-	"path"
 	"path/filepath"
 )
 
@@ -23,11 +22,15 @@ func (r *Repository) NewHook(name HookName) *Hook {
 	}
 }
 
-// Hook returns a Git hook by given name in the repository. It returns an os.ErrNotExist
-// if both active and sample hook do not exist.
-func (r *Repository) Hook(name HookName) (*Hook, error) {
+// Hook returns a Git hook by given name in the repository. Giving empty directory
+// will use the default directory.It returns an os.ErrNotExist if both active and
+// sample hook do not exist.
+func (r *Repository) Hook(dir string, name HookName) (*Hook, error) {
+	if dir == "" {
+		dir = DefaultHooksDir
+	}
 	// 1. Check if there is an active hook.
-	fpath := filepath.Join(r.path, DefaultHooksDir, string(name))
+	fpath := filepath.Join(r.path, dir, string(name))
 	if isFile(fpath) {
 		p, err := ioutil.ReadFile(fpath)
 		if err != nil {
@@ -41,7 +44,7 @@ func (r *Repository) Hook(name HookName) (*Hook, error) {
 	}
 
 	// 2. Check if a sample file exists.
-	spath := fpath + ".sample"
+	spath := filepath.Join(r.path, DefaultHooksDir, string(name)+".sample")
 	if isFile(spath) {
 		p, err := ioutil.ReadFile(spath)
 		if err != nil {
@@ -58,16 +61,12 @@ func (r *Repository) Hook(name HookName) (*Hook, error) {
 	return nil, os.ErrNotExist
 }
 
-// Hooks returns a list of Git hooks found in the repository. It may return an empty slice
-// when no hooks found.
-func (r *Repository) Hooks() ([]*Hook, error) {
-	if !isDir(path.Join(r.path, DefaultHooksDir)) {
-		return []*Hook{}, nil
-	}
-
+// Hooks returns a list of Git hooks found in the repository. Giving empty directory
+// will use the default directory. It may return an empty slice when no hooks found.
+func (r *Repository) Hooks(dir string) ([]*Hook, error) {
 	hooks := make([]*Hook, 0, len(ServerSideHooks))
 	for _, name := range ServerSideHooks {
-		h, err := r.Hook(name)
+		h, err := r.Hook(dir, name)
 		if err != nil {
 			if err == os.ErrNotExist {
 				continue

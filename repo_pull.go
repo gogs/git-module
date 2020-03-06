@@ -17,14 +17,15 @@ type MergeBaseOptions struct {
 	Timeout time.Duration
 }
 
-// MergeBase returns merge base between base and head revisions.
-func (r *Repository) MergeBase(base, head string, opts ...MergeBaseOptions) (string, error) {
+// RepoMergeBase returns merge base between base and head revisions of the repository
+// in given path.
+func RepoMergeBase(repoPath, base, head string, opts ...MergeBaseOptions) (string, error) {
 	var opt MergeBaseOptions
 	if len(opts) > 0 {
 		opt = opts[0]
 	}
 
-	stdout, err := NewCommand("merge-base", base, head).RunInDirWithTimeout(opt.Timeout, r.path)
+	stdout, err := NewCommand("merge-base", base, head).RunInDirWithTimeout(opt.Timeout, repoPath)
 	if err != nil {
 		if strings.Contains(err.Error(), "exit status 1") {
 			return "", ErrNoMergeBase
@@ -32,4 +33,9 @@ func (r *Repository) MergeBase(base, head string, opts ...MergeBaseOptions) (str
 		return "", err
 	}
 	return strings.TrimSpace(string(stdout)), nil
+}
+
+// MergeBase returns merge base between base and head revisions of the repository.
+func (r *Repository) MergeBase(base, head string, opts ...MergeBaseOptions) (string, error) {
+	return RepoMergeBase(r.path, base, head, opts...)
 }

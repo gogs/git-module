@@ -37,6 +37,21 @@ func TestRefShortName(t *testing.T) {
 	}
 }
 
+func TestRepository_ShowRefVerify(t *testing.T) {
+	t.Run("reference does not exsit", func(t *testing.T) {
+		rev, err := testrepo.ShowRefVerify("bad_reference")
+		assert.NotNil(t, err)
+		assert.Empty(t, rev)
+	})
+
+	rev, err := testrepo.ShowRefVerify("refs/heads/release-1.0")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	assert.Equal(t, "0eedd79eba4394bbef888c804e899731644367fe", rev)
+}
+
 func TestRepository_HasReference(t *testing.T) {
 	tests := []struct {
 		ref    string

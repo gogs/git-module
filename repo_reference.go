@@ -42,14 +42,15 @@ type ShowRefVerifyOptions struct {
 
 var ErrReferenceNotExist = errors.New("reference does not exist")
 
-// ShowRefVerify returns the commit ID of given reference if it exists in the repository.
-func (r *Repository) ShowRefVerify(ref string, opts ...ShowRefVerifyOptions) (string, error) {
+// ShowRefVerify returns the commit ID of given reference if it exists in the repository
+// in given path.
+func RepoShowRefVerify(repoPath, ref string, opts ...ShowRefVerifyOptions) (string, error) {
 	var opt ShowRefVerifyOptions
 	if len(opts) > 0 {
 		opt = opts[0]
 	}
 
-	stdout, err := NewCommand("show-ref", "--verify", ref).RunInDirWithTimeout(opt.Timeout, r.path)
+	stdout, err := NewCommand("show-ref", "--verify", ref).RunInDirWithTimeout(opt.Timeout, repoPath)
 	if err != nil {
 		if strings.Contains(err.Error(), "not a valid ref") {
 			return "", ErrReferenceNotExist
@@ -59,18 +60,54 @@ func (r *Repository) ShowRefVerify(ref string, opts ...ShowRefVerifyOptions) (st
 	return strings.Split(string(stdout), " ")[0], nil
 }
 
-// HasReference returns true if given reference exists in the repository. The reference must be
-// given in full path, e.g. refs/heads/master
-func (r *Repository) HasReference(ref string, opts ...ShowRefVerifyOptions) bool {
-	_, err := r.ShowRefVerify(ref, opts...)
+// ShowRefVerify returns the commit ID of given reference if it exists in the repository.
+func (r *Repository) ShowRefVerify(ref string, opts ...ShowRefVerifyOptions) (string, error) {
+	return RepoShowRefVerify(r.path, ref, opts...)
+}
+
+// RepoHasReference returns true if given reference exists in the repository in given path.
+// The reference must be given in full refspec, e.g. "refs/heads/master".
+func RepoHasReference(repoPath, ref string, opts ...ShowRefVerifyOptions) bool {
+	_, err := RepoShowRefVerify(repoPath, ref, opts...)
 	return err == nil
+}
+
+// RepoHasBranch returns true if given branch exists in the repository in given path.
+// The branch must be given in short name e.g. "master".
+func RepoHasBranch(repoPath, branch string, opts ...ShowRefVerifyOptions) bool {
+	return RepoHasReference(repoPath, RefsHeads+branch, opts...)
+}
+
+// RepoHasTag returns true if given tag exists in the repository in given path.
+// The tag must be given in short name e.g. "v1.0.0".
+func RepoHasTag(repoPath, tag string, opts ...ShowRefVerifyOptions) bool {
+	return RepoHasReference(repoPath, RefsTags+tag, opts...)
+}
+
+// HasReference returns true if given reference exists in the repository.
+// The reference must be given in full refspec, e.g. "refs/heads/master".
+func (r *Repository) HasReference(ref string, opts ...ShowRefVerifyOptions) bool {
+	return RepoHasReference(r.path, ref, opts...)
+}
+
+// HasBranch returns true if given branch exists in the repository.
+// The branch must be given in short name e.g. "master".
+func (r *Repository) HasBranch(branch string, opts ...ShowRefVerifyOptions) bool {
+	return RepoHasBranch(r.path, branch, opts...)
+}
+
+// HasTag returns true if given tag exists in the repository.
+// The tag must be given in short name e.g. "v1.0.0".
+func (r *Repository) HasTag(tag string, opts ...ShowRefVerifyOptions) bool {
+	return RepoHasTag(r.path, tag, opts...)
 }
 
 // SymbolicRefOptions contains optional arguments for get and set symbolic ref.
 type SymbolicRefOptions struct {
 	// The name of the symbolic ref. When not set, default ref "HEAD" is used.
 	Name string
-	// The name of the reference. When set, it will be used to update the symbolic ref.
+	// The name of the reference, e.g. "refs/heads/master". When set, it will
+	// be used to update the symbolic ref.
 	Ref string
 	// The timeout duration before giving up for each shell command execution.
 	// The default timeout duration will be used when not supplied.
@@ -164,8 +201,8 @@ type DeleteBranchOptions struct {
 	Timeout time.Duration
 }
 
-// DeleteBranch deletes the branch from the repository.
-func (r *Repository) DeleteBranch(name string, opts ...DeleteBranchOptions) error {
+// RepoDeleteBranch deletes the branch from the repository in given path.
+func RepoDeleteBranch(repoPath, name string, opts ...DeleteBranchOptions) error {
 	var opt DeleteBranchOptions
 	if len(opts) > 0 {
 		opt = opts[0]
@@ -177,6 +214,11 @@ func (r *Repository) DeleteBranch(name string, opts ...DeleteBranchOptions) erro
 	} else {
 		cmd.AddArgs("-d")
 	}
-	_, err := cmd.AddArgs(name).RunInDirWithTimeout(opt.Timeout, r.path)
+	_, err := cmd.AddArgs(name).RunInDirWithTimeout(opt.Timeout, repoPath)
 	return err
+}
+
+// DeleteBranch deletes the branch from the repository.
+func (r *Repository) DeleteBranch(name string, opts ...DeleteBranchOptions) error {
+	return RepoDeleteBranch(r.path, name, opts...)
 }

@@ -77,6 +77,13 @@ func TestRepository_Log(t *testing.T) {
 			}
 
 			assert.Equal(t, test.expCommitIDs, commitsToIDs(commits))
+
+			commits, err = RepoLog(testrepo.path, test.rev, test.opt)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			assert.Equal(t, test.expCommitIDs, commitsToIDs(commits))
 		})
 	}
 }
