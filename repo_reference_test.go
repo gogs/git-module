@@ -63,6 +63,10 @@ func TestRepository_HasReference(t *testing.T) {
 			expVal: true,
 		},
 		{
+			ref:    RefsTags + "v1.0.0",
+			expVal: true,
+		},
+		{
 			ref:    "master",
 			expVal: false,
 		},
@@ -70,6 +74,50 @@ func TestRepository_HasReference(t *testing.T) {
 	for _, test := range tests {
 		t.Run("", func(t *testing.T) {
 			assert.Equal(t, test.expVal, testrepo.HasReference(test.ref, test.opt))
+		})
+	}
+}
+
+func TestRepository_HasBranch(t *testing.T) {
+	tests := []struct {
+		ref    string
+		opt    ShowRefVerifyOptions
+		expVal bool
+	}{
+		{
+			ref:    "master",
+			expVal: true,
+		},
+		{
+			ref:    RefsHeads + "master",
+			expVal: false,
+		},
+	}
+	for _, test := range tests {
+		t.Run("", func(t *testing.T) {
+			assert.Equal(t, test.expVal, testrepo.HasBranch(test.ref, test.opt))
+		})
+	}
+}
+
+func TestRepository_HasTag(t *testing.T) {
+	tests := []struct {
+		ref    string
+		opt    ShowRefVerifyOptions
+		expVal bool
+	}{
+		{
+			ref:    "v1.0.0",
+			expVal: true,
+		},
+		{
+			ref:    RefsTags + "v1.0.0",
+			expVal: false,
+		},
+	}
+	for _, test := range tests {
+		t.Run("", func(t *testing.T) {
+			assert.Equal(t, test.expVal, testrepo.HasTag(test.ref, test.opt))
 		})
 	}
 }
