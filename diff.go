@@ -358,6 +358,13 @@ func (p *diffParser) parseSection() (_ *DiffSection, isIncomplete bool, _ error)
 		if p.buffer[0] != ' ' &&
 			p.buffer[0] != '+' &&
 			p.buffer[0] != '-' {
+
+			// No new line indicator
+			if p.buffer[0] == '\\' &&
+				bytes.HasPrefix(p.buffer, []byte(`\ No newline at end of file`)) {
+				p.buffer = nil
+				continue
+			}
 			return section, false, nil
 		}
 
