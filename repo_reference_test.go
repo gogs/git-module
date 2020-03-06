@@ -196,6 +196,25 @@ func TestRepository_ShowRef(t *testing.T) {
 	}
 }
 
+func TestRepository_Branches(t *testing.T) {
+	expBranches := map[string]bool{
+		"master":      true,
+		"develop":     true,
+		"release-1.0": true,
+	}
+	branches, err := testrepo.Branches()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, b := range branches {
+		delete(expBranches, b)
+	}
+
+	if len(expBranches) > 0 {
+		t.Fatalf("expect to be empty but got %v", expBranches)
+	}
+}
+
 func TestRepository_DeleteBranch(t *testing.T) {
 	r, cleanup, err := setupTempRepo()
 	if err != nil {

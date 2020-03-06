@@ -191,6 +191,20 @@ func (r *Repository) ShowRef(opts ...ShowRefOptions) ([]*Reference, error) {
 	return refs, nil
 }
 
+// Branches returns a list of all branches in the repository.
+func (r *Repository) Branches() ([]string, error) {
+	heads, err := r.ShowRef(ShowRefOptions{Heads: true})
+	if err != nil {
+		return nil, err
+	}
+
+	branches := make([]string, len(heads))
+	for i := range heads {
+		branches[i] = strings.TrimPrefix(heads[i].Refspec, RefsHeads)
+	}
+	return branches, nil
+}
+
 // DeleteBranchOptions contains optional arguments for deleting a branch.
 // // Docs: https://git-scm.com/docs/git-branch
 type DeleteBranchOptions struct {
