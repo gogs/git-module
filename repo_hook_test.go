@@ -14,7 +14,7 @@ import (
 
 func TestRepository_Hooks(t *testing.T) {
 	t.Run("invalid hook", func(t *testing.T) {
-		h, err := testrepo.Hook("bad_hook")
+		h, err := testrepo.Hook("", "bad_hook")
 		assert.Equal(t, os.ErrNotExist, err)
 		assert.Nil(t, h)
 	})
@@ -30,7 +30,7 @@ func TestRepository_Hooks(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		hooks, err := r.Hooks()
+		hooks, err := r.Hooks("")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -57,7 +57,7 @@ func TestRepository_Hooks(t *testing.T) {
 			_ = os.RemoveAll(dir)
 		}()
 
-		hooks, err := r.Hooks()
+		hooks, err := r.Hooks("")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -75,7 +75,7 @@ func TestRepository_Hooks(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	hooks, err := testrepo.Hooks()
+	hooks, err := testrepo.Hooks("")
 	if err != nil {
 		t.Fatal(err)
 	}
