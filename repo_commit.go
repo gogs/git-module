@@ -74,7 +74,7 @@ type CatFileCommitOptions struct {
 }
 
 // CatFileCommit returns the commit corresponding to the given revision of the repository.
-// The revision could be a commit ID or refspec.
+// The revision could be a commit ID or full refspec (e.g. "refs/heads/master").
 func (r *Repository) CatFileCommit(rev string, opts ...CatFileCommitOptions) (*Commit, error) {
 	var opt CatFileCommitOptions
 	if len(opts) > 0 {
@@ -106,6 +106,18 @@ func (r *Repository) CatFileCommit(rev string, opts ...CatFileCommitOptions) (*C
 
 	r.cachedCommits.Set(commitID, c)
 	return c, nil
+}
+
+// BranchCommit returns the latest commit of given branch of the repository.
+// The branch must be given in short name e.g. "master".
+func (r *Repository) BranchCommit(branch string, opts ...CatFileCommitOptions) (*Commit, error) {
+	return r.CatFileCommit(RefsHeads+branch, opts...)
+}
+
+// TagCommit returns the latest commit of given tag of the repository.
+// The tag must be given in short name e.g. "v1.0.0".
+func (r *Repository) TagCommit(tag string, opts ...CatFileCommitOptions) (*Commit, error) {
+	return r.CatFileCommit(RefsTags+tag, opts...)
 }
 
 // LogOptions contains optional arguments for listing commits.

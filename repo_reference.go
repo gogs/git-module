@@ -114,8 +114,8 @@ type SymbolicRefOptions struct {
 	Timeout time.Duration
 }
 
-// SymbolicRef returns the reference name pointed by the symbolic ref. It returns an empty string
-// and nil error when doing set operation.
+// SymbolicRef returns the reference name (e.g. "refs/heads/master") pointed by the
+// symbolic ref. It returns an empty string and nil error when doing set operation.
 func (r *Repository) SymbolicRef(opts ...SymbolicRefOptions) (string, error) {
 	var opt SymbolicRefOptions
 	if len(opts) > 0 {
