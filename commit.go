@@ -155,9 +155,12 @@ func (w *limitWriter) Write(p []byte) (int, error) {
 }
 
 // IsImageFile returns true if the commit is an image blob.
-func (c *Commit) IsImageFile(name string) (bool, error) {
-	blob, err := c.Blob(name)
+func (c *Commit) IsImageFile(subpath string) (bool, error) {
+	blob, err := c.Blob(subpath)
 	if err != nil {
+		if err == ErrNotBlob {
+			return false, nil
+		}
 		return false, err
 	}
 
