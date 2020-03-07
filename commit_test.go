@@ -560,13 +560,15 @@ func TestCommit_Ancestors(t *testing.T) {
 
 func TestCommit_IsImageFile(t *testing.T) {
 	t.Run("not a blob", func(t *testing.T) {
-		c, err := testrepo.CatFileCommit("4eaa8d4b05e731e950e2eaf9e8b92f522303ab41")
+		c, err := testrepo.CatFileCommit("4e59b72440188e7c2578299fc28ea425fbe9aece")
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		isImage, err := c.IsImageFile("img")
-		assert.Equal(t, ErrRevisionNotExist, err)
+		isImage, err := c.IsImageFile("gogs/docs-api")
+		if err != nil {
+			t.Fatal(err)
+		}
 		assert.False(t, isImage)
 	})
 
