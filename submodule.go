@@ -6,8 +6,9 @@ package git
 
 // Submodule contains information of a Git submodule.
 type Submodule struct {
-	name string
-	url  string
+	name   string
+	url    string
+	commit string
 }
 
 // Name returns the name of the submodule.
@@ -18,4 +19,9 @@ func (s *Submodule) Name() string {
 // URL returns the URL of the submodule.
 func (s *Submodule) URL() string {
 	return s.url
+}
+
+// Commit returns the commit of the subproject.
+func (s *Submodule) Commit() string {
+	return s.commit
 }
