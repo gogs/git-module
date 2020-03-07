@@ -145,9 +145,9 @@ func (es Entries) Sort() {
 
 // EntryCommitInfo contains a tree entry with its commit information.
 type EntryCommitInfo struct {
-	entry     *TreeEntry
-	commit    *Commit
-	submodule *Submodule
+	Entry     *TreeEntry
+	Commit    *Commit
+	Submodule *Submodule
 }
 
 // CommitsInfoOptions contains optional arguments for getting commits information.
@@ -224,12 +224,12 @@ func (es Entries) CommitsInfo(commit *Commit, opts ...CommitsInfoOptions) ([]*En
 				}
 
 				info := &EntryCommitInfo{
-					entry: e,
+					Entry: e,
 				}
 				epath := path.Join(opt.Path, e.Name())
 
 				var err error
-				info.commit, err = commit.CommitByPath(CommitByRevisionOptions{
+				info.Commit, err = commit.CommitByPath(CommitByRevisionOptions{
 					Path:    epath,
 					Timeout: opt.Timeout,
 				})
@@ -240,7 +240,7 @@ func (es Entries) CommitsInfo(commit *Commit, opts ...CommitsInfoOptions) ([]*En
 
 				// Get extra information for submodules
 				if e.IsCommit() {
-					info.submodule, err = commit.Submodule(epath)
+					info.Submodule, err = commit.Submodule(epath)
 					if err != nil {
 						setError(fmt.Errorf("get submodule %q: %v", epath, err))
 						return
@@ -260,7 +260,7 @@ func (es Entries) CommitsInfo(commit *Commit, opts ...CommitsInfoOptions) ([]*En
 	close(results)
 	infos := make(map[[20]byte]*EntryCommitInfo, len(es))
 	for info := range results {
-		infos[info.entry.id.bytes] = info
+		infos[info.Entry.id.bytes] = info
 	}
 
 	commitsInfo := make([]*EntryCommitInfo, len(es))

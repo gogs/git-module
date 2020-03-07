@@ -22,6 +22,7 @@ func TestCommit_Submodule(t *testing.T) {
 	}
 	assert.Equal(t, "gogs/docs-api", mod.Name())
 	assert.Equal(t, "https://github.com/gogs/docs-api.git", mod.URL())
+	assert.Equal(t, "6b08f76a5313fa3d26859515b30aa17a5faa2807", mod.Commit())
 
 	_, err = c.Submodule("404")
 	assert.Equal(t, ErrSubmoduleNotExist, err)

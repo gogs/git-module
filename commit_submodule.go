@@ -36,19 +36,27 @@ func (c *Commit) Submodules() (Submodules, error) {
 			if strings.HasPrefix(scanner.Text(), "[submodule") {
 				inSection = true
 				continue
+			} else if !inSection {
+				continue
 			}
-			if inSection {
-				fields := strings.Split(scanner.Text(), "=")
-				k := strings.TrimSpace(fields[0])
-				if k == "path" {
-					path = strings.TrimSpace(fields[1])
-				} else if k == "url" {
-					c.submodules.Set(path, &Submodule{
-						name: path,
-						url:  strings.TrimSpace(fields[1])},
-					)
-					inSection = false
+
+			fields := strings.Split(scanner.Text(), "=")
+			switch strings.TrimSpace(fields[0]) {
+			case "path":
+				path = strings.TrimSpace(fields[1])
+			case "url":
+				mod := &Submodule{
+					name: path,
+					url:  strings.TrimSpace(fields[1]),
 				}
+
+				mod.commit, c.submodulesErr = c.repo.RevParse("@:" + mod.name)
+				if c.submodulesErr != nil {
+					return
+				}
+
+				c.submodules.Set(path, mod)
+				inSection = false
 			}
 		}
 	})

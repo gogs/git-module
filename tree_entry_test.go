@@ -143,101 +143,101 @@ func TestEntries_CommitsInfo(t *testing.T) {
 
 		expInfos := []*EntryCommitInfo{
 			{
-				entry: &TreeEntry{
+				Entry: &TreeEntry{
 					name: ".DS_Store",
 				},
-				commit: &Commit{
+				Commit: &Commit{
 					id: MustIDFromString("4eaa8d4b05e731e950e2eaf9e8b92f522303ab41"),
 				},
 			}, {
-				entry: &TreeEntry{
+				Entry: &TreeEntry{
 					name: ".gitattributes",
 				},
-				commit: &Commit{
+				Commit: &Commit{
 					id: MustIDFromString("bf7a9a5ee025edee0e610bd7ba23c0704b53c6db"),
 				},
 			}, {
-				entry: &TreeEntry{
+				Entry: &TreeEntry{
 					name: ".gitignore",
 				},
-				commit: &Commit{
+				Commit: &Commit{
 					id: MustIDFromString("d2280d000c84f1e595e4dec435ae6c1e6c245367"),
 				},
 			}, {
-				entry: &TreeEntry{
+				Entry: &TreeEntry{
 					name: ".gitmodules",
 				},
-				commit: &Commit{
+				Commit: &Commit{
 					id: MustIDFromString("4e59b72440188e7c2578299fc28ea425fbe9aece"),
 				},
 			}, {
-				entry: &TreeEntry{
+				Entry: &TreeEntry{
 					name: ".travis.yml",
 				},
-				commit: &Commit{
+				Commit: &Commit{
 					id: MustIDFromString("9805760644754c38d10a9f1522a54a4bdc00fa8a"),
 				},
 			}, {
-				entry: &TreeEntry{
+				Entry: &TreeEntry{
 					name: "README.txt",
 				},
-				commit: &Commit{
+				Commit: &Commit{
 					id: MustIDFromString("a13dba1e469944772490909daa58c53ac8fa4b0d"),
 				},
 			}, {
-				entry: &TreeEntry{
+				Entry: &TreeEntry{
 					name: "build.gradle",
 				},
-				commit: &Commit{
+				Commit: &Commit{
 					id: MustIDFromString("c59479302142d79e46f84d11438a41b39ba51a1f"),
 				},
 			}, {
-				entry: &TreeEntry{
+				Entry: &TreeEntry{
 					name: "gogs",
 				},
-				commit: &Commit{
+				Commit: &Commit{
 					id: MustIDFromString("4e59b72440188e7c2578299fc28ea425fbe9aece"),
 				},
 			}, {
-				entry: &TreeEntry{
+				Entry: &TreeEntry{
 					name: "img",
 				},
-				commit: &Commit{
+				Commit: &Commit{
 					id: MustIDFromString("4eaa8d4b05e731e950e2eaf9e8b92f522303ab41"),
 				},
 			}, {
-				entry: &TreeEntry{
+				Entry: &TreeEntry{
 					name: "pom.xml",
 				},
-				commit: &Commit{
+				Commit: &Commit{
 					id: MustIDFromString("ef7bebf8bdb1919d947afe46ab4b2fb4278039b3"),
 				},
 			}, {
-				entry: &TreeEntry{
+				Entry: &TreeEntry{
 					name: "resources",
 				},
-				commit: &Commit{
+				Commit: &Commit{
 					id: MustIDFromString("755fd577edcfd9209d0ac072eed3b022cbe4d39b"),
 				},
 			}, {
-				entry: &TreeEntry{
+				Entry: &TreeEntry{
 					name: "run.sh",
 				},
-				commit: &Commit{
+				Commit: &Commit{
 					id: MustIDFromString("0eedd79eba4394bbef888c804e899731644367fe"),
 				},
 			}, {
-				entry: &TreeEntry{
+				Entry: &TreeEntry{
 					name: "src",
 				},
-				commit: &Commit{
+				Commit: &Commit{
 					id: MustIDFromString("ebbbf773431ba07510251bb03f9525c7bab2b13a"),
 				},
 			},
 		}
 		for i := range expInfos {
-			assert.Equal(t, expInfos[i].entry.Name(), infos[i].entry.Name(), "idx: %d", i)
-			assert.Equal(t, expInfos[i].commit.ID().String(), infos[i].commit.ID().String(), "idx: %d", i)
+			assert.Equal(t, expInfos[i].Entry.Name(), infos[i].Entry.Name(), "idx: %d", i)
+			assert.Equal(t, expInfos[i].Commit.ID().String(), infos[i].Commit.ID().String(), "idx: %d", i)
 		}
 	})
 
@@ -261,17 +261,17 @@ func TestEntries_CommitsInfo(t *testing.T) {
 
 		expInfos := []*EntryCommitInfo{
 			{
-				entry: &TreeEntry{
+				Entry: &TreeEntry{
 					name: "docs-api",
 				},
-				commit: &Commit{
+				Commit: &Commit{
 					id: MustIDFromString("4e59b72440188e7c2578299fc28ea425fbe9aece"),
 				},
 			},
 		}
 		for i := range expInfos {
-			assert.Equal(t, expInfos[i].entry.Name(), infos[i].entry.Name(), "idx: %d", i)
-			assert.Equal(t, expInfos[i].commit.ID().String(), infos[i].commit.ID().String(), "idx: %d", i)
+			assert.Equal(t, expInfos[i].Entry.Name(), infos[i].Entry.Name(), "idx: %d", i)
+			assert.Equal(t, expInfos[i].Commit.ID().String(), infos[i].Commit.ID().String(), "idx: %d", i)
 		}
 	})
 }

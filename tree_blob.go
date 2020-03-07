@@ -30,6 +30,7 @@ func (t *Tree) TreeEntry(subpath string, opts ...LsTreeOptions) (*TreeEntry, err
 			if err != nil {
 				return nil, err
 			}
+
 			for _, v := range entries {
 				if v.name == name {
 					return v, nil
@@ -56,5 +57,5 @@ func (t *Tree) Blob(subpath string, opts ...LsTreeOptions) (*Blob, error) {
 		return e.Blob(), nil
 	}
 
-	return nil, ErrRevisionNotExist
+	return nil, ErrNotBlob
 }
