@@ -52,6 +52,36 @@ func TestRepository_ShowRefVerify(t *testing.T) {
 	assert.Equal(t, "0eedd79eba4394bbef888c804e899731644367fe", rev)
 }
 
+func TestRepository_BranchCommitID(t *testing.T) {
+	t.Run("branch does not exsit", func(t *testing.T) {
+		rev, err := testrepo.BranchCommitID("bad_branch")
+		assert.NotNil(t, err)
+		assert.Empty(t, rev)
+	})
+
+	rev, err := testrepo.BranchCommitID("release-1.0")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	assert.Equal(t, "0eedd79eba4394bbef888c804e899731644367fe", rev)
+}
+
+func TestRepository_TagCommitID(t *testing.T) {
+	t.Run("tag does not exsit", func(t *testing.T) {
+		rev, err := testrepo.TagCommitID("bad_tag")
+		assert.NotNil(t, err)
+		assert.Empty(t, rev)
+	})
+
+	rev, err := testrepo.TagCommitID("v1.0.0")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	assert.Equal(t, "0eedd79eba4394bbef888c804e899731644367fe", rev)
+}
+
 func TestRepository_HasReference(t *testing.T) {
 	tests := []struct {
 		ref    string

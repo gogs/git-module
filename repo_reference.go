@@ -60,9 +60,22 @@ func RepoShowRefVerify(repoPath, ref string, opts ...ShowRefVerifyOptions) (stri
 	return strings.Split(string(stdout), " ")[0], nil
 }
 
-// ShowRefVerify returns the commit ID of given reference if it exists in the repository.
+// ShowRefVerify returns the commit ID of given reference (e.g. "refs/heads/master")
+// if it exists in the repository.
 func (r *Repository) ShowRefVerify(ref string, opts ...ShowRefVerifyOptions) (string, error) {
 	return RepoShowRefVerify(r.path, ref, opts...)
+}
+
+// BranchCommitID returns the commit ID of given branch if it exists in the repository.
+// The branch must be given in short name e.g. "master".
+func (r *Repository) BranchCommitID(branch string, opts ...ShowRefVerifyOptions) (string, error) {
+	return r.ShowRefVerify(RefsHeads+branch, opts...)
+}
+
+// TagCommitID returns the commit ID of given tag if it exists in the repository.
+// The tag must be given in short name e.g. "v1.0.0".
+func (r *Repository) TagCommitID(tag string, opts ...ShowRefVerifyOptions) (string, error) {
+	return r.ShowRefVerify(RefsTags+tag, opts...)
 }
 
 // RepoHasReference returns true if given reference exists in the repository in given path.
