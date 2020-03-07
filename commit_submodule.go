@@ -10,6 +10,16 @@ import (
 	"strings"
 )
 
+// Submodule contains information of a Git submodule.
+type Submodule struct {
+	// The name of the submodule.
+	Name string
+	// The URL of the submodule.
+	URL string
+	// The commit ID of the subproject.
+	Commit string
+}
+
 // Submodules contains information of submodules.
 type Submodules = *objectCache
 
@@ -46,11 +56,11 @@ func (c *Commit) Submodules() (Submodules, error) {
 				path = strings.TrimSpace(fields[1])
 			case "url":
 				mod := &Submodule{
-					name: path,
-					url:  strings.TrimSpace(fields[1]),
+					Name: path,
+					URL:  strings.TrimSpace(fields[1]),
 				}
 
-				mod.commit, c.submodulesErr = c.repo.RevParse("@:" + mod.name)
+				mod.Commit, c.submodulesErr = c.repo.RevParse("@:" + mod.Name)
 				if c.submodulesErr != nil {
 					return
 				}
