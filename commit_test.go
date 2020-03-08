@@ -6,7 +6,6 @@ package git
 
 import (
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -17,31 +16,7 @@ func TestCommit(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Run("ID", func(t *testing.T) {
-		assert.Equal(t, "435ffceb7ba576c937e922766e37d4f7abdcc122", c.ID().String())
-	})
-
-	author := &Signature{
-		Name:  "Jordan McCullough",
-		Email: "jordan@github.com",
-		When:  time.Unix(1415213395, 0),
-	}
-	t.Run("Author", func(t *testing.T) {
-		assert.Equal(t, author.Name, c.Author().Name)
-		assert.Equal(t, author.Email, c.Author().Email)
-		assert.Equal(t, author.When.Unix(), c.Author().When.Unix())
-	})
-
-	t.Run("Committer", func(t *testing.T) {
-		assert.Equal(t, author.Name, c.Committer().Name)
-		assert.Equal(t, author.Email, c.Committer().Email)
-		assert.Equal(t, author.When.Unix(), c.Committer().When.Unix())
-	})
-
-	t.Run("Message", func(t *testing.T) {
-		message := `Merge pull request #35 from githubtraining/travis-yml-docker
-
-Add special option flag for Travis Docker use case`
-		assert.Equal(t, message, c.Message())
+		assert.Equal(t, "435ffceb7ba576c937e922766e37d4f7abdcc122", c.ID.String())
 	})
 
 	t.Run("Summary", func(t *testing.T) {
@@ -84,7 +59,7 @@ func TestCommit_Parent(t *testing.T) {
 				if err != nil {
 					t.Fatal(err)
 				}
-				assert.Equal(t, test.expParentID, p.ID().String())
+				assert.Equal(t, test.expParentID, p.ID.String())
 			})
 		}
 	})
@@ -123,7 +98,7 @@ func TestCommit_CommitByPath(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			assert.Equal(t, test.expCommitID, cc.ID().String())
+			assert.Equal(t, test.expCommitID, cc.ID.String())
 		})
 	}
 }
@@ -132,7 +107,7 @@ func TestCommit_CommitByPath(t *testing.T) {
 func commitsToIDs(commits []*Commit) []string {
 	ids := make([]string, len(commits))
 	for i := range commits {
-		ids[i] = commits[i].ID().String()
+		ids[i] = commits[i].ID.String()
 	}
 	return ids
 }

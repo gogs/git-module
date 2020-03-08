@@ -147,97 +147,97 @@ func TestEntries_CommitsInfo(t *testing.T) {
 					name: ".DS_Store",
 				},
 				Commit: &Commit{
-					id: MustIDFromString("4eaa8d4b05e731e950e2eaf9e8b92f522303ab41"),
+					ID: MustIDFromString("4eaa8d4b05e731e950e2eaf9e8b92f522303ab41"),
 				},
 			}, {
 				Entry: &TreeEntry{
 					name: ".gitattributes",
 				},
 				Commit: &Commit{
-					id: MustIDFromString("bf7a9a5ee025edee0e610bd7ba23c0704b53c6db"),
+					ID: MustIDFromString("bf7a9a5ee025edee0e610bd7ba23c0704b53c6db"),
 				},
 			}, {
 				Entry: &TreeEntry{
 					name: ".gitignore",
 				},
 				Commit: &Commit{
-					id: MustIDFromString("d2280d000c84f1e595e4dec435ae6c1e6c245367"),
+					ID: MustIDFromString("d2280d000c84f1e595e4dec435ae6c1e6c245367"),
 				},
 			}, {
 				Entry: &TreeEntry{
 					name: ".gitmodules",
 				},
 				Commit: &Commit{
-					id: MustIDFromString("4e59b72440188e7c2578299fc28ea425fbe9aece"),
+					ID: MustIDFromString("4e59b72440188e7c2578299fc28ea425fbe9aece"),
 				},
 			}, {
 				Entry: &TreeEntry{
 					name: ".travis.yml",
 				},
 				Commit: &Commit{
-					id: MustIDFromString("9805760644754c38d10a9f1522a54a4bdc00fa8a"),
+					ID: MustIDFromString("9805760644754c38d10a9f1522a54a4bdc00fa8a"),
 				},
 			}, {
 				Entry: &TreeEntry{
 					name: "README.txt",
 				},
 				Commit: &Commit{
-					id: MustIDFromString("a13dba1e469944772490909daa58c53ac8fa4b0d"),
+					ID: MustIDFromString("a13dba1e469944772490909daa58c53ac8fa4b0d"),
 				},
 			}, {
 				Entry: &TreeEntry{
 					name: "build.gradle",
 				},
 				Commit: &Commit{
-					id: MustIDFromString("c59479302142d79e46f84d11438a41b39ba51a1f"),
+					ID: MustIDFromString("c59479302142d79e46f84d11438a41b39ba51a1f"),
 				},
 			}, {
 				Entry: &TreeEntry{
 					name: "gogs",
 				},
 				Commit: &Commit{
-					id: MustIDFromString("4e59b72440188e7c2578299fc28ea425fbe9aece"),
+					ID: MustIDFromString("4e59b72440188e7c2578299fc28ea425fbe9aece"),
 				},
 			}, {
 				Entry: &TreeEntry{
 					name: "img",
 				},
 				Commit: &Commit{
-					id: MustIDFromString("4eaa8d4b05e731e950e2eaf9e8b92f522303ab41"),
+					ID: MustIDFromString("4eaa8d4b05e731e950e2eaf9e8b92f522303ab41"),
 				},
 			}, {
 				Entry: &TreeEntry{
 					name: "pom.xml",
 				},
 				Commit: &Commit{
-					id: MustIDFromString("ef7bebf8bdb1919d947afe46ab4b2fb4278039b3"),
+					ID: MustIDFromString("ef7bebf8bdb1919d947afe46ab4b2fb4278039b3"),
 				},
 			}, {
 				Entry: &TreeEntry{
 					name: "resources",
 				},
 				Commit: &Commit{
-					id: MustIDFromString("755fd577edcfd9209d0ac072eed3b022cbe4d39b"),
+					ID: MustIDFromString("755fd577edcfd9209d0ac072eed3b022cbe4d39b"),
 				},
 			}, {
 				Entry: &TreeEntry{
 					name: "run.sh",
 				},
 				Commit: &Commit{
-					id: MustIDFromString("0eedd79eba4394bbef888c804e899731644367fe"),
+					ID: MustIDFromString("0eedd79eba4394bbef888c804e899731644367fe"),
 				},
 			}, {
 				Entry: &TreeEntry{
 					name: "src",
 				},
 				Commit: &Commit{
-					id: MustIDFromString("ebbbf773431ba07510251bb03f9525c7bab2b13a"),
+					ID: MustIDFromString("ebbbf773431ba07510251bb03f9525c7bab2b13a"),
 				},
 			},
 		}
 		for i := range expInfos {
 			assert.Equal(t, expInfos[i].Entry.Name(), infos[i].Entry.Name(), "idx: %d", i)
-			assert.Equal(t, expInfos[i].Commit.ID().String(), infos[i].Commit.ID().String(), "idx: %d", i)
+			assert.Equal(t, expInfos[i].Commit.ID.String(), infos[i].Commit.ID.String(), "idx: %d", i)
 		}
 	})
 
@@ -265,13 +265,13 @@ func TestEntries_CommitsInfo(t *testing.T) {
 					name: "docs-api",
 				},
 				Commit: &Commit{
-					id: MustIDFromString("4e59b72440188e7c2578299fc28ea425fbe9aece"),
+					ID: MustIDFromString("4e59b72440188e7c2578299fc28ea425fbe9aece"),
 				},
 			},
 		}
 		for i := range expInfos {
 			assert.Equal(t, expInfos[i].Entry.Name(), infos[i].Entry.Name(), "idx: %d", i)
-			assert.Equal(t, expInfos[i].Commit.ID().String(), infos[i].Commit.ID().String(), "idx: %d", i)
+			assert.Equal(t, expInfos[i].Commit.ID.String(), infos[i].Commit.ID.String(), "idx: %d", i)
 		}
 	})
 }

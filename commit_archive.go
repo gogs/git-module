@@ -25,7 +25,7 @@ func (c *Commit) CreateArchive(format ArchiveFormat, dst string) error {
 		"--prefix="+prefix,
 		"--format="+string(format),
 		"-o", dst,
-		c.id.String(),
+		c.ID.String(),
 	).RunInDir(c.repo.path)
 	return err
 }
