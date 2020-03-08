@@ -12,31 +12,31 @@ import (
 
 func TestRepository_Tag(t *testing.T) {
 	tests := []struct {
-		refspec string
-		opt     TagOptions
-		expTag  *Tag
+		name   string
+		opt    TagOptions
+		expTag *Tag
 	}{
 		{
-			refspec: "v1.0.0",
+			name: "v1.0.0",
 			expTag: &Tag{
 				typ:      ObjectCommit,
 				id:       MustIDFromString("0eedd79eba4394bbef888c804e899731644367fe"),
 				commitID: MustIDFromString("0eedd79eba4394bbef888c804e899731644367fe"),
-				refspec:  "v1.0.0",
+				refspec:  "refs/tags/v1.0.0",
 			},
 		}, {
-			refspec: "v1.1.0",
+			name: "v1.1.0",
 			expTag: &Tag{
 				typ:      ObjectTag,
 				id:       MustIDFromString("b39c8508bbc4b00ad2e24d358012ea123bcafd8d"),
 				commitID: MustIDFromString("0eedd79eba4394bbef888c804e899731644367fe"),
-				refspec:  "v1.1.0",
+				refspec:  "refs/tags/v1.1.0",
 			},
 		},
 	}
 	for _, test := range tests {
 		t.Run("", func(t *testing.T) {
-			tag, err := testrepo.Tag(test.refspec, test.opt)
+			tag, err := testrepo.Tag(test.name, test.opt)
 			if err != nil {
 				t.Fatal(err)
 			}

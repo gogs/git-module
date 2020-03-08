@@ -107,16 +107,17 @@ type TagOptions struct {
 	Timeout time.Duration
 }
 
-// Tag returns a Git tag by given refspec, e.g. "refs/tags/v1.0.0".
-func (r *Repository) Tag(refspec string, opts ...TagOptions) (*Tag, error) {
+// Tag returns a Git tag by given name, e.g. "v1.0.0".
+func (r *Repository) Tag(name string, opts ...TagOptions) (*Tag, error) {
 	var opt TagOptions
 	if len(opts) > 0 {
 		opt = opts[0]
 	}
 
+	refsepc := RefsTags + name
 	refs, err := r.ShowRef(ShowRefOptions{
 		Tags:     true,
-		Patterns: []string{refspec},
+		Patterns: []string{refsepc},
 		Timeout:  opt.Timeout,
 	})
 	if err != nil {
@@ -134,7 +135,7 @@ func (r *Repository) Tag(refspec string, opts ...TagOptions) (*Tag, error) {
 	if err != nil {
 		return nil, err
 	}
-	tag.refspec = refspec
+	tag.refspec = refsepc
 	return tag, nil
 }
 

@@ -23,7 +23,7 @@ func (r *Repository) NewHook(dir string, name HookName) *Hook {
 }
 
 // Hook returns a Git hook by given name in the repository. Giving empty directory
-// will use the default directory.It returns an os.ErrNotExist if both active and
+// will use the default directory. It returns an os.ErrNotExist if both active and
 // sample hook do not exist.
 func (r *Repository) Hook(dir string, name HookName) (*Hook, error) {
 	if dir == "" {
