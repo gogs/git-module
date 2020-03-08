@@ -15,10 +15,10 @@ const DefaultHooksDir = "hooks"
 
 // NewHook creates and returns a new hook with given name. Update method must be called
 // to actually save the hook to disk.
-func (r *Repository) NewHook(name HookName) *Hook {
+func (r *Repository) NewHook(dir string, name HookName) *Hook {
 	return &Hook{
 		name: name,
-		path: filepath.Join(r.path, DefaultHooksDir, string(name)),
+		path: filepath.Join(r.path, dir, string(name)),
 	}
 }
 
@@ -43,18 +43,14 @@ func (r *Repository) Hook(dir string, name HookName) (*Hook, error) {
 		}, nil
 	}
 
-	// 2. Check if a sample file exists.
-	spath := filepath.Join(r.path, DefaultHooksDir, string(name)+".sample")
-	if isFile(spath) {
-		p, err := ioutil.ReadFile(spath)
-		if err != nil {
-			return nil, err
-		}
+	// 2. Check if sample content exists.
+	sample := ServerSideHookSamples[name]
+	if sample != "" {
 		return &Hook{
 			name:     name,
 			path:     fpath,
 			isSample: true,
-			content:  string(p),
+			content:  sample,
 		}, nil
 	}
 
