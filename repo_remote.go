@@ -123,7 +123,7 @@ type RemoveRemoteOptions struct {
 	Timeout time.Duration
 }
 
-// RemoveRemote removes a remote from the repository in given path.
+// RepoRemoveRemote removes a remote from the repository in given path.
 func RepoRemoveRemote(repoPath, name string, opts ...RemoveRemoteOptions) error {
 	var opt RemoveRemoteOptions
 	if len(opts) > 0 {
