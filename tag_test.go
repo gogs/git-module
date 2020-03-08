@@ -41,5 +41,5 @@ func TestTag_Commit(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	assert.Equal(t, "0eedd79eba4394bbef888c804e899731644367fe", c.ID().String())
+	assert.Equal(t, "0eedd79eba4394bbef888c804e899731644367fe", c.ID.String())
 }

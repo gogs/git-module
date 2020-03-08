@@ -374,11 +374,11 @@ func TestRepository_Commit(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	assert.Equal(t, committer.Name, c.Committer().Name)
-	assert.Equal(t, committer.Email, c.Committer().Email)
-	assert.Equal(t, author.Name, c.Author().Name)
-	assert.Equal(t, author.Email, c.Author().Email)
-	assert.Equal(t, message+"\n", c.Message())
+	assert.Equal(t, committer.Name, c.Committer.Name)
+	assert.Equal(t, committer.Email, c.Committer.Email)
+	assert.Equal(t, author.Name, c.Author.Name)
+	assert.Equal(t, author.Email, c.Author.Email)
+	assert.Equal(t, message+"\n", c.Message)
 }
 
 func TestRepository_RevParse(t *testing.T) {

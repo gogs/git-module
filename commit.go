@@ -15,12 +15,16 @@ import (
 
 // Commit contains information of a Git commit.
 type Commit struct {
-	id        *SHA1
-	parents   []*SHA1
-	author    *Signature
-	committer *Signature
-	message   string
+	// The SHA-1 hash of the commit.
+	ID *SHA1
+	//  The author of the commit.
+	Author *Signature
+	// The committer of the commit.
+	Committer *Signature
+	// The full commit message.
+	Message string
 
+	parents []*SHA1
 	*Tree
 
 	submodules     Submodules
@@ -28,29 +32,9 @@ type Commit struct {
 	submodulesErr  error
 }
 
-// ID returns the SHA-1 hash of the commit.
-func (c *Commit) ID() *SHA1 {
-	return c.id
-}
-
-// Author returns the author of the commit.
-func (c *Commit) Author() *Signature {
-	return c.author
-}
-
-// Committer returns the committer of the commit.
-func (c *Commit) Committer() *Signature {
-	return c.committer
-}
-
-// Message returns the full commit message.
-func (c *Commit) Message() string {
-	return c.message
-}
-
 // Summary returns first line of commit message.
 func (c *Commit) Summary() string {
-	return strings.Split(c.message, "\n")[0]
+	return strings.Split(c.Message, "\n")[0]
 }
 
 // ParentsCount returns number of parents of the commit.
@@ -81,40 +65,40 @@ func (c *Commit) Parent(n int, opts ...CatFileCommitOptions) (*Commit, error) {
 
 // CommitByPath returns the commit of the path in the state of this commit.
 func (c *Commit) CommitByPath(opts ...CommitByRevisionOptions) (*Commit, error) {
-	return c.repo.CommitByRevision(c.id.String(), opts...)
+	return c.repo.CommitByRevision(c.ID.String(), opts...)
 }
 
 // CommitsByPage returns a paginated list of commits in the state of this commit.
 // The returned list is in reverse chronological order.
 func (c *Commit) CommitsByPage(page, size int, opts ...CommitsByPageOptions) ([]*Commit, error) {
-	return c.repo.CommitsByPage(c.id.String(), page, size, opts...)
+	return c.repo.CommitsByPage(c.ID.String(), page, size, opts...)
 }
 
 // SearchCommits searches commit message with given pattern. The returned list is in reverse
 // chronological order.
 func (c *Commit) SearchCommits(pattern string, opts ...SearchCommitsOptions) ([]*Commit, error) {
-	return c.repo.SearchCommits(c.id.String(), pattern, opts...)
+	return c.repo.SearchCommits(c.ID.String(), pattern, opts...)
 }
 
 // ShowNameStatus returns name status of the commit.
 func (c *Commit) ShowNameStatus(opts ...ShowNameStatusOptions) (*NameStatus, error) {
-	return c.repo.ShowNameStatus(c.id.String(), opts...)
+	return c.repo.ShowNameStatus(c.ID.String(), opts...)
 }
 
 // CommitsCount returns number of total commits up to this commit.
 func (c *Commit) CommitsCount(opts ...RevListCountOptions) (int64, error) {
-	return c.repo.RevListCount([]string{c.id.String()}, opts...)
+	return c.repo.RevListCount([]string{c.ID.String()}, opts...)
 }
 
 // FilesChangedSince returns a list of files changed after given commit ID.
 func (c *Commit) FilesChangedAfter(after string, opts ...DiffNameOnlyOptions) ([]string, error) {
-	return c.repo.DiffNameOnly(after, c.id.String(), opts...)
+	return c.repo.DiffNameOnly(after, c.ID.String(), opts...)
 }
 
 // CommitsAfter returns a list of commits after given commit ID up to this commit. The returned
 // list is in reverse chronological order.
 func (c *Commit) CommitsAfter(after string, opts ...RevListOptions) ([]*Commit, error) {
-	return c.repo.RevList([]string{after + "..." + c.id.String()}, opts...)
+	return c.repo.RevList([]string{after + "..." + c.ID.String()}, opts...)
 }
 
 // Ancestors returns a list of ancestors of this commit in reverse chronological order.
@@ -130,7 +114,7 @@ func (c *Commit) Ancestors(opts ...LogOptions) ([]*Commit, error) {
 
 	opt.Skip++
 
-	return c.repo.Log(c.id.String(), opt)
+	return c.repo.Log(c.ID.String(), opt)
 }
 
 type limitWriter struct {

@@ -46,17 +46,17 @@ loop:
 				if err != nil {
 					return nil, err
 				}
-				commit.author = sig
+				commit.Author = sig
 			case "committer":
 				sig, err := parseSignature(line[spacepos+1:])
 				if err != nil {
 					return nil, err
 				}
-				commit.committer = sig
+				commit.Committer = sig
 			}
 			nextline += eol + 1
 		case eol == 0:
-			commit.message = string(data[nextline+1:])
+			commit.Message = string(data[nextline+1:])
 			break loop
 		default:
 			break loop
@@ -102,7 +102,7 @@ func (r *Repository) CatFileCommit(rev string, opts ...CatFileCommitOptions) (*C
 		return nil, err
 	}
 	c.repo = r
-	c.id = MustIDFromString(commitID)
+	c.ID = MustIDFromString(commitID)
 
 	r.cachedCommits.Set(commitID, c)
 	return c, nil

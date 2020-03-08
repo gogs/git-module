@@ -41,7 +41,7 @@ func (r *Repository) Diff(rev string, maxFiles, maxFileLines, maxLineChars int, 
 			cmd.AddArgs("show", "--full-index", rev)
 		} else {
 			c, _ := commit.Parent(0)
-			cmd.AddArgs("diff", "--full-index", "-M", c.id.String(), rev)
+			cmd.AddArgs("diff", "--full-index", "-M", c.ID.String(), rev)
 		}
 	} else {
 		cmd.AddArgs("diff", "--full-index", "-M", opt.Base, rev)
@@ -97,14 +97,14 @@ func (r *Repository) RawDiff(rev string, diffType RawDiffFormat, w io.Writer, op
 			cmd.AddArgs("show", rev)
 		} else {
 			c, _ := commit.Parent(0)
-			cmd.AddArgs("diff", "-M", c.id.String(), rev)
+			cmd.AddArgs("diff", "-M", c.ID.String(), rev)
 		}
 	case RawDiffPatch:
 		if commit.ParentsCount() == 0 {
 			cmd.AddArgs("format-patch", "--no-signature", "--stdout", "--root", rev)
 		} else {
 			c, _ := commit.Parent(0)
-			cmd.AddArgs("format-patch", "--no-signature", "--stdout", rev+"..."+c.id.String())
+			cmd.AddArgs("format-patch", "--no-signature", "--stdout", rev+"..."+c.ID.String())
 		}
 	default:
 		return fmt.Errorf("invalid diffType: %s", diffType)

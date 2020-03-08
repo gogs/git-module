@@ -49,8 +49,8 @@ func TestRepository_CatFileCommit(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	assert.Equal(t, "d58e3ef9f123eea6857161c79275ee22b228f659", c.ID().String())
-	assert.Equal(t, "Add a symlink\n", c.Message())
+	assert.Equal(t, "d58e3ef9f123eea6857161c79275ee22b228f659", c.ID.String())
+	assert.Equal(t, "Add a symlink\n", c.Message)
 }
 
 func TestRepository_BranchCommit(t *testing.T) {
@@ -65,8 +65,8 @@ func TestRepository_BranchCommit(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	assert.Equal(t, "0eedd79eba4394bbef888c804e899731644367fe", c.ID().String())
-	assert.Equal(t, "Rename shell script\n", c.Message())
+	assert.Equal(t, "0eedd79eba4394bbef888c804e899731644367fe", c.ID.String())
+	assert.Equal(t, "Rename shell script\n", c.Message)
 }
 
 func TestRepository_TagCommit(t *testing.T) {
@@ -81,8 +81,8 @@ func TestRepository_TagCommit(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	assert.Equal(t, "0eedd79eba4394bbef888c804e899731644367fe", c.ID().String())
-	assert.Equal(t, "Rename shell script\n", c.Message())
+	assert.Equal(t, "0eedd79eba4394bbef888c804e899731644367fe", c.ID.String())
+	assert.Equal(t, "Rename shell script\n", c.Message)
 }
 
 func TestRepository_Log(t *testing.T) {
@@ -152,7 +152,7 @@ func TestRepository_CommitByRevision(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			assert.Equal(t, test.expID, c.ID().String())
+			assert.Equal(t, test.expID, c.ID.String())
 		})
 	}
 }
