@@ -1,5 +1,6 @@
-os: linux
 language: go
+os: linux
+dist: xenial
 go:
   - 1.9.x
   - 1.10.x
@@ -8,15 +9,11 @@ go:
   - 1.13.x
   - 1.14.x
 go_import_path: github.com/gogs/git-module
-
 env:
   - GO111MODULE=on
-
 install:
   - go get -t -v ./...
-
 script:
   - go test -v -race -verbose -coverprofile=coverage.txt -covermode=atomic
-
 after_success:
   - bash <(curl -s https://codecov.io/bash)
