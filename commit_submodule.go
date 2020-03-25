@@ -60,7 +60,7 @@ func (c *Commit) Submodules() (Submodules, error) {
 					URL:  strings.TrimSpace(fields[1]),
 				}
 
-				mod.Commit, c.submodulesErr = c.repo.RevParse("@:" + mod.Name)
+				mod.Commit, c.submodulesErr = c.repo.RevParse(c.id.String() + ":" + mod.Name)
 				if c.submodulesErr != nil {
 					return
 				}
