@@ -87,7 +87,7 @@ func (r *Repository) CatFileCommit(rev string, opts ...CatFileCommitOptions) (*C
 		return cache.(*Commit), nil
 	}
 
-	commitID, err := r.RevParse(rev, RevParseOptions{Timeout: opt.Timeout})
+	commitID, err := r.RevParse(rev, RevParseOptions{Timeout: opt.Timeout}) //nolint
 	if err != nil {
 		return nil, err
 	}

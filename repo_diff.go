@@ -85,7 +85,7 @@ func (r *Repository) RawDiff(rev string, diffType RawDiffFormat, w io.Writer, op
 		opt = opts[0]
 	}
 
-	commit, err := r.CatFileCommit(rev, CatFileCommitOptions{Timeout: opt.Timeout})
+	commit, err := r.CatFileCommit(rev, CatFileCommitOptions{Timeout: opt.Timeout}) //nolint
 	if err != nil {
 		return err
 	}

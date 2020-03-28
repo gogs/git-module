@@ -505,5 +505,4 @@ func StreamParseDiff(r io.Reader, done chan<- SteamParseDiffResult, maxFiles, ma
 		Diff: diff,
 		Err:  err,
 	}
-	return
 }

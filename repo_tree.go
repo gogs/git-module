@@ -100,7 +100,7 @@ func (r *Repository) LsTree(rev string, opts ...LsTreeOptions) (*Tree, error) {
 	}
 
 	var err error
-	rev, err = r.RevParse(rev, RevParseOptions{Timeout: opt.Timeout})
+	rev, err = r.RevParse(rev, RevParseOptions{Timeout: opt.Timeout}) //nolint
 	if err != nil {
 		return nil, err
 	}
