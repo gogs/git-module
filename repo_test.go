@@ -348,37 +348,69 @@ func TestRepository_Commit(t *testing.T) {
 		}
 	})
 
-	// Generate a file and add to index
-	fpath := filepath.Join(r.Path(), "TESTFILE")
-	err = ioutil.WriteFile(fpath, []byte("something"), 0600)
-	if err != nil {
-		t.Fatal(err)
-	}
+	t.Run("committer is also the author", func(t *testing.T) {
+		// Generate a file and add to index
+		fpath := filepath.Join(r.Path(), "COMMITTER_IS_AUTHOR")
+		err = ioutil.WriteFile(fpath, []byte("something"), 0600)
+		if err != nil {
+			t.Fatal(err)
+		}
 
-	if err := r.Add(AddOptions{
-		All: true,
-	}); err != nil {
-		t.Fatal(err)
-	}
+		if err := r.Add(AddOptions{
+			All: true,
+		}); err != nil {
+			t.Fatal(err)
+		}
 
-	// Make sure it does not blow up
-	if err = r.Commit(committer, message, CommitOptions{
-		Author: author,
-	}); err != nil {
-		t.Fatal(err)
-	}
+		// Make sure it does not blow up
+		if err = r.Commit(committer, message); err != nil {
+			t.Fatal(err)
+		}
 
-	// Verify the result
-	c, err := r.CatFileCommit("master")
-	if err != nil {
-		t.Fatal(err)
-	}
+		// Verify the result
+		c, err := r.CatFileCommit("master")
+		if err != nil {
+			t.Fatal(err)
+		}
 
-	assert.Equal(t, committer.Name, c.Committer.Name)
-	assert.Equal(t, committer.Email, c.Committer.Email)
-	assert.Equal(t, author.Name, c.Author.Name)
-	assert.Equal(t, author.Email, c.Author.Email)
-	assert.Equal(t, message+"\n", c.Message)
+		assert.Equal(t, committer.Name, c.Committer.Name)
+		assert.Equal(t, committer.Email, c.Committer.Email)
+		assert.Equal(t, committer.Name, c.Author.Name)
+		assert.Equal(t, committer.Email, c.Author.Email)
+		assert.Equal(t, message+"\n", c.Message)
+	})
+
+	t.Run("committer is not the author", func(t *testing.T) {
+		// Generate a file and add to index
+		fpath := filepath.Join(r.Path(), "COMMITTER_IS_NOT_AUTHOR")
+		err = ioutil.WriteFile(fpath, []byte("something"), 0600)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if err := r.Add(AddOptions{
+			All: true,
+		}); err != nil {
+			t.Fatal(err)
+		}
+
+		// Make sure it does not blow up
+		if err = r.Commit(committer, message, CommitOptions{Author: author}); err != nil {
+			t.Fatal(err)
+		}
+
+		// Verify the result
+		c, err := r.CatFileCommit("master")
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		assert.Equal(t, committer.Name, c.Committer.Name)
+		assert.Equal(t, committer.Email, c.Committer.Email)
+		assert.Equal(t, author.Name, c.Author.Name)
+		assert.Equal(t, author.Email, c.Author.Email)
+		assert.Equal(t, message+"\n", c.Message)
+	})
 }
 
 func TestRepository_RevParse(t *testing.T) {

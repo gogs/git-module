@@ -389,9 +389,10 @@ func RepoCommit(repoPath string, committer *Signature, message string, opts ...C
 	cmd := NewCommand("commit")
 	cmd.AddEnvs("GIT_COMMITTER_NAME="+committer.Name, "GIT_COMMITTER_EMAIL="+committer.Email)
 
-	if opt.Author != nil {
-		cmd.AddArgs(fmt.Sprintf("--author='%s <%s>'", opt.Author.Name, opt.Author.Email))
+	if opt.Author == nil {
+		opt.Author = committer
 	}
+	cmd.AddArgs(fmt.Sprintf("--author='%s <%s>'", opt.Author.Name, opt.Author.Email))
 	cmd.AddArgs("-m", message)
 
 	_, err := cmd.RunInDirWithTimeout(opt.Timeout, repoPath)
