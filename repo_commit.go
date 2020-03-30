@@ -108,6 +108,29 @@ func (r *Repository) CatFileCommit(rev string, opts ...CatFileCommitOptions) (*C
 	return c, nil
 }
 
+// CatFileTypeOptions contains optional arguments for showing the object type.
+// Docs: https://git-scm.com/docs/git-cat-file#Documentation/git-cat-file.txt--t
+type CatFileTypeOptions struct {
+	// The timeout duration before giving up for each shell command execution.
+	// The default timeout duration will be used when not supplied.
+	Timeout time.Duration
+}
+
+// CatFileType returns the object type of given revision of the repository.
+func (r *Repository) CatFileType(rev string, opts ...CatFileTypeOptions) (ObjectType, error) {
+	var opt CatFileTypeOptions
+	if len(opts) > 0 {
+		opt = opts[0]
+	}
+
+	typ, err := NewCommand("cat-file", "-t", rev).RunInDirWithTimeout(opt.Timeout, r.path)
+	if err != nil {
+		return "", err
+	}
+	typ = bytes.TrimSpace(typ)
+	return ObjectType(typ), nil
+}
+
 // BranchCommit returns the latest commit of given branch of the repository.
 // The branch must be given in short name e.g. "master".
 func (r *Repository) BranchCommit(branch string, opts ...CatFileCommitOptions) (*Commit, error) {

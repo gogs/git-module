@@ -579,3 +579,50 @@ func TestCommit_IsImageFile(t *testing.T) {
 		})
 	}
 }
+
+func TestCommit_IsImageFileByIndex(t *testing.T) {
+	t.Run("not a blob", func(t *testing.T) {
+		c, err := testrepo.CatFileCommit("4e59b72440188e7c2578299fc28ea425fbe9aece")
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		isImage, err := c.IsImageFileByIndex("fcf7087e732bfe3c25328248a9bf8c3ccd85bed4") // "gogs"
+		if err != nil {
+			t.Fatal(err)
+		}
+		assert.False(t, isImage)
+	})
+
+	tests := []struct {
+		id     string
+		index  string
+		expVal bool
+	}{
+		{
+			id:     "4eaa8d4b05e731e950e2eaf9e8b92f522303ab41",
+			index:  "adfd6da3c0a3fb038393144becbf37f14f780087", // "README.txt"
+			expVal: false,
+		},
+		{
+			id:     "4eaa8d4b05e731e950e2eaf9e8b92f522303ab41",
+			index:  "2ce918888b0fdd4736767360fc5e3e83daf47fce", // "img/sourcegraph.png"
+			expVal: true,
+		},
+	}
+	for _, test := range tests {
+		t.Run("", func(t *testing.T) {
+			c, err := testrepo.CatFileCommit(test.id)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			isImage, err := c.IsImageFileByIndex(test.index)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			assert.Equal(t, test.expVal, isImage)
+		})
+	}
+}

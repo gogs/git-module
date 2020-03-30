@@ -59,3 +59,29 @@ func (t *Tree) Blob(subpath string, opts ...LsTreeOptions) (*Blob, error) {
 
 	return nil, ErrNotBlob
 }
+
+// BlobByIndex returns blob object by given index.
+func (t *Tree) BlobByIndex(index string) (*Blob, error) {
+	typ, err := t.repo.CatFileType(index)
+	if err != nil {
+		return nil, err
+	}
+
+	if typ != ObjectBlob {
+		return nil, ErrNotBlob
+	}
+
+	id, err := t.repo.RevParse(index)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Blob{
+		TreeEntry: &TreeEntry{
+			mode:   EntryBlob,
+			typ:    ObjectBlob,
+			id:     MustIDFromString(id),
+			parent: t,
+		},
+	}, nil
+}
