@@ -62,14 +62,13 @@ func (r *Repository) getTag(timeout time.Duration, id *SHA1) (*Tag, error) {
 	}
 
 	// Check tag type
-	typ, err := NewCommand("cat-file", "-t", id.String()).RunInDirWithTimeout(timeout, r.path)
+	typ, err := r.CatFileType(id.String(), CatFileTypeOptions{Timeout: timeout})
 	if err != nil {
 		return nil, err
 	}
-	typ = bytes.TrimSpace(typ)
 
 	var tag *Tag
-	switch ObjectType(typ) {
+	switch typ {
 	case ObjectCommit: // Tag is a commit
 		tag = &Tag{
 			typ:      ObjectCommit,

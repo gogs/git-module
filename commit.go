@@ -138,9 +138,7 @@ func (w *limitWriter) Write(p []byte) (int, error) {
 	return len(p), err
 }
 
-// IsImageFile returns true if the commit is an image blob.
-func (c *Commit) IsImageFile(subpath string) (bool, error) {
-	blob, err := c.Blob(subpath)
+func (c *Commit) isImageFile(blob *Blob, err error) (bool, error) {
 	if err != nil {
 		if err == ErrNotBlob {
 			return false, nil
@@ -161,4 +159,14 @@ func (c *Commit) IsImageFile(subpath string) (bool, error) {
 	}
 
 	return strings.Contains(http.DetectContentType(buf.Bytes()), "image/"), nil
+}
+
+// IsImageFile returns true if the blob of the commit is an image by subpath.
+func (c *Commit) IsImageFile(subpath string) (bool, error) {
+	return c.isImageFile(c.Blob(subpath))
+}
+
+// IsImageFileByIndex returns true if the blob of the commit is an image by index.
+func (c *Commit) IsImageFileByIndex(index string) (bool, error) {
+	return c.isImageFile(c.BlobByIndex(index))
 }
