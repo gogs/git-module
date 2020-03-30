@@ -306,11 +306,15 @@ checkType:
 				file.Index = shas[1]
 			}
 			break checkType
-		case strings.HasPrefix(line, "similarity index 100%"):
+		case strings.HasPrefix(line, "similarity index "):
 			file.Type = DiffFileRename
 			file.oldName = a
 			file.Name = b
-			break checkType
+
+			// No need to look for index if it's a pure rename
+			if strings.HasSuffix(line, "100%") {
+				break checkType
+			}
 		case strings.HasPrefix(line, "old mode"):
 			break checkType
 		}

@@ -480,6 +480,90 @@ index b6fc4c620b67d95f953a5c1c1230aaab5db5a1b0..ab80bda5dd90d8b42be25ac2c7a071b7
 			},
 		},
 		{
+			input: `diff --git a/src/app/tabs/teacher/teacher.module.ts b/src/app/tabs/friends/friends.module.ts
+similarity index 69%
+rename from src/app/tabs/teacher/teacher.module.ts
+rename to src/app/tabs/friends/friends.module.ts
+index ce53c7e..56a156b 100644
+--- a/src/app/tabs/teacher/teacher.module.ts
++++ b/src/app/tabs/friends/friends.module.ts
+@@ -2,9 +2,9 @@ import { IonicModule } from '@ionic/angular'
+ import { RouterModule } from '@angular/router'
+ import { NgModule } from '@angular/core'
+ import { CommonModule } from '@angular/common'
+-import { FormsModule } from '@angular/forms'
+-import { TeacherPage } from './teacher.page'
+ import { ComponentsModule } from '@components/components.module'
++import { FormsModule } from '@angular/forms'
++import { FriendsPage } from './friends.page'`,
+			expDiff: &Diff{
+				Files: []*DiffFile{
+					{
+						Name:  "src/app/tabs/friends/friends.module.ts",
+						Type:  DiffFileRename,
+						Index: "56a156b",
+						Sections: []*DiffSection{
+							{
+								Lines: []*DiffLine{
+									{
+										Type:    DiffLineSection,
+										Content: "@@ -2,9 +2,9 @@ import { IonicModule } from '@ionic/angular'",
+									}, {
+										Type:      DiffLinePlain,
+										Content:   ` import { RouterModule } from '@angular/router'`,
+										LeftLine:  2,
+										RightLine: 2,
+									}, {
+										Type:      DiffLinePlain,
+										Content:   ` import { NgModule } from '@angular/core'`,
+										LeftLine:  3,
+										RightLine: 3,
+									}, {
+										Type:      DiffLinePlain,
+										Content:   ` import { CommonModule } from '@angular/common'`,
+										LeftLine:  4,
+										RightLine: 4,
+									}, {
+										Type:      DiffLineDelete,
+										Content:   `-import { FormsModule } from '@angular/forms'`,
+										LeftLine:  5,
+										RightLine: 0,
+									}, {
+										Type:      DiffLineDelete,
+										Content:   `-import { TeacherPage } from './teacher.page'`,
+										LeftLine:  6,
+										RightLine: 0,
+									}, {
+										Type:      DiffLinePlain,
+										Content:   ` import { ComponentsModule } from '@components/components.module'`,
+										LeftLine:  7,
+										RightLine: 5,
+									}, {
+										Type:      DiffLineAdd,
+										Content:   `+import { FormsModule } from '@angular/forms'`,
+										LeftLine:  0,
+										RightLine: 6,
+									}, {
+										Type:      DiffLineAdd,
+										Content:   `+import { FriendsPage } from './friends.page'`,
+										LeftLine:  0,
+										RightLine: 7,
+									},
+								},
+								numAdditions: 2,
+								numDeletions: 2,
+							},
+						},
+						numAdditions: 2,
+						numDeletions: 2,
+						oldName:      "src/app/tabs/teacher/teacher.module.ts",
+					},
+				},
+				totalAdditions: 2,
+				totalDeletions: 2,
+			},
+		},
+		{
 			input: `diff --git a/.travis.yml b/.travis.yml
 index 335db7ea..51d7543e 100644
 --- a/.travis.yml
