@@ -53,7 +53,7 @@ func (t *Tree) Blob(subpath string, opts ...LsTreeOptions) (*Blob, error) {
 		return nil, err
 	}
 
-	if e.IsBlob() {
+	if e.IsBlob() || e.IsExec() {
 		return e.Blob(), nil
 	}
 
