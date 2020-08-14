@@ -146,6 +146,7 @@ func (es Entries) Sort() {
 // EntryCommitInfo contains a tree entry with its commit information.
 type EntryCommitInfo struct {
 	Entry     *TreeEntry
+	Index     int
 	Commit    *Commit
 	Submodule *Submodule
 }
@@ -212,7 +213,7 @@ func (es Entries) CommitsInfo(commit *Commit, opts ...CommitsInfoOptions) ([]*En
 			// Block until there is an empty slot to control the maximum concurrency
 			bucket <- struct{}{}
 
-			go func(e *TreeEntry) {
+			go func(e *TreeEntry, i int) {
 				defer func() {
 					wg.Done()
 					<-bucket
@@ -225,6 +226,7 @@ func (es Entries) CommitsInfo(commit *Commit, opts ...CommitsInfoOptions) ([]*En
 
 				info := &EntryCommitInfo{
 					Entry: e,
+					Index: i,
 				}
 				epath := path.Join(opt.Path, e.Name())
 
@@ -248,7 +250,7 @@ func (es Entries) CommitsInfo(commit *Commit, opts ...CommitsInfoOptions) ([]*En
 				}
 
 				results <- info
-			}(e)
+			}(e, i)
 		}
 	}()
 
@@ -258,14 +260,10 @@ func (es Entries) CommitsInfo(commit *Commit, opts ...CommitsInfoOptions) ([]*En
 	}
 
 	close(results)
-	infos := make(map[[20]byte]*EntryCommitInfo, len(es))
-	for info := range results {
-		infos[info.Entry.id.bytes] = info
-	}
 
 	commitsInfo := make([]*EntryCommitInfo, len(es))
-	for i, e := range es {
-		commitsInfo[i] = infos[e.id.bytes]
+	for info := range results {
+		commitsInfo[info.Index] = info
 	}
 	return commitsInfo, nil
 }
