@@ -120,7 +120,7 @@ func TestEntries_Sort(t *testing.T) {
 }
 
 func TestEntries_CommitsInfo(t *testing.T) {
-	tree, err := testrepo.LsTree("0eedd79eba4394bbef888c804e899731644367fe")
+	tree, err := testrepo.LsTree("cfc3b2993f74726356887a5ec093de50486dc617")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -130,7 +130,7 @@ func TestEntries_CommitsInfo(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	t.Run("", func(t *testing.T) {
+	t.Run("general directory", func(t *testing.T) {
 		es, err := tree.Entries()
 		if err != nil {
 			t.Fatal(err)
@@ -228,6 +228,13 @@ func TestEntries_CommitsInfo(t *testing.T) {
 				},
 			}, {
 				Entry: &TreeEntry{
+					name: "sameSHAs",
+				},
+				Commit: &Commit{
+					ID: MustIDFromString("cfc3b2993f74726356887a5ec093de50486dc617"),
+				},
+			}, {
+				Entry: &TreeEntry{
 					name: "src",
 				},
 				Commit: &Commit{
@@ -241,7 +248,7 @@ func TestEntries_CommitsInfo(t *testing.T) {
 		}
 	})
 
-	t.Run("", func(t *testing.T) {
+	t.Run("directory with submodule", func(t *testing.T) {
 		subtree, err := tree.Subtree("gogs")
 		if err != nil {
 			t.Fatal(err)
@@ -266,6 +273,47 @@ func TestEntries_CommitsInfo(t *testing.T) {
 				},
 				Commit: &Commit{
 					ID: MustIDFromString("4e59b72440188e7c2578299fc28ea425fbe9aece"),
+				},
+			},
+		}
+		for i := range expInfos {
+			assert.Equal(t, expInfos[i].Entry.Name(), infos[i].Entry.Name(), "idx: %d", i)
+			assert.Equal(t, expInfos[i].Commit.ID.String(), infos[i].Commit.ID.String(), "idx: %d", i)
+		}
+	})
+
+	t.Run("direcotry with files have same SHA", func(t *testing.T) {
+		subtree, err := tree.Subtree("sameSHAs")
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		es, err := subtree.Entries()
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		infos, err := es.CommitsInfo(c, CommitsInfoOptions{
+			Path: "sameSHAs",
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		expInfos := []*EntryCommitInfo{
+			{
+				Entry: &TreeEntry{
+					name: "file1.txt",
+				},
+				Commit: &Commit{
+					ID: MustIDFromString("cfc3b2993f74726356887a5ec093de50486dc617"),
+				},
+			}, {
+				Entry: &TreeEntry{
+					name: "file2.txt",
+				},
+				Commit: &Commit{
+					ID: MustIDFromString("cfc3b2993f74726356887a5ec093de50486dc617"),
 				},
 			},
 		}
