@@ -42,9 +42,12 @@ func (c *Commit) Submodules() (Submodules, error) {
 		c.submodules = newObjectCache()
 		var inSection bool
 		var path string
+		var url string
 		for scanner.Scan() {
 			if strings.HasPrefix(scanner.Text(), "[submodule") {
 				inSection = true
+				path = ""
+				url = ""
 				continue
 			} else if !inSection {
 				continue
@@ -55,9 +58,13 @@ func (c *Commit) Submodules() (Submodules, error) {
 			case "path":
 				path = strings.TrimSpace(fields[1])
 			case "url":
+				url = strings.TrimSpace(fields[1])
+			}
+
+			if len(path) > 0 && len(url) > 0 {
 				mod := &Submodule{
 					Name: path,
-					URL:  strings.TrimSpace(fields[1]),
+					URL: url,
 				}
 
 				mod.Commit, c.submodulesErr = c.repo.RevParse(c.id.String() + ":" + mod.Name)
