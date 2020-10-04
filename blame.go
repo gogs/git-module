@@ -48,7 +48,9 @@ func Blame(content []byte) (map[int]*Commit, error) {
 				case "previous":
 					commit.parents = []*SHA1{MustIDFromString(words[1])}
 				default:
-					details[words[0]] = line[len(words[0])+1:]
+					if len(words) > 1 {
+						details[words[0]] = line[len(words[0])+1:]
+					}
 				}
 			}
 		} else {
