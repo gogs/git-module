@@ -1,9 +1,14 @@
+// Copyright 2020 The Gogs Authors. All rights reserved.
+// Use of this source code is governed by a MIT-style
+// license that can be found in the LICENSE file.
+
 package git
 
 import (
-	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
 )
 
 var oneRowBlame = `2c49687c5b06776a44e2a8c0635428f647909472 3 3 4
@@ -71,31 +76,31 @@ var commit2 = &Commit{
 }
 
 func TestOneRowBlame(t *testing.T) {
-	blame, _ := Blame([]byte(oneRowBlame))
-	var expect = make(map[int]*Commit)
+	blame, _ := BlameContent([]byte(oneRowBlame))
+	var expect = createBlame()
 
-	expect[3] = commit2
+	expect.commits[3] = commit2
 
 	assert.Equal(t, expect, blame)
 }
 
 func TestMultipleRowsBlame(t *testing.T) {
-	blame, _ := Blame([]byte(twoRowsBlame + oneRowBlame))
-	var expect = make(map[int]*Commit)
+	blame, _ := BlameContent([]byte(twoRowsBlame + oneRowBlame))
+	var expect = createBlame()
 
-	expect[1] = commit1
-	expect[2] = commit1
-	expect[3] = commit2
+	expect.commits[1] = commit1
+	expect.commits[2] = commit1
+	expect.commits[3] = commit2
 
 	assert.Equal(t, expect, blame)
 }
 
 func TestRepository_BlameFile(t *testing.T) {
-	blame, _ := testrepo.BlameFile("README.md")
-	assert.Greater(t, len(blame), 0)
+	blame, _ := testrepo.BlameFile("master", "pom.xml")
+	assert.Greater(t, len(blame.commits), 0)
 }
 
 func TestRepository_BlameNotExistFile(t *testing.T) {
-	_, err := testrepo.BlameFile("0")
+	_, err := testrepo.BlameFile("master", "0")
 	assert.Error(t, err)
 }

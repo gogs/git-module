@@ -1,3 +1,7 @@
+// Copyright 2020 The Gogs Authors. All rights reserved.
+// Use of this source code is governed by a MIT-style
+// license that can be found in the LICENSE file.
+
 package git
 
 import (
@@ -8,22 +12,30 @@ import (
 	"time"
 )
 
-// BlameFile return map of line number and Commit that change that line
-func (r *Repository) BlameFile(file string) (map[int]*Commit, error) {
-	cmd := NewCommand("blame", "-p", file)
-	stdout, err := cmd.Run()
+type (
+	Blame struct {
+		commits map[int]*Commit
+	}
+	BlameOptions struct {
+	}
+)
+
+// BlameFile returns map of line number and the Commit changed that line.
+func (r *Repository) BlameFile(rev, file string, opts ...BlameOptions) (*Blame, error) {
+	cmd := NewCommand("blame", "-p", rev, "--", file)
+	stdout, err := cmd.RunInDir(r.path)
 	if err != nil {
 		return nil, err
 	}
-	return Blame(stdout)
+	return BlameContent(stdout)
 }
 
-// Blame parse content of `git blame` in porcelain format
-func Blame(content []byte) (map[int]*Commit, error) {
+// BlameContent parse content of `git blame` in porcelain format
+func BlameContent(content []byte) (*Blame, error) {
 	var commits = make(map[[20]byte]*Commit)
 	var commit = &Commit{}
 	var details = make(map[string]string)
-	var result = make(map[int]*Commit)
+	var result = createBlame()
 	scanner := bufio.NewScanner(bytes.NewReader(content))
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -39,7 +51,7 @@ func Blame(content []byte) (map[int]*Commit, error) {
 				if err != nil {
 					return nil, err
 				}
-				result[i] = commit
+				result.commits[i] = commit
 			} else {
 				// commit details line
 				switch words[0] {
@@ -60,6 +72,12 @@ func Blame(content []byte) (map[int]*Commit, error) {
 	}
 
 	return result, nil
+}
+
+func createBlame() *Blame {
+	var blame = Blame{}
+	blame.commits = make(map[int]*Commit)
+	return &blame
 }
 
 // Return commit from map or creates a new one
