@@ -43,7 +43,7 @@ func (r *Repository) BlameFile(rev, file string, opts ...BlameOptions) (*Blame, 
 		if id[0] == '^' {
 			id = id[1:]
 		}
-		commit, err := r.CatFileCommit(string(id), CatFileCommitOptions{Timeout: opt.Timeout})
+		commit, err := r.CatFileCommit(string(id), CatFileCommitOptions{Timeout: opt.Timeout}) //nolint
 		if err != nil {
 			return nil, err
 		}
