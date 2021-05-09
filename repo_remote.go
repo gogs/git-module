@@ -132,7 +132,9 @@ func RepoRemoveRemote(repoPath, name string, opts ...RemoveRemoteOptions) error 
 
 	_, err := NewCommand("remote", "remove", name).RunInDirWithTimeout(opt.Timeout, repoPath)
 	if err != nil {
-		if strings.Contains(err.Error(), "fatal: No such remote") {
+		// the error status may differ from git clients
+		if strings.Contains(err.Error(), "error: No such remote") ||
+			strings.Contains(err.Error(), "fatal: No such remote") {
 			return ErrRemoteNotExist
 		}
 		return err

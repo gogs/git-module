@@ -77,6 +77,17 @@ func TestClone(t *testing.T) {
 				Branch: "develop",
 			},
 		},
+		{
+			opt: CloneOptions{
+				Depth: 1,
+			},
+		},
+		{
+			opt: CloneOptions{
+				Branch: "develop",
+				Depth:  1,
+			},
+		},
 	}
 	for _, test := range tests {
 		t.Run("", func(t *testing.T) {
