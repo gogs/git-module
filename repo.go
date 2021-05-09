@@ -109,7 +109,7 @@ type CloneOptions struct {
 	Quiet bool
 	// The branch to checkout for the working tree when Bare=false.
 	Branch string
-	// The number of revisions to clone when Bare=false.
+	// The number of revisions to clone.
 	Depth uint64
 	// The timeout duration before giving up for each shell command execution.
 	// The default timeout duration will be used when not supplied.
@@ -141,7 +141,7 @@ func Clone(url, dst string, opts ...CloneOptions) error {
 	if !opt.Bare && opt.Branch != "" {
 		cmd.AddArgs("-b", opt.Branch)
 	}
-	if !opt.Bare && opt.Depth > 0 {
+	if opt.Depth > 0 {
 		cmd.AddArgs("--depth", strconv.FormatUint(opt.Depth, 10))
 	}
 
