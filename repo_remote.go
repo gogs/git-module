@@ -174,3 +174,153 @@ func RepoRemotesList(repoPath string, opts ...RemotesListOptions) ([]string, err
 func (r *Repository) RemotesList(opts ...RemotesListOptions) ([]string, error) {
 	return RepoRemotesList(r.path, opts...)
 }
+
+// RemoteURLGetOptions contains arguments for retrieving URL(s) of a remote of the repository.
+// Docs: https://git-scm.com/docs/git-remote#Documentation/git-remote.txt-emget-urlem
+type RemoteURLGetOptions struct {
+	// False: get fetch URLs
+	// True: get push URLs
+	Push bool
+	// True: get all URLs (lists also non-main URLs; not related with Push)
+	All bool
+	// The timeout duration before giving up for each shell command execution.
+	// The default timeout duration will be used when not supplied.
+	Timeout time.Duration
+}
+
+// RepoRemoteURLGet retrieves URL(s) of a remote of the repository in given path.
+func RepoRemoteURLGet(repoPath, name string, opts ...RemoteURLGetOptions) ([]string, error) {
+	var opt RemoteURLGetOptions
+	if len(opts) > 0 {
+		opt = opts[0]
+	}
+
+	cmd := NewCommand("remote", "get-url")
+	if opt.Push {
+		cmd.AddArgs("--push")
+	}
+	if opt.All {
+		cmd.AddArgs("--all")
+	}
+
+	stdout, err := cmd.AddArgs(name).RunInDirWithTimeout(opt.Timeout, repoPath)
+	if err != nil {
+		return nil, err
+	}
+	return stdoutToStringSlice(stdout), nil
+}
+
+// RemoteURLGet retrieves URL(s) of a remote of the repository in given path.
+func (r *Repository) RemoteURLGet(name string, opts ...RemoteURLGetOptions) ([]string, error) {
+	return RepoRemoteURLGet(r.path, name, opts...)
+}
+
+// RemoteURLSetOptions contains arguments for setting an URL of a remote of the repository.
+// Docs: https://git-scm.com/docs/git-remote#Documentation/git-remote.txt-emget-urlem
+type RemoteURLSetOptions struct {
+	// False: set fetch URLs
+	// True: set push URLs
+	Push bool
+	// The timeout duration before giving up for each shell command execution.
+	// The default timeout duration will be used when not supplied.
+	Timeout time.Duration
+}
+
+// RepoRemoteURLSetFirst sets first URL of the remote with given name of the repository in given path.
+func RepoRemoteURLSetFirst(repoPath, name, newurl string, opts ...RemoteURLSetOptions) error {
+	var opt RemoteURLSetOptions
+	if len(opts) > 0 {
+		opt = opts[0]
+	}
+
+	cmd := NewCommand("remote", "set-url")
+	if opt.Push {
+		cmd.AddArgs("--push")
+	}
+
+	_, err := cmd.AddArgs(name, newurl).RunInDirWithTimeout(opt.Timeout, repoPath)
+	if err != nil && strings.Contains(err.Error(), "No such remote") {
+		return ErrRemoteNotExist
+	}
+	return err
+}
+
+// RemoteURLSetFirst sets the first URL of the remote with given name of the repository.
+func (r *Repository) RemoteURLSetFirst(name, newurl string, opts ...RemoteURLSetOptions) error {
+	return RepoRemoteURLSetFirst(r.path, name, newurl, opts...)
+}
+
+// RepoRemoteURLSetRegex sets the first URL of the remote with given name and URL regex match of the repository in given path.
+func RepoRemoteURLSetRegex(repoPath, name, urlregex string, newurl string, opts ...RemoteURLSetOptions) error {
+	var opt RemoteURLSetOptions
+	if len(opts) > 0 {
+		opt = opts[0]
+	}
+
+	cmd := NewCommand("remote", "set-url")
+	if opt.Push {
+		cmd.AddArgs("--push")
+	}
+
+	_, err := cmd.AddArgs(name, newurl, urlregex).RunInDirWithTimeout(opt.Timeout, repoPath)
+	if err != nil {
+		if strings.Contains(err.Error(), "No such URL found") {
+			return ErrURLNotExist
+		}
+		if strings.Contains(err.Error(), "No such remote") {
+			return ErrRemoteNotExist
+		}
+		return err
+	}
+	return nil
+}
+
+// RemoteURLSetRegex sets the first URL of the remote with given name and URL regex match of the repository.
+func (r *Repository) RemoteURLSetRegex(name, urlregex, newurl string, opts ...RemoteURLSetOptions) error {
+	return RepoRemoteURLSetRegex(r.path, name, urlregex, newurl, opts...)
+}
+
+// RepoRemoteURLAdd adds an URL to the remote with given name of the repository in given path.
+func RepoRemoteURLAdd(repoPath, name, newurl string, opts ...RemoteURLSetOptions) error {
+	var opt RemoteURLSetOptions
+	if len(opts) > 0 {
+		opt = opts[0]
+	}
+
+	cmd := NewCommand("remote", "set-url", "--add")
+	if opt.Push {
+		cmd.AddArgs("--push")
+	}
+
+	_, err := cmd.AddArgs(name, newurl).RunInDirWithTimeout(opt.Timeout, repoPath)
+	return err
+}
+
+// RemoteURLAdd adds an URL to the remote with given name of the repository.
+func (r *Repository) RemoteURLAdd(name, newvalue string, opts ...RemoteURLSetOptions) error {
+	return RepoRemoteURLAdd(r.path, name, newvalue, opts...)
+}
+
+// RepoRemoteURLDelRegex Deletes all URLs matchin regex of the remote with given name of the repository in given path.
+func RepoRemoteURLDelRegex(repoPath, name, urlregex string, opts ...RemoteURLSetOptions) error {
+	var opt RemoteURLSetOptions
+	if len(opts) > 0 {
+		opt = opts[0]
+	}
+
+	cmd := NewCommand("remote", "set-url", "--delete")
+	if opt.Push {
+		cmd.AddArgs("--push")
+	}
+
+	_, err := cmd.AddArgs(name, urlregex).RunInDirWithTimeout(opt.Timeout, repoPath)
+	if err != nil && strings.Contains(err.Error(), "Will not delete all non-push URLs") {
+		return ErrDelAllNonPushURL
+	}
+	return err
+}
+
+// RemoteURLDelRegex // RepoRemoteURLDelRegex Deletes all URLs matchin regex of the remote with given name of the repository.
+func (r *Repository) RemoteURLDelRegex(name, urlregex string, opts ...RemoteURLSetOptions) error {
+	return RepoRemoteURLDelRegex(r.path, name, urlregex, opts...)
+}
