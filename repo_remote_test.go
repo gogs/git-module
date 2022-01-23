@@ -131,3 +131,36 @@ func TestRepository_RemoveRemote(t *testing.T) {
 	err = r.RemoveRemote("origin", RemoveRemoteOptions{})
 	assert.Equal(t, ErrRemoteNotExist, err)
 }
+
+func TestRepository_RemotesList(t *testing.T) {
+	r, cleanup, err := setupTempRepo()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer cleanup()
+
+	// 1 remote
+	remotes, err := r.RemotesList()
+	assert.Nil(t, err)
+	assert.Equal(t, []string{"origin"}, remotes)
+
+	// 2 remotes
+	err = r.AddRemote("t", "t")
+	assert.Nil(t, err)
+
+	remotes, err = r.RemotesList()
+	assert.Nil(t, err)
+	assert.Equal(t, []string{"origin", "t"}, remotes)
+	assert.Len(t, remotes, 2)
+
+	// 0 remotes
+	err = r.RemoveRemote("t")
+	assert.Nil(t, err)
+	err = r.RemoveRemote("origin")
+	assert.Nil(t, err)
+
+	remotes, err = r.RemotesList()
+	assert.Nil(t, err)
+	assert.Equal(t, []string{}, remotes)
+	assert.Len(t, remotes, 0)
+}

@@ -146,3 +146,31 @@ func RepoRemoveRemote(repoPath, name string, opts ...RemoveRemoteOptions) error 
 func (r *Repository) RemoveRemote(name string, opts ...RemoveRemoteOptions) error {
 	return RepoRemoveRemote(r.path, name, opts...)
 }
+
+// RemotesListOptions contains arguments for listing remotes of the repository.
+// Docs: https://git-scm.com/docs/git-remote#_commands
+type RemotesListOptions struct {
+	// The timeout duration before giving up for each shell command execution.
+	// The default timeout duration will be used when not supplied.
+	Timeout time.Duration
+}
+
+// RepoRemotesList lists remotes of the repository in given path.
+func RepoRemotesList(repoPath string, opts ...RemotesListOptions) ([]string, error) {
+	var opt RemotesListOptions
+	if len(opts) > 0 {
+		opt = opts[0]
+	}
+
+	stdout, err := NewCommand("remote").RunInDirWithTimeout(opt.Timeout, repoPath)
+	if err != nil {
+		return nil, err
+	}
+
+	return stdoutToStringSlice(stdout), nil
+}
+
+// RemotesList lists remotes of the repository.
+func (r *Repository) RemotesList(opts ...RemotesListOptions) ([]string, error) {
+	return RepoRemotesList(r.path, opts...)
+}

@@ -7,6 +7,7 @@ package git
 import (
 	"fmt"
 	"os"
+	"strings"
 	"sync"
 )
 
@@ -70,4 +71,13 @@ func concatenateError(err error, stderr string) error {
 		return err
 	}
 	return fmt.Errorf("%v - %s", err, stderr)
+}
+
+// turns "a\n\list\n" to []string{"a", "list"}
+func stdoutToStringSlice(stdout []byte) []string {
+	o := strings.TrimRight(string(stdout), "\n")
+	if o == "" { // empty (not {""}, len=1)
+		return []string{}
+	}
+	return strings.Split(o, "\n")
 }
