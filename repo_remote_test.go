@@ -140,7 +140,7 @@ func TestRepository_RemotesList(t *testing.T) {
 	defer cleanup()
 
 	// 1 remote
-	remotes, err := r.RemotesList()
+	remotes, err := r.Remotes()
 	assert.Nil(t, err)
 	assert.Equal(t, []string{"origin"}, remotes)
 
@@ -148,7 +148,7 @@ func TestRepository_RemotesList(t *testing.T) {
 	err = r.AddRemote("t", "t")
 	assert.Nil(t, err)
 
-	remotes, err = r.RemotesList()
+	remotes, err = r.Remotes()
 	assert.Nil(t, err)
 	assert.Equal(t, []string{"origin", "t"}, remotes)
 	assert.Len(t, remotes, 2)
@@ -159,7 +159,7 @@ func TestRepository_RemotesList(t *testing.T) {
 	err = r.RemoveRemote("origin")
 	assert.Nil(t, err)
 
-	remotes, err = r.RemotesList()
+	remotes, err = r.Remotes()
 	assert.Nil(t, err)
 	assert.Equal(t, []string{}, remotes)
 	assert.Len(t, remotes, 0)

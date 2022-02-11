@@ -73,11 +73,12 @@ func concatenateError(err error, stderr string) error {
 	return fmt.Errorf("%v - %s", err, stderr)
 }
 
-// turns "a\n\list\n" to []string{"a", "list"}
-func stdoutToStringSlice(stdout []byte) []string {
-	o := strings.TrimRight(string(stdout), "\n")
-	if o == "" { // empty (not {""}, len=1)
+// bytesToStrings splits given bytes into strings by line separator ("\n").
+// It returns empty slice if the given bytes only contains line separators.
+func bytesToStrings(in []byte) []string {
+	s := strings.TrimRight(string(in), "\n")
+	if s == "" { // empty (not {""}, len=1)
 		return []string{}
 	}
-	return strings.Split(o, "\n")
+	return strings.Split(s, "\n")
 }
