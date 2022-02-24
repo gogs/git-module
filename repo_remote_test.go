@@ -175,34 +175,34 @@ func TestRepository_RemoteURLFamily(t *testing.T) {
 	err = r.RemoteURLDelRegex("origin", ".*")
 	assert.Equal(t, ErrDelAllNonPushURL, err)
 
-	err = r.RemoteURLSetFirst("notexist", "t")
+	err = r.RemoteSetURL("notexist", "t")
 	assert.Equal(t, ErrRemoteNotExist, err)
 
-	err = r.RemoteURLSetRegex("notexist", "t", "t")
+	err = r.RemoteSetURLRegex("notexist", "t", "t")
 	assert.Equal(t, ErrRemoteNotExist, err)
 
 	// default origin URL is not easily testable
-	err = r.RemoteURLSetFirst("origin", "t")
+	err = r.RemoteSetURL("origin", "t")
 	assert.Nil(t, err)
-	URLs, err := r.RemoteURLGet("origin")
+	URLs, err := r.RemoteGetURL("origin")
 	assert.Nil(t, err)
 	assert.Equal(t, []string{"t"}, URLs)
 
 	err = r.RemoteURLAdd("origin", "e")
 	assert.Nil(t, err)
-	URLs, err = r.RemoteURLGet("origin", RemoteURLGetOptions{All: true})
+	URLs, err = r.RemoteGetURL("origin", RemoteGetURLOptions{All: true})
 	assert.Nil(t, err)
 	assert.Equal(t, []string{"t", "e"}, URLs)
 
-	err = r.RemoteURLSetRegex("origin", "e", "s")
+	err = r.RemoteSetURLRegex("origin", "e", "s")
 	assert.Nil(t, err)
-	URLs, err = r.RemoteURLGet("origin", RemoteURLGetOptions{All: true})
+	URLs, err = r.RemoteGetURL("origin", RemoteGetURLOptions{All: true})
 	assert.Nil(t, err)
 	assert.Equal(t, []string{"t", "s"}, URLs)
 
 	err = r.RemoteURLDelRegex("origin", "t")
 	assert.Nil(t, err)
-	URLs, err = r.RemoteURLGet("origin", RemoteURLGetOptions{All: true})
+	URLs, err = r.RemoteGetURL("origin", RemoteGetURLOptions{All: true})
 	assert.Nil(t, err)
 	assert.Equal(t, []string{"s"}, URLs)
 }
