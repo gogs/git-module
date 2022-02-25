@@ -172,37 +172,37 @@ func TestRepository_RemoteURLFamily(t *testing.T) {
 	}
 	defer cleanup()
 
-	err = r.RemoteURLDelRegex("origin", ".*")
-	assert.Equal(t, ErrDelAllNonPushURL, err)
+	err = r.RemoteSetURLDelete("origin", RemoteSetURLDeleteOptions{Regex: ".*"})
+	assert.Equal(t, ErrNotDeleteNonPushURLs, err)
 
 	err = r.RemoteSetURL("notexist", "t")
 	assert.Equal(t, ErrRemoteNotExist, err)
 
-	err = r.RemoteSetURLRegex("notexist", "t", "t")
+	err = r.RemoteSetURL("notexist", "t", RemoteSetURLOptions{Regex: "t"})
 	assert.Equal(t, ErrRemoteNotExist, err)
 
-	// default origin URL is not easily testable
+	// Default origin URL is not easily testable
 	err = r.RemoteSetURL("origin", "t")
 	assert.Nil(t, err)
-	URLs, err := r.RemoteGetURL("origin")
+	urls, err := r.RemoteGetURL("origin")
 	assert.Nil(t, err)
-	assert.Equal(t, []string{"t"}, URLs)
+	assert.Equal(t, []string{"t"}, urls)
 
-	err = r.RemoteURLAdd("origin", "e")
+	err = r.RemoteSetURL("origin", "e", RemoteSetURLOptions{Add: true})
 	assert.Nil(t, err)
-	URLs, err = r.RemoteGetURL("origin", RemoteGetURLOptions{All: true})
+	urls, err = r.RemoteGetURL("origin", RemoteGetURLOptions{All: true})
 	assert.Nil(t, err)
-	assert.Equal(t, []string{"t", "e"}, URLs)
+	assert.Equal(t, []string{"t", "e"}, urls)
 
-	err = r.RemoteSetURLRegex("origin", "e", "s")
+	err = r.RemoteSetURL("origin", "s", RemoteSetURLOptions{Regex: "e"})
 	assert.Nil(t, err)
-	URLs, err = r.RemoteGetURL("origin", RemoteGetURLOptions{All: true})
+	urls, err = r.RemoteGetURL("origin", RemoteGetURLOptions{All: true})
 	assert.Nil(t, err)
-	assert.Equal(t, []string{"t", "s"}, URLs)
+	assert.Equal(t, []string{"t", "s"}, urls)
 
-	err = r.RemoteURLDelRegex("origin", "t")
+	err = r.RemoteSetURLDelete("origin", RemoteSetURLDeleteOptions{Regex: "t"})
 	assert.Nil(t, err)
-	URLs, err = r.RemoteGetURL("origin", RemoteGetURLOptions{All: true})
+	urls, err = r.RemoteGetURL("origin", RemoteGetURLOptions{All: true})
 	assert.Nil(t, err)
-	assert.Equal(t, []string{"s"}, URLs)
+	assert.Equal(t, []string{"s"}, urls)
 }
