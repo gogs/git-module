@@ -279,7 +279,7 @@ type RemoteSetURLAddOptions struct {
 }
 
 // RemoteSetURLAdd appends an URL to the remote with given name of the repository in
-// given path. (RemoteSetURL overwrites the URL(s) instead)
+// given path. Use RemoteSetURL to overwrite the URL(s) instead.
 func RemoteSetURLAdd(repoPath, name, newurl string, opts ...RemoteSetURLAddOptions) error {
 	var opt RemoteSetURLAddOptions
 	if len(opts) > 0 {
@@ -301,7 +301,7 @@ func RemoteSetURLAdd(repoPath, name, newurl string, opts ...RemoteSetURLAddOptio
 }
 
 // RemoteSetURLAdd appends an URL to the remote with given name of the repository.
-// (RemoteSetURL overwrites the URL(s) instead)
+// Use RemoteSetURL to overwrite the URL(s) instead.
 func (r *Repository) RemoteSetURLAdd(name, newurl string, opts ...RemoteSetURLAddOptions) error {
 	return RemoteSetURLAdd(r.path, name, newurl, opts...)
 }
