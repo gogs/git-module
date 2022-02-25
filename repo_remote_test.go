@@ -188,7 +188,7 @@ func TestRepository_RemoteURLFamily(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, []string{"t"}, urls)
 
-	err = r.RemoteSetURL("origin", "e", RemoteSetURLOptions{Add: true})
+	err = r.RemoteSetURLAdd("origin", "e")
 	assert.Nil(t, err)
 	urls, err = r.RemoteGetURL("origin", RemoteGetURLOptions{All: true})
 	assert.Nil(t, err)

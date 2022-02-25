@@ -222,11 +222,9 @@ func (r *Repository) RemoteGetURL(name string, opts ...RemoteGetURLOptions) ([]s
 //
 // Docs: https://git-scm.com/docs/git-remote#Documentation/git-remote.txt-emset-urlem
 type RemoteSetURLOptions struct {
-	// Indicates whether to append, instead of overwriting (the first) URL.
-	Add bool
 	// Indicates whether to get push URLs instead of fetch URLs.
 	Push bool
-	// The regex to match existing URLs.
+	// The regex to match existing URLs to replace (instead of first).
 	Regex string
 	// The timeout duration before giving up for each shell command execution.
 	// The default timeout duration will be used when not supplied.
@@ -241,9 +239,6 @@ func RemoteSetURL(repoPath, name, newurl string, opts ...RemoteSetURLOptions) er
 	}
 
 	cmd := NewCommand("remote", "set-url")
-	if opt.Add {
-		cmd.AddArgs("--add")
-	}
 	if opt.Push {
 		cmd.AddArgs("--push")
 	}
@@ -271,6 +266,46 @@ func (r *Repository) RemoteSetURL(name, newurl string, opts ...RemoteSetURLOptio
 	return RemoteSetURL(r.path, name, newurl, opts...)
 }
 
+// RemoteSetURLAddOptions contains arguments for appending an URL to a remote
+// of the repository.
+//
+// Docs: https://git-scm.com/docs/git-remote#Documentation/git-remote.txt-emset-urlem
+type RemoteSetURLAddOptions struct {
+	// Indicates whether to get push URLs instead of fetch URLs.
+	Push bool
+	// The timeout duration before giving up for each shell command execution.
+	// The default timeout duration will be used when not supplied.
+	Timeout time.Duration
+}
+
+// RemoteSetURLAdd appends an URL to the remote with given name of the repository in
+// given path. (RemoteSetURL overwrites the URL(s) instead)
+func RemoteSetURLAdd(repoPath, name, newurl string, opts ...RemoteSetURLAddOptions) error {
+	var opt RemoteSetURLAddOptions
+	if len(opts) > 0 {
+		opt = opts[0]
+	}
+
+	cmd := NewCommand("remote", "set-url", "--add")
+	if opt.Push {
+		cmd.AddArgs("--push")
+	}
+
+	cmd.AddArgs(name, newurl)
+
+	_, err := cmd.RunInDirWithTimeout(opt.Timeout, repoPath)
+	if err != nil && strings.Contains(err.Error(), "Will not delete all non-push URLs") {
+		return ErrNotDeleteNonPushURLs
+	}
+	return err
+}
+
+// RemoteSetURLAdd appends an URL to the remote with given name of the repository.
+// (RemoteSetURL overwrites the URL(s) instead)
+func (r *Repository) RemoteSetURLAdd(name, newurl string, opts ...RemoteSetURLAddOptions) error {
+	return RemoteSetURLAdd(r.path, name, newurl, opts...)
+}
+
 // RemoteSetURLDeleteOptions contains arguments for deleting an URL of a remote
 // of the repository.
 //
@@ -296,8 +331,7 @@ func RemoteSetURLDelete(repoPath, name, regex string, opts ...RemoteSetURLDelete
 		cmd.AddArgs("--push")
 	}
 
-	cmd.AddArgs(name)
-	cmd.AddArgs(regex)
+	cmd.AddArgs(name, regex)
 
 	_, err := cmd.RunInDirWithTimeout(opt.Timeout, repoPath)
 	if err != nil && strings.Contains(err.Error(), "Will not delete all non-push URLs") {
