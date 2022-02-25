@@ -278,8 +278,6 @@ func (r *Repository) RemoteSetURL(name, newurl string, opts ...RemoteSetURLOptio
 type RemoteSetURLDeleteOptions struct {
 	// Indicates whether to get push URLs instead of fetch URLs.
 	Push bool
-	// The regex to match existing URLs.
-	Regex string
 	// The timeout duration before giving up for each shell command execution.
 	// The default timeout duration will be used when not supplied.
 	Timeout time.Duration
@@ -287,7 +285,7 @@ type RemoteSetURLDeleteOptions struct {
 
 // RemoteSetURLDelete deletes the remote with given name of the repository in
 // given path.
-func RemoteSetURLDelete(repoPath, name string, opts ...RemoteSetURLDeleteOptions) error {
+func RemoteSetURLDelete(repoPath, name, regex string, opts ...RemoteSetURLDeleteOptions) error {
 	var opt RemoteSetURLDeleteOptions
 	if len(opts) > 0 {
 		opt = opts[0]
@@ -299,10 +297,7 @@ func RemoteSetURLDelete(repoPath, name string, opts ...RemoteSetURLDeleteOptions
 	}
 
 	cmd.AddArgs(name)
-
-	if opt.Regex != "" {
-		cmd.AddArgs(opt.Regex)
-	}
+	cmd.AddArgs(regex)
 
 	_, err := cmd.RunInDirWithTimeout(opt.Timeout, repoPath)
 	if err != nil && strings.Contains(err.Error(), "Will not delete all non-push URLs") {
@@ -313,6 +308,6 @@ func RemoteSetURLDelete(repoPath, name string, opts ...RemoteSetURLDeleteOptions
 
 // RemoteSetURLDelete deletes all URLs matching regex of the remote with given
 // name of the repository.
-func (r *Repository) RemoteSetURLDelete(name string, opts ...RemoteSetURLDeleteOptions) error {
-	return RemoteSetURLDelete(r.path, name, opts...)
+func (r *Repository) RemoteSetURLDelete(name, regex string, opts ...RemoteSetURLDeleteOptions) error {
+	return RemoteSetURLDelete(r.path, name, regex, opts...)
 }

@@ -172,7 +172,7 @@ func TestRepository_RemoteURLFamily(t *testing.T) {
 	}
 	defer cleanup()
 
-	err = r.RemoteSetURLDelete("origin", RemoteSetURLDeleteOptions{Regex: ".*"})
+	err = r.RemoteSetURLDelete("origin", ".*")
 	assert.Equal(t, ErrNotDeleteNonPushURLs, err)
 
 	err = r.RemoteSetURL("notexist", "t")
@@ -200,7 +200,7 @@ func TestRepository_RemoteURLFamily(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, []string{"t", "s"}, urls)
 
-	err = r.RemoteSetURLDelete("origin", RemoteSetURLDeleteOptions{Regex: "t"})
+	err = r.RemoteSetURLDelete("origin", "t")
 	assert.Nil(t, err)
 	urls, err = r.RemoteGetURL("origin", RemoteGetURLOptions{All: true})
 	assert.Nil(t, err)
