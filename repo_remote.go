@@ -222,7 +222,7 @@ func (r *Repository) RemoteGetURL(name string, opts ...RemoteGetURLOptions) ([]s
 //
 // Docs: https://git-scm.com/docs/git-remote#Documentation/git-remote.txt-emset-urlem
 type RemoteSetURLOptions struct {
-	// Indicates whether to add a new URL.
+	// Indicates whether to append, instead of overwriting (the first) URL.
 	Add bool
 	// Indicates whether to get push URLs instead of fetch URLs.
 	Push bool
