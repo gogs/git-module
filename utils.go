@@ -7,6 +7,7 @@ package git
 import (
 	"fmt"
 	"os"
+	"strings"
 	"sync"
 )
 
@@ -70,4 +71,14 @@ func concatenateError(err error, stderr string) error {
 		return err
 	}
 	return fmt.Errorf("%v - %s", err, stderr)
+}
+
+// bytesToStrings splits given bytes into strings by line separator ("\n").
+// It returns empty slice if the given bytes only contains line separators.
+func bytesToStrings(in []byte) []string {
+	s := strings.TrimRight(string(in), "\n")
+	if s == "" { // empty (not {""}, len=1)
+		return []string{}
+	}
+	return strings.Split(s, "\n")
 }

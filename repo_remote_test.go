@@ -131,3 +131,78 @@ func TestRepository_RemoveRemote(t *testing.T) {
 	err = r.RemoveRemote("origin", RemoveRemoteOptions{})
 	assert.Equal(t, ErrRemoteNotExist, err)
 }
+
+func TestRepository_RemotesList(t *testing.T) {
+	r, cleanup, err := setupTempRepo()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer cleanup()
+
+	// 1 remote
+	remotes, err := r.Remotes()
+	assert.Nil(t, err)
+	assert.Equal(t, []string{"origin"}, remotes)
+
+	// 2 remotes
+	err = r.AddRemote("t", "t")
+	assert.Nil(t, err)
+
+	remotes, err = r.Remotes()
+	assert.Nil(t, err)
+	assert.Equal(t, []string{"origin", "t"}, remotes)
+	assert.Len(t, remotes, 2)
+
+	// 0 remotes
+	err = r.RemoveRemote("t")
+	assert.Nil(t, err)
+	err = r.RemoveRemote("origin")
+	assert.Nil(t, err)
+
+	remotes, err = r.Remotes()
+	assert.Nil(t, err)
+	assert.Equal(t, []string{}, remotes)
+	assert.Len(t, remotes, 0)
+}
+
+func TestRepository_RemoteURLFamily(t *testing.T) {
+	r, cleanup, err := setupTempRepo()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer cleanup()
+
+	err = r.RemoteSetURLDelete("origin", ".*")
+	assert.Equal(t, ErrNotDeleteNonPushURLs, err)
+
+	err = r.RemoteSetURL("notexist", "t")
+	assert.Equal(t, ErrRemoteNotExist, err)
+
+	err = r.RemoteSetURL("notexist", "t", RemoteSetURLOptions{Regex: "t"})
+	assert.Equal(t, ErrRemoteNotExist, err)
+
+	// Default origin URL is not easily testable
+	err = r.RemoteSetURL("origin", "t")
+	assert.Nil(t, err)
+	urls, err := r.RemoteGetURL("origin")
+	assert.Nil(t, err)
+	assert.Equal(t, []string{"t"}, urls)
+
+	err = r.RemoteSetURLAdd("origin", "e")
+	assert.Nil(t, err)
+	urls, err = r.RemoteGetURL("origin", RemoteGetURLOptions{All: true})
+	assert.Nil(t, err)
+	assert.Equal(t, []string{"t", "e"}, urls)
+
+	err = r.RemoteSetURL("origin", "s", RemoteSetURLOptions{Regex: "e"})
+	assert.Nil(t, err)
+	urls, err = r.RemoteGetURL("origin", RemoteGetURLOptions{All: true})
+	assert.Nil(t, err)
+	assert.Equal(t, []string{"t", "s"}, urls)
+
+	err = r.RemoteSetURLDelete("origin", "t")
+	assert.Nil(t, err)
+	urls, err = r.RemoteGetURL("origin", RemoteGetURLOptions{All: true})
+	assert.Nil(t, err)
+	assert.Equal(t, []string{"s"}, urls)
+}
