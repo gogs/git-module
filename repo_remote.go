@@ -180,7 +180,7 @@ func (r *Repository) Remotes(opts ...RemotesListOptions) ([]string, error) {
 type RemoteGetURLOptions struct {
 	// Indicates whether to get push URLs instead of fetch URLs.
 	Push bool
-	// get all URLs: also lists non-main/default URLs for fetch OR push (not related with Push)
+	// Indicates whether to get all URLs, including lists that are not part of main URLs. This option is independent of the Push option.
 	All bool
 	// The timeout duration before giving up for each shell command execution.
 	// The default timeout duration will be used when not supplied.
