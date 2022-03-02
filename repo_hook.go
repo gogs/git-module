@@ -13,8 +13,8 @@ import (
 // DefaultHooksDir is the default directory for Git hooks.
 const DefaultHooksDir = "hooks"
 
-// NewHook creates and returns a new hook with given name. Update method must be called
-// to actually save the hook to disk.
+// NewHook creates and returns a new hook with given name. Update method must be
+// called to actually save the hook to disk.
 func (r *Repository) NewHook(dir string, name HookName) *Hook {
 	return &Hook{
 		name: name,
@@ -22,9 +22,9 @@ func (r *Repository) NewHook(dir string, name HookName) *Hook {
 	}
 }
 
-// Hook returns a Git hook by given name in the repository. Giving empty directory
-// will use the default directory. It returns an os.ErrNotExist if both active and
-// sample hook do not exist.
+// Hook returns a Git hook by given name in the repository. Giving empty
+// directory will use the default directory. It returns an os.ErrNotExist if
+// both active and sample hook do not exist.
 func (r *Repository) Hook(dir string, name HookName) (*Hook, error) {
 	if dir == "" {
 		dir = DefaultHooksDir
@@ -57,8 +57,9 @@ func (r *Repository) Hook(dir string, name HookName) (*Hook, error) {
 	return nil, os.ErrNotExist
 }
 
-// Hooks returns a list of Git hooks found in the repository. Giving empty directory
-// will use the default directory. It may return an empty slice when no hooks found.
+// Hooks returns a list of Git hooks found in the repository. Giving empty
+// directory will use the default directory. It may return an empty slice when
+// no hooks found.
 func (r *Repository) Hooks(dir string) ([]*Hook, error) {
 	hooks := make([]*Hook, 0, len(ServerSideHooks))
 	for _, name := range ServerSideHooks {

@@ -215,7 +215,8 @@ type diffParser struct {
 	maxFileLines int
 	maxLineChars int
 
-	// The next line that hasn't been processed. It is used to determine what kind of process should go in.
+	// The next line that hasn't been processed. It is used to determine what kind
+	// of process should go in.
 	buffer []byte
 	isEOF  bool
 }
@@ -248,8 +249,8 @@ func (p *diffParser) parseFileHeader() (*DiffFile, error) {
 	line := string(p.buffer)
 	p.buffer = nil
 
-	// Note: In case file name is surrounded by double quotes (it happens only in git-shell).
-	// e.g. diff --git "a/xxx" "b/xxx"
+	// NOTE: In case file name is surrounded by double quotes (it happens only in
+	// git-shell). e.g. diff --git "a/xxx" "b/xxx"
 	var middle int
 	hasQuote := line[len(diffHead)] == '"'
 	if hasQuote {
@@ -494,9 +495,10 @@ func (p *diffParser) parse() (*Diff, error) {
 	return diff, nil
 }
 
-// StreamParseDiff parses the diff read from the given io.Reader. It does parse-on-read to minimize
-// the time spent on huge diffs. It accepts a channel to notify and send error (if any) to the caller
-// when the process is done. Therefore, this method should be called in a goroutine asynchronously.
+// StreamParseDiff parses the diff read from the given io.Reader. It does
+// parse-on-read to minimize the time spent on huge diffs. It accepts a channel
+// to notify and send error (if any) to the caller when the process is done.
+// Therefore, this method should be called in a goroutine asynchronously.
 func StreamParseDiff(r io.Reader, done chan<- SteamParseDiffResult, maxFiles, maxFileLines, maxLineChars int) {
 	p := &diffParser{
 		Reader:       bufio.NewReader(r),

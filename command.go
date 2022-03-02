@@ -53,8 +53,8 @@ func (c *Command) AddEnvs(envs ...string) *Command {
 // DefaultTimeout is the default timeout duration for all commands.
 const DefaultTimeout = time.Minute
 
-// A limitDualWriter writes to W but limits the amount of data written to just N bytes.
-// On the other hand, it passes everything to w.
+// A limitDualWriter writes to W but limits the amount of data written to just N
+// bytes. On the other hand, it passes everything to w.
 type limitDualWriter struct {
 	W        io.Writer // underlying writer
 	N        int64     // max bytes remaining
@@ -81,10 +81,11 @@ func (w *limitDualWriter) Write(p []byte) (int, error) {
 	return w.w.Write(p)
 }
 
-// RunInDirPipelineWithTimeout executes the command in given directory and timeout duration.
-// It pipes stdout and stderr to supplied io.Writer. DefaultTimeout will be used if the timeout
-// duration is less than time.Nanosecond (i.e. less than or equal to 0).
-// It returns an ErrExecTimeout if the execution was timed out.
+// RunInDirPipelineWithTimeout executes the command in given directory and
+// timeout duration. It pipes stdout and stderr to supplied io.Writer.
+// DefaultTimeout will be used if the timeout duration is less than
+// time.Nanosecond (i.e. less than or equal to 0). It returns an ErrExecTimeout
+// if the execution was timed out.
 func (c *Command) RunInDirPipelineWithTimeout(timeout time.Duration, stdout, stderr io.Writer, dir string) (err error) {
 	if timeout < time.Nanosecond {
 		timeout = DefaultTimeout
@@ -148,14 +149,14 @@ func (c *Command) RunInDirPipelineWithTimeout(timeout time.Duration, stdout, std
 	}
 }
 
-// RunInDirPipeline executes the command in given directory and default timeout duration.
-// It pipes stdout and stderr to supplied io.Writer.
+// RunInDirPipeline executes the command in given directory and default timeout
+// duration. It pipes stdout and stderr to supplied io.Writer.
 func (c *Command) RunInDirPipeline(stdout, stderr io.Writer, dir string) error {
 	return c.RunInDirPipelineWithTimeout(DefaultTimeout, stdout, stderr, dir)
 }
 
-// RunInDirWithTimeout executes the command in given directory and timeout duration.
-// It returns stdout in []byte and error (combined with stderr).
+// RunInDirWithTimeout executes the command in given directory and timeout
+// duration. It returns stdout in []byte and error (combined with stderr).
 func (c *Command) RunInDirWithTimeout(timeout time.Duration, dir string) ([]byte, error) {
 	stdout := new(bytes.Buffer)
 	stderr := new(bytes.Buffer)
@@ -165,14 +166,14 @@ func (c *Command) RunInDirWithTimeout(timeout time.Duration, dir string) ([]byte
 	return stdout.Bytes(), nil
 }
 
-// RunInDir executes the command in given directory and default timeout duration.
-// It returns stdout and error (combined with stderr).
+// RunInDir executes the command in given directory and default timeout
+// duration. It returns stdout and error (combined with stderr).
 func (c *Command) RunInDir(dir string) ([]byte, error) {
 	return c.RunInDirWithTimeout(DefaultTimeout, dir)
 }
 
-// RunWithTimeout executes the command in working directory and given timeout duration.
-// It returns stdout in string and error (combined with stderr).
+// RunWithTimeout executes the command in working directory and given timeout
+// duration. It returns stdout in string and error (combined with stderr).
 func (c *Command) RunWithTimeout(timeout time.Duration) ([]byte, error) {
 	stdout, err := c.RunInDirWithTimeout(timeout, "")
 	if err != nil {
