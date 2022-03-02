@@ -14,8 +14,8 @@ type Blob struct {
 	*TreeEntry
 }
 
-// Bytes reads and returns the content of the blob all at once in bytes.
-// This can be very slow and memory consuming for huge content.
+// Bytes reads and returns the content of the blob all at once in bytes. This
+// can be very slow and memory consuming for huge content.
 func (b *Blob) Bytes() ([]byte, error) {
 	stdout := new(bytes.Buffer)
 	stderr := new(bytes.Buffer)
@@ -29,7 +29,8 @@ func (b *Blob) Bytes() ([]byte, error) {
 	return stdout.Bytes(), nil
 }
 
-// Pipeline reads the content of the blob and pipes stdout and stderr to supplied io.Writer.
+// Pipeline reads the content of the blob and pipes stdout and stderr to
+// supplied io.Writer.
 func (b *Blob) Pipeline(stdout, stderr io.Writer) error {
 	return NewCommand("show", b.id.String()).RunInDirPipeline(stdout, stderr, b.parent.repo.path)
 }

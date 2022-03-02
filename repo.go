@@ -32,8 +32,8 @@ func (r *Repository) Path() string {
 
 const LogFormatHashOnly = `format:%H`
 
-// parsePrettyFormatLogToList returns a list of commits parsed from given logs that are
-// formatted in LogFormatHashOnly.
+// parsePrettyFormatLogToList returns a list of commits parsed from given logs
+// that are formatted in LogFormatHashOnly.
 func (r *Repository) parsePrettyFormatLogToList(timeout time.Duration, logs []byte) ([]*Commit, error) {
 	if len(logs) == 0 {
 		return []*Commit{}, nil
@@ -52,12 +52,13 @@ func (r *Repository) parsePrettyFormatLogToList(timeout time.Duration, logs []by
 }
 
 // InitOptions contains optional arguments for initializing a repository.
+//
 // Docs: https://git-scm.com/docs/git-init
 type InitOptions struct {
 	// Indicates whether the repository should be initialized in bare format.
 	Bare bool
-	// The timeout duration before giving up for each shell command execution.
-	// The default timeout duration will be used when not supplied.
+	// The timeout duration before giving up for each shell command execution. The
+	// default timeout duration will be used when not supplied.
 	Timeout time.Duration
 }
 
@@ -81,8 +82,8 @@ func Init(path string, opts ...InitOptions) error {
 	return err
 }
 
-// Open opens the repository at the given path. It returns an os.ErrNotExist
-// if the path does not exist.
+// Open opens the repository at the given path. It returns an os.ErrNotExist if
+// the path does not exist.
 func Open(repoPath string) (*Repository, error) {
 	repoPath, err := filepath.Abs(repoPath)
 	if err != nil {
@@ -99,6 +100,7 @@ func Open(repoPath string) (*Repository, error) {
 }
 
 // CloneOptions contains optional arguments for cloning a repository.
+//
 // Docs: https://git-scm.com/docs/git-clone
 type CloneOptions struct {
 	// Indicates whether the repository should be cloned as a mirror.
@@ -111,8 +113,8 @@ type CloneOptions struct {
 	Branch string
 	// The number of revisions to clone.
 	Depth uint64
-	// The timeout duration before giving up for each shell command execution.
-	// The default timeout duration will be used when not supplied.
+	// The timeout duration before giving up for each shell command execution. The
+	// default timeout duration will be used when not supplied.
 	Timeout time.Duration
 }
 
@@ -150,12 +152,13 @@ func Clone(url, dst string, opts ...CloneOptions) error {
 }
 
 // FetchOptions contains optional arguments for fetching repository updates.
+//
 // Docs: https://git-scm.com/docs/git-fetch
 type FetchOptions struct {
 	// Indicates whether to prune during fetching.
 	Prune bool
-	// The timeout duration before giving up for each shell command execution.
-	// The default timeout duration will be used when not supplied.
+	// The timeout duration before giving up for each shell command execution. The
+	// default timeout duration will be used when not supplied.
 	Timeout time.Duration
 }
 
@@ -176,6 +179,7 @@ func (r *Repository) Fetch(opts ...FetchOptions) error {
 }
 
 // PullOptions contains optional arguments for pulling repository updates.
+//
 // Docs: https://git-scm.com/docs/git-pull
 type PullOptions struct {
 	// Indicates whether to rebased during pulling.
@@ -186,8 +190,8 @@ type PullOptions struct {
 	Remote string
 	// The branch to pull updates from when All=false and Remote is supplied.
 	Branch string
-	// The timeout duration before giving up for each shell command execution.
-	// The default timeout duration will be used when not supplied.
+	// The timeout duration before giving up for each shell command execution. The
+	// default timeout duration will be used when not supplied.
 	Timeout time.Duration
 }
 
@@ -217,18 +221,19 @@ func (r *Repository) Pull(opts ...PullOptions) error {
 }
 
 // PushOptions contains optional arguments for pushing repository changes.
+//
 // Docs: https://git-scm.com/docs/git-push
 type PushOptions struct {
 	// The environment variables set for the push.
 	Envs []string
-	// The timeout duration before giving up for each shell command execution.
-	// The default timeout duration will be used when not supplied.
+	// The timeout duration before giving up for each shell command execution. The
+	// default timeout duration will be used when not supplied.
 	Timeout time.Duration
 }
 
-// RepoPush pushs local changes to given remote and branch for the repository
-// in given path.
-func RepoPush(repoPath, remote, branch string, opts ...PushOptions) error {
+// Push pushes local changes to given remote and branch for the repository in
+// given path.
+func Push(repoPath, remote, branch string, opts ...PushOptions) error {
 	var opt PushOptions
 	if len(opts) > 0 {
 		opt = opts[0]
@@ -240,23 +245,29 @@ func RepoPush(repoPath, remote, branch string, opts ...PushOptions) error {
 	return err
 }
 
-// Push pushs local changes to given remote and branch for the repository.
+// Deprecated: Use Push instead.
+func RepoPush(repoPath, remote, branch string, opts ...PushOptions) error {
+	return Push(repoPath, remote, branch, opts...)
+}
+
+// Push pushes local changes to given remote and branch for the repository.
 func (r *Repository) Push(remote, branch string, opts ...PushOptions) error {
-	return RepoPush(r.path, remote, branch, opts...)
+	return Push(r.path, remote, branch, opts...)
 }
 
 // CheckoutOptions contains optional arguments for checking out to a branch.
+//
 // Docs: https://git-scm.com/docs/git-checkout
 type CheckoutOptions struct {
 	// The base branch if checks out to a new branch.
 	BaseBranch string
-	// The timeout duration before giving up for each shell command execution.
-	// The default timeout duration will be used when not supplied.
+	// The timeout duration before giving up for each shell command execution. The
+	// default timeout duration will be used when not supplied.
 	Timeout time.Duration
 }
 
 // Checkout checks out to given branch for the repository in given path.
-func RepoCheckout(repoPath, branch string, opts ...CheckoutOptions) error {
+func Checkout(repoPath, branch string, opts ...CheckoutOptions) error {
 	var opt CheckoutOptions
 	if len(opts) > 0 {
 		opt = opts[0]
@@ -275,23 +286,29 @@ func RepoCheckout(repoPath, branch string, opts ...CheckoutOptions) error {
 	return err
 }
 
+// Deprecated: Use Checkout instead.
+func RepoCheckout(repoPath, branch string, opts ...CheckoutOptions) error {
+	return Checkout(repoPath, branch, opts...)
+}
+
 // Checkout checks out to given branch for the repository.
 func (r *Repository) Checkout(branch string, opts ...CheckoutOptions) error {
-	return RepoCheckout(r.path, branch, opts...)
+	return Checkout(r.path, branch, opts...)
 }
 
 // ResetOptions contains optional arguments for resetting a branch.
+//
 // Docs: https://git-scm.com/docs/git-reset
 type ResetOptions struct {
 	// Indicates whether to perform a hard reset.
 	Hard bool
-	// The timeout duration before giving up for each shell command execution.
-	// The default timeout duration will be used when not supplied.
+	// The timeout duration before giving up for each shell command execution. The
+	// default timeout duration will be used when not supplied.
 	Timeout time.Duration
 }
 
-// RepoReset resets working tree to given revision for the repository in given path.
-func RepoReset(repoPath, rev string, opts ...ResetOptions) error {
+// Reset resets working tree to given revision for the repository in given path.
+func Reset(repoPath, rev string, opts ...ResetOptions) error {
 	var opt ResetOptions
 	if len(opts) > 0 {
 		opt = opts[0]
@@ -306,22 +323,29 @@ func RepoReset(repoPath, rev string, opts ...ResetOptions) error {
 	return err
 }
 
-// Reset resets working tree to given revision for the repository.
-func (r *Repository) Reset(rev string, opts ...ResetOptions) error {
-	return RepoReset(r.path, rev, opts...)
+// Deprecated: Use Reset instead.
+func RepoReset(repoPath, rev string, opts ...ResetOptions) error {
+	return Reset(repoPath, rev, opts...)
 }
 
-// MoveOptions contains optional arguments for moving a file, a directory, or a symlink.
+// Reset resets working tree to given revision for the repository.
+func (r *Repository) Reset(rev string, opts ...ResetOptions) error {
+	return Reset(r.path, rev, opts...)
+}
+
+// MoveOptions contains optional arguments for moving a file, a directory, or a
+// symlink.
+//
 // Docs: https://git-scm.com/docs/git-mv
 type MoveOptions struct {
-	// The timeout duration before giving up for each shell command execution.
-	// The default timeout duration will be used when not supplied.
+	// The timeout duration before giving up for each shell command execution. The
+	// default timeout duration will be used when not supplied.
 	Timeout time.Duration
 }
 
-// RepoMove moves a file, a directory, or a symlink file or directory from source to
+// Move moves a file, a directory, or a symlink file or directory from source to
 // destination for the repository in given path.
-func RepoMove(repoPath, src, dst string, opts ...MoveOptions) error {
+func Move(repoPath, src, dst string, opts ...MoveOptions) error {
 	var opt MoveOptions
 	if len(opts) > 0 {
 		opt = opts[0]
@@ -331,26 +355,32 @@ func RepoMove(repoPath, src, dst string, opts ...MoveOptions) error {
 	return err
 }
 
-// Move moves a file, a directory, or a symlink file or directory from source to destination
-// for the repository.
+// Deprecated: Use Move instead.
+func RepoMove(repoPath, src, dst string, opts ...MoveOptions) error {
+	return Move(repoPath, src, dst, opts...)
+}
+
+// Move moves a file, a directory, or a symlink file or directory from source to
+// destination for the repository.
 func (r *Repository) Move(src, dst string, opts ...MoveOptions) error {
-	return RepoMove(r.path, src, dst, opts...)
+	return Move(r.path, src, dst, opts...)
 }
 
 // AddOptions contains optional arguments for adding local changes.
+//
 // Docs: https://git-scm.com/docs/git-add
 type AddOptions struct {
 	// Indicates whether to add all changes to index.
 	All bool
 	// The specific pathspecs to be added to index.
 	Pathsepcs []string
-	// The timeout duration before giving up for each shell command execution.
-	// The default timeout duration will be used when not supplied.
+	// The timeout duration before giving up for each shell command execution. The
+	// default timeout duration will be used when not supplied.
 	Timeout time.Duration
 }
 
-// RepoAdd adds local changes to index for the repository in given path.
-func RepoAdd(repoPath string, opts ...AddOptions) error {
+// Add adds local changes to index for the repository in given path.
+func Add(repoPath string, opts ...AddOptions) error {
 	var opt AddOptions
 	if len(opts) > 0 {
 		opt = opts[0]
@@ -368,24 +398,30 @@ func RepoAdd(repoPath string, opts ...AddOptions) error {
 	return err
 }
 
+// Deprecated: Use Add instead.
+func RepoAdd(repoPath string, opts ...AddOptions) error {
+	return Add(repoPath, opts...)
+}
+
 // Add adds local changes to index for the repository.
 func (r *Repository) Add(opts ...AddOptions) error {
-	return RepoAdd(r.path, opts...)
+	return Add(r.path, opts...)
 }
 
 // CommitOptions contains optional arguments to commit changes.
+//
 // Docs: https://git-scm.com/docs/git-commit
 type CommitOptions struct {
 	// Author is the author of the changes if that's not the same as committer.
 	Author *Signature
-	// The timeout duration before giving up for each shell command execution.
-	// The default timeout duration will be used when not supplied.
+	// The timeout duration before giving up for each shell command execution. The
+	// default timeout duration will be used when not supplied.
 	Timeout time.Duration
 }
 
-// RepoCommit commits local changes with given author, committer and message for the
-// repository in given path.
-func RepoCommit(repoPath string, committer *Signature, message string, opts ...CommitOptions) error {
+// CreateCommit commits local changes with given author, committer and message
+// for the repository in given path.
+func CreateCommit(repoPath string, committer *Signature, message string, opts ...CommitOptions) error {
 	var opt CommitOptions
 	if len(opts) > 0 {
 		opt = opts[0]
@@ -408,9 +444,15 @@ func RepoCommit(repoPath string, committer *Signature, message string, opts ...C
 	return err
 }
 
-// Commit commits local changes with given author, committer and message for the repository.
+// Deprecated: Use CreateCommit instead.
+func RepoCommit(repoPath string, committer *Signature, message string, opts ...CommitOptions) error {
+	return CreateCommit(repoPath, committer, message, opts...)
+}
+
+// Commit commits local changes with given author, committer and message for the
+// repository.
 func (r *Repository) Commit(committer *Signature, message string, opts ...CommitOptions) error {
-	return RepoCommit(r.path, committer, message, opts...)
+	return CreateCommit(r.path, committer, message, opts...)
 }
 
 // NameStatus contains name status of a commit.
@@ -421,15 +463,17 @@ type NameStatus struct {
 }
 
 // ShowNameStatusOptions contains optional arguments for showing name status.
+//
 // Docs: https://git-scm.com/docs/git-show#Documentation/git-show.txt---name-status
 type ShowNameStatusOptions struct {
-	// The timeout duration before giving up for each shell command execution.
-	// The default timeout duration will be used when not supplied.
+	// The timeout duration before giving up for each shell command execution. The
+	// default timeout duration will be used when not supplied.
 	Timeout time.Duration
 }
 
-// RepoShowNameStatus returns name status of given revision of the repository in given path.
-func RepoShowNameStatus(repoPath, rev string, opts ...ShowNameStatusOptions) (*NameStatus, error) {
+// ShowNameStatus returns name status of given revision of the repository in
+// given path.
+func ShowNameStatus(repoPath, rev string, opts ...ShowNameStatusOptions) (*NameStatus, error) {
 	var opt ShowNameStatusOptions
 	if len(opts) > 0 {
 		opt = opts[0]
@@ -469,20 +513,27 @@ func RepoShowNameStatus(repoPath, rev string, opts ...ShowNameStatusOptions) (*N
 	return fileStatus, nil
 }
 
+// Deprecated: Use ShowNameStatus instead.
+func RepoShowNameStatus(repoPath, rev string, opts ...ShowNameStatusOptions) (*NameStatus, error) {
+	return ShowNameStatus(repoPath, rev, opts...)
+}
+
 // ShowNameStatus returns name status of given revision of the repository.
 func (r *Repository) ShowNameStatus(rev string, opts ...ShowNameStatusOptions) (*NameStatus, error) {
-	return RepoShowNameStatus(r.path, rev, opts...)
+	return ShowNameStatus(r.path, rev, opts...)
 }
 
 // RevParseOptions contains optional arguments for parsing revision.
+//
 // Docs: https://git-scm.com/docs/git-rev-parse
 type RevParseOptions struct {
-	// The timeout duration before giving up for each shell command execution.
-	// The default timeout duration will be used when not supplied.
+	// The timeout duration before giving up for each shell command execution. The
+	// default timeout duration will be used when not supplied.
 	Timeout time.Duration
 }
 
-// RevParse returns full length (40) commit ID by given revision in the repository.
+// RevParse returns full length (40) commit ID by given revision in the
+// repository.
 func (r *Repository) RevParse(rev string, opts ...RevParseOptions) (string, error) {
 	var opt RevParseOptions
 	if len(opts) > 0 {
@@ -512,15 +563,16 @@ type CountObject struct {
 }
 
 // CountObjectsOptions contains optional arguments for counting objects.
+//
 // Docs: https://git-scm.com/docs/git-count-objects
 type CountObjectsOptions struct {
-	// The timeout duration before giving up for each shell command execution.
-	// The default timeout duration will be used when not supplied.
+	// The timeout duration before giving up for each shell command execution. The
+	// default timeout duration will be used when not supplied.
 	Timeout time.Duration
 }
 
-// RepoCountObjects returns disk usage report of the repository in given path.
-func RepoCountObjects(repoPath string, opts ...CountObjectsOptions) (*CountObject, error) {
+// CountObjects returns disk usage report of the repository in given path.
+func CountObjects(repoPath string, opts ...CountObjectsOptions) (*CountObject, error) {
 	var opt CountObjectsOptions
 	if len(opts) > 0 {
 		opt = opts[0]
@@ -561,24 +613,30 @@ func RepoCountObjects(repoPath string, opts ...CountObjectsOptions) (*CountObjec
 	return countObject, nil
 }
 
+// Deprecated: Use CountObjects instead.
+func RepoCountObjects(repoPath string, opts ...CountObjectsOptions) (*CountObject, error) {
+	return CountObjects(repoPath, opts...)
+}
+
 // CountObjects returns disk usage report of the repository.
 func (r *Repository) CountObjects(opts ...CountObjectsOptions) (*CountObject, error) {
-	return RepoCountObjects(r.path, opts...)
+	return CountObjects(r.path, opts...)
 }
 
 // FsckOptions contains optional arguments for verifying the objects.
+//
 // Docs: https://git-scm.com/docs/git-fsck
 type FsckOptions struct {
 	// The additional arguments to be applied.
 	Args []string
-	// The timeout duration before giving up for each shell command execution.
-	// The default timeout duration will be used when not supplied.
+	// The timeout duration before giving up for each shell command execution. The
+	// default timeout duration will be used when not supplied.
 	Timeout time.Duration
 }
 
-// RepoFsck verifies the connectivity and validity of the objects in the database for the
-// repository in given path.
-func RepoFsck(repoPath string, opts ...FsckOptions) error {
+// Fsck verifies the connectivity and validity of the objects in the database
+// for the repository in given path.
+func Fsck(repoPath string, opts ...FsckOptions) error {
 	var opt FsckOptions
 	if len(opts) > 0 {
 		opt = opts[0]
@@ -592,7 +650,13 @@ func RepoFsck(repoPath string, opts ...FsckOptions) error {
 	return err
 }
 
-// Fsck verifies the connectivity and validity of the objects in the database for the repository.
+// Deprecated: Use Fsck instead.
+func RepoFsck(repoPath string, opts ...FsckOptions) error {
+	return Fsck(repoPath, opts...)
+}
+
+// Fsck verifies the connectivity and validity of the objects in the database
+// for the repository.
 func (r *Repository) Fsck(opts ...FsckOptions) error {
-	return RepoFsck(r.path, opts...)
+	return Fsck(r.path, opts...)
 }

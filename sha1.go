@@ -22,7 +22,8 @@ type SHA1 struct {
 	strOnce sync.Once
 }
 
-// Equal returns true if s2 has the same SHA1 as s. It supports 40-length-string, []byte, and SHA1.
+// Equal returns true if s2 has the same SHA1 as s. It supports
+// 40-length-string, []byte, and SHA1.
 func (s *SHA1) Equal(s2 interface{}) bool {
 	switch v := s2.(type) {
 	case string:
@@ -49,7 +50,8 @@ func (s *SHA1) String() string {
 	return s.str
 }
 
-// MustID always returns a new SHA1 from a [20]byte array with no validation of input.
+// MustID always returns a new SHA1 from a [20]byte array with no validation of
+// input.
 func MustID(b []byte) *SHA1 {
 	var id SHA1
 	for i := 0; i < 20; i++ {
@@ -66,7 +68,8 @@ func NewID(b []byte) (*SHA1, error) {
 	return MustID(b), nil
 }
 
-// MustIDFromString always returns a new sha from a ID with no validation of input.
+// MustIDFromString always returns a new sha from a ID with no validation of
+// input.
 func MustIDFromString(s string) *SHA1 {
 	b, _ := hex.DecodeString(s)
 	return MustID(b)

@@ -12,13 +12,14 @@ import (
 )
 
 // DiffOptions contains optional arguments for parsing diff.
+//
 // Docs: https://git-scm.com/docs/git-diff#Documentation/git-diff.txt---full-index
 type DiffOptions struct {
-	// The commit ID to used for computing diff between a range of commits (base, revision]. When not set,
-	// only computes diff for a single commit at revision.
+	// The commit ID to used for computing diff between a range of commits (base,
+	// revision]. When not set, only computes diff for a single commit at revision.
 	Base string
-	// The timeout duration before giving up for each shell command execution.
-	// The default timeout duration will be used when not supplied.
+	// The timeout duration before giving up for each shell command execution. The
+	// default timeout duration will be used when not supplied.
 	Timeout time.Duration
 }
 
@@ -70,15 +71,17 @@ const (
 	RawDiffPatch  RawDiffFormat = "patch"
 )
 
-// RawDiffOptions contains optional arguments for dumpping a raw diff.
+// RawDiffOptions contains optional arguments for dumping a raw diff.
+//
 // Docs: https://git-scm.com/docs/git-format-patch
 type RawDiffOptions struct {
-	// The timeout duration before giving up for each shell command execution.
-	// The default timeout duration will be used when not supplied.
+	// The timeout duration before giving up for each shell command execution. The
+	// default timeout duration will be used when not supplied.
 	Timeout time.Duration
 }
 
-// RawDiff dumps diff of repository in given revision directly to given io.Writer.
+// RawDiff dumps diff of repository in given revision directly to given
+// io.Writer.
 func (r *Repository) RawDiff(rev string, diffType RawDiffFormat, w io.Writer, opts ...RawDiffOptions) error {
 	var opt RawDiffOptions
 	if len(opts) > 0 {
@@ -119,12 +122,13 @@ func (r *Repository) RawDiff(rev string, diffType RawDiffFormat, w io.Writer, op
 
 // DiffBinaryOptions contains optional arguments for producing binary patch.
 type DiffBinaryOptions struct {
-	// The timeout duration before giving up for each shell command execution.
-	// The default timeout duration will be used when not supplied.
+	// The timeout duration before giving up for each shell command execution. The
+	// default timeout duration will be used when not supplied.
 	Timeout time.Duration
 }
 
-// DiffBinary returns binary patch between base and head revisions that could be used for git-apply.
+// DiffBinary returns binary patch between base and head revisions that could be
+// used for git-apply.
 func (r *Repository) DiffBinary(base, head string, opts ...DiffBinaryOptions) ([]byte, error) {
 	var opt DiffBinaryOptions
 	if len(opts) > 0 {
