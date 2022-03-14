@@ -166,7 +166,7 @@ func RepoTags(repoPath string, opts ...TagsOptions) ([]string, error) {
 
 	var sorted bool
 	if opt.SortKey != "" {
-		cmd.AddArgs(fmt.Sprintf("--sort=%s", opt.SortKey))
+		cmd.AddArgs("--sort=" + opt.SortKey)
 		sorted = true
 	} else if goversion.Compare(version, "2.4.9", ">=") {
 		cmd.AddArgs("--sort=-creatordate")
