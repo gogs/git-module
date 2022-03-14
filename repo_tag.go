@@ -195,13 +195,15 @@ func (r *Repository) Tags(opts ...TagsOptions) ([]string, error) {
 //
 // Docs: https://git-scm.com/docs/git-tag
 type CreateTagOptions struct {
-	// The timeout duration before giving up for each shell command execution. The
-	// default timeout duration will be used when not supplied.
-	Timeout time.Duration
 	// Annotated marks a tag as annotated rather than lightweight.
 	Annotated bool
 	// Message specifies a tagging message for the annotated tag. It is ignored when tag is not annotated.
 	Message string
+	// Author is the author of the changes if that's not the same as committer.
+	Author *Signature
+	// The timeout duration before giving up for each shell command execution. The
+	// default timeout duration will be used when not supplied.
+	Timeout time.Duration
 }
 
 // CreateTag creates a new tag on given revision.
@@ -217,6 +219,10 @@ func (r *Repository) CreateTag(name, rev string, opts ...CreateTagOptions) error
 		cmd.AddArgs("--message", opt.Message)
 	} else {
 		cmd.AddArgs(name)
+	}
+
+	if opt.Author != nil {
+		cmd.AddCommitter(opt.Author)
 	}
 	cmd.AddArgs(rev)
 

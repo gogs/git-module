@@ -86,6 +86,10 @@ func TestRepository_CreateAnnotatedTag(t *testing.T) {
 
 	err = r.CreateTag("v2.0.0", "master", CreateTagOptions{
 		Annotated: true,
+		Author: &Signature{
+			Name:  "alice",
+			Email: "alice@example.com",
+		},
 	})
 	if err != nil {
 		t.Fatal(err)
