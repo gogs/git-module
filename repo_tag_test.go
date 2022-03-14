@@ -58,6 +58,33 @@ func TestRepository_Tags(t *testing.T) {
 	assert.NotEmpty(t, tags)
 }
 
+func TestRepository_Tags_VersionSort(t *testing.T) {
+	r, cleanup, err := setupTempRepo()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer cleanup()
+
+	err = r.CreateTag("v3.0.0", "master", CreateTagOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = r.CreateTag("v2.0.0", "master", CreateTagOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tags, err := r.Tags(TagsOptions{
+		SortKey: "-version:refname",
+		Pattern: "v*",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	assert.Equal(t, "v3.0.0", tags[0])
+}
+
 func TestRepository_CreateTag(t *testing.T) {
 	r, cleanup, err := setupTempRepo()
 	if err != nil {

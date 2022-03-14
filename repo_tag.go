@@ -144,6 +144,10 @@ type TagsOptions struct {
 	// The timeout duration before giving up for each shell command execution.
 	// The default timeout duration will be used when not supplied.
 	Timeout time.Duration
+	// SortKet sorts tags with provided tag key, optionally prefixed with '-' to sort tags in descending order.
+	SortKey string
+	// Pattern filters tags matching the specified pattern.
+	Pattern string
 }
 
 // RepoTags returns a list of tags of the repository in given path.
@@ -159,8 +163,18 @@ func RepoTags(repoPath string, opts ...TagsOptions) ([]string, error) {
 	}
 
 	cmd := NewCommand("tag", "--list")
-	if goversion.Compare(version, "2.4.9", ">=") {
+
+	var sorted bool
+	if opt.SortKey != "" {
+		cmd.AddArgs(fmt.Sprintf("--sort=%s", opt.SortKey))
+		sorted = true
+	} else if goversion.Compare(version, "2.4.9", ">=") {
 		cmd.AddArgs("--sort=-creatordate")
+		sorted = true
+	}
+
+	if opt.Pattern != "" {
+		cmd.AddArgs(opt.Pattern)
 	}
 
 	stdout, err := cmd.RunInDirWithTimeout(opt.Timeout, repoPath)
@@ -171,7 +185,7 @@ func RepoTags(repoPath string, opts ...TagsOptions) ([]string, error) {
 	tags := strings.Split(string(stdout), "\n")
 	tags = tags[:len(tags)-1]
 
-	if goversion.Compare(version, "2.4.9", "<") {
+	if !sorted {
 		goversion.Sort(tags)
 
 		// Reverse order
