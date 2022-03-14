@@ -69,7 +69,7 @@ func TestRepository_Tags_VersionSort(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = r.CreateTag("v2.0.0", "master", CreateTagOptions{})
+	err = r.CreateTag("v2.0.0", "master")
 	if err != nil {
 		t.Fatal(err)
 	}
