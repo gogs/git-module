@@ -141,13 +141,13 @@ func (r *Repository) Tag(name string, opts ...TagOptions) (*Tag, error) {
 // TagsOptions contains optional arguments for listing tags.
 // Docs: https://git-scm.com/docs/git-tag#Documentation/git-tag.txt---list
 type TagsOptions struct {
-	// The timeout duration before giving up for each shell command execution.
-	// The default timeout duration will be used when not supplied.
-	Timeout time.Duration
 	// SortKet sorts tags with provided tag key, optionally prefixed with '-' to sort tags in descending order.
 	SortKey string
 	// Pattern filters tags matching the specified pattern.
 	Pattern string
+	// The timeout duration before giving up for each shell command execution.
+	// The default timeout duration will be used when not supplied.
+	Timeout time.Duration
 }
 
 // RepoTags returns a list of tags of the repository in given path.
