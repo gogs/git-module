@@ -22,9 +22,11 @@ const (
 )
 
 var (
-	// ServerSideHooks contains a list of Git hooks that are supported on the server side.
+	// ServerSideHooks contains a list of Git hooks that are supported on the server
+	// side.
 	ServerSideHooks = []HookName{HookPreReceive, HookUpdate, HookPostReceive}
-	// ServerSideHookSamples contains samples of Git hooks that are supported on the server side.
+	// ServerSideHookSamples contains samples of Git hooks that are supported on the
+	// server side.
 	ServerSideHookSamples = map[HookName]string{
 		HookPreReceive: `#!/bin/sh
 #
@@ -214,7 +216,7 @@ func (h *Hook) Name() HookName {
 	return h.name
 }
 
-// path returns the path of the Git hook.
+// Path returns the path of the Git hook.
 func (h *Hook) Path() string {
 	return h.path
 }
@@ -229,8 +231,8 @@ func (h *Hook) Content() string {
 	return h.content
 }
 
-// Update writes the content of the Git hook on filesystem. It updates the memory copy of
-// the content as well.
+// Update writes the content of the Git hook on filesystem. It updates the
+// memory copy of the content as well.
 func (h *Hook) Update(content string) error {
 	h.content = strings.TrimSpace(content)
 	h.content = strings.Replace(h.content, "\r", "", -1)

@@ -33,9 +33,9 @@ func log(format string, args ...interface{}) {
 		return
 	}
 
-	fmt.Fprint(logOutput, logPrefix)
-	fmt.Fprintf(logOutput, format, args...)
-	fmt.Fprintln(logOutput)
+	_, _ = fmt.Fprint(logOutput, logPrefix)
+	_, _ = fmt.Fprintf(logOutput, format, args...)
+	_, _ = fmt.Fprintln(logOutput)
 }
 
 var (

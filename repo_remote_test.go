@@ -87,7 +87,7 @@ func TestIsURLAccessible(t *testing.T) {
 	}
 }
 
-func TestRepository_AddRemote(t *testing.T) {
+func TestRepository_RemoteAdd(t *testing.T) {
 	path := tempPath()
 	defer func() {
 		_ = os.RemoveAll(path)
@@ -106,7 +106,7 @@ func TestRepository_AddRemote(t *testing.T) {
 	}
 
 	// Add testrepo as the mirror remote and fetch right away
-	err = r.AddRemote("origin", testrepo.Path(), AddRemoteOptions{
+	err = r.RemoteAdd("origin", testrepo.Path(), RemoteAddOptions{
 		Fetch:       true,
 		MirrorFetch: true,
 	})
@@ -118,21 +118,21 @@ func TestRepository_AddRemote(t *testing.T) {
 	assert.True(t, r.HasReference(RefsHeads+"release-1.0"))
 }
 
-func TestRepository_RemoveRemote(t *testing.T) {
+func TestRepository_RemoteRemove(t *testing.T) {
 	r, cleanup, err := setupTempRepo()
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer cleanup()
 
-	err = r.RemoveRemote("origin", RemoveRemoteOptions{})
+	err = r.RemoteRemove("origin", RemoteRemoveOptions{})
 	assert.Nil(t, err)
 
-	err = r.RemoveRemote("origin", RemoveRemoteOptions{})
+	err = r.RemoteRemove("origin", RemoteRemoveOptions{})
 	assert.Equal(t, ErrRemoteNotExist, err)
 }
 
-func TestRepository_RemotesList(t *testing.T) {
+func TestRepository_Remotes(t *testing.T) {
 	r, cleanup, err := setupTempRepo()
 	if err != nil {
 		t.Fatal(err)
@@ -145,7 +145,7 @@ func TestRepository_RemotesList(t *testing.T) {
 	assert.Equal(t, []string{"origin"}, remotes)
 
 	// 2 remotes
-	err = r.AddRemote("t", "t")
+	err = r.RemoteAdd("t", "t")
 	assert.Nil(t, err)
 
 	remotes, err = r.Remotes()
@@ -154,9 +154,9 @@ func TestRepository_RemotesList(t *testing.T) {
 	assert.Len(t, remotes, 2)
 
 	// 0 remotes
-	err = r.RemoveRemote("t")
+	err = r.RemoteRemove("t")
 	assert.Nil(t, err)
-	err = r.RemoveRemote("origin")
+	err = r.RemoteRemove("origin")
 	assert.Nil(t, err)
 
 	remotes, err = r.Remotes()

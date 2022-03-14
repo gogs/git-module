@@ -19,8 +19,8 @@ import (
 // EntryMode is the unix file mode of a tree entry.
 type EntryMode int
 
-// There are only a few file modes in Git. They look like unix file modes, but they can only be
-// one of these.
+// There are only a few file modes in Git. They look like unix file modes, but
+// they can only be one of these.
 const (
 	EntryTree    EntryMode = 0040000
 	EntryBlob    EntryMode = 0100644
@@ -151,7 +151,8 @@ type EntryCommitInfo struct {
 	Submodule *Submodule
 }
 
-// CommitsInfoOptions contains optional arguments for getting commits information.
+// CommitsInfoOptions contains optional arguments for getting commits
+// information.
 type CommitsInfoOptions struct {
 	// The relative path of the repository.
 	Path string
@@ -165,10 +166,10 @@ type CommitsInfoOptions struct {
 
 var defaultConcurrency = runtime.GOMAXPROCS(0)
 
-// CommitsInfo returns a list of commit information for these tree entries in the state of
-// given commit and subpath. It takes advantages of concurrency to speed up the process.
-// The returned list has the same number of items as tree entries, so the caller can access
-// them via slice indices.
+// CommitsInfo returns a list of commit information for these tree entries in
+// the state of given commit and subpath. It takes advantages of concurrency to
+// speed up the process. The returned list has the same number of items as tree
+// entries, so the caller can access them via slice indices.
 func (es Entries) CommitsInfo(commit *Commit, opts ...CommitsInfoOptions) ([]*EntryCommitInfo, error) {
 	if len(es) == 0 {
 		return []*EntryCommitInfo{}, nil

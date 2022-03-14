@@ -10,16 +10,17 @@ import (
 )
 
 // MergeBaseOptions contains optional arguments for getting merge base.
+//
 // Docs: https://git-scm.com/docs/git-merge-base
 type MergeBaseOptions struct {
-	// The timeout duration before giving up for each shell command execution.
-	// The default timeout duration will be used when not supplied.
+	// The timeout duration before giving up for each shell command execution. The
+	// default timeout duration will be used when not supplied.
 	Timeout time.Duration
 }
 
-// RepoMergeBase returns merge base between base and head revisions of the repository
-// in given path.
-func RepoMergeBase(repoPath, base, head string, opts ...MergeBaseOptions) (string, error) {
+// MergeBase returns merge base between base and head revisions of the
+// repository in given path.
+func MergeBase(repoPath, base, head string, opts ...MergeBaseOptions) (string, error) {
 	var opt MergeBaseOptions
 	if len(opts) > 0 {
 		opt = opts[0]
@@ -35,7 +36,13 @@ func RepoMergeBase(repoPath, base, head string, opts ...MergeBaseOptions) (strin
 	return strings.TrimSpace(string(stdout)), nil
 }
 
-// MergeBase returns merge base between base and head revisions of the repository.
+// Deprecated: Use MergeBase instead.
+func RepoMergeBase(repoPath, base, head string, opts ...MergeBaseOptions) (string, error) {
+	return MergeBase(repoPath, base, head, opts...)
+}
+
+// MergeBase returns merge base between base and head revisions of the
+// repository.
 func (r *Repository) MergeBase(base, head string, opts ...MergeBaseOptions) (string, error) {
-	return RepoMergeBase(r.path, base, head, opts...)
+	return MergeBase(r.path, base, head, opts...)
 }

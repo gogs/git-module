@@ -12,12 +12,13 @@ import (
 // BlameOptions contains optional arguments for blaming a file.
 // Docs: https://git-scm.com/docs/git-blame
 type BlameOptions struct {
-	// The timeout duration before giving up for each shell command execution.
-	// The default timeout duration will be used when not supplied.
+	// The timeout duration before giving up for each shell command execution. The
+	// default timeout duration will be used when not supplied.
 	Timeout time.Duration
 }
 
-// BlameFile returns blame results of the file with the given revision of the repository.
+// BlameFile returns blame results of the file with the given revision of the
+// repository.
 func (r *Repository) BlameFile(rev, file string, opts ...BlameOptions) (*Blame, error) {
 	var opt BlameOptions
 	if len(opts) > 0 {

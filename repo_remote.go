@@ -10,19 +10,21 @@ import (
 	"time"
 )
 
-// LsRemoteOptions contains arguments for listing references in a remote repository.
+// LsRemoteOptions contains arguments for listing references in a remote
+// repository.
+//
 // Docs: https://git-scm.com/docs/git-ls-remote
 type LsRemoteOptions struct {
 	// Indicates whether include heads.
 	Heads bool
 	// Indicates whether include tags.
 	Tags bool
-	// Indicates whether to not show peeled tags or pseudorefs.
+	// Indicates whether to not show peeled tags or pseudo refs.
 	Refs bool
 	// The list of patterns to filter results.
 	Patterns []string
-	// The timeout duration before giving up for each shell command execution.
-	// The default timeout duration will be used when not supplied.
+	// The timeout duration before giving up for each shell command execution. The
+	// default timeout duration will be used when not supplied.
 	Timeout time.Duration
 }
 
@@ -69,8 +71,8 @@ func LsRemote(url string, opts ...LsRemoteOptions) ([]*Reference, error) {
 	return refs, nil
 }
 
-// IsURLAccessible returns true if given remote URL is accessible via Git
-// within given timeout.
+// IsURLAccessible returns true if given remote URL is accessible via Git within
+// given timeout.
 func IsURLAccessible(timeout time.Duration, url string) bool {
 	_, err := LsRemote(url, LsRemoteOptions{
 		Patterns: []string{"HEAD"},
@@ -79,21 +81,26 @@ func IsURLAccessible(timeout time.Duration, url string) bool {
 	return err == nil
 }
 
-// AddRemoteOptions contains options to add a remote address.
+// RemoteAddOptions contains options to add a remote address.
+//
 // Docs: https://git-scm.com/docs/git-remote#Documentation/git-remote.txt-emaddem
-type AddRemoteOptions struct {
-	// Indicates whether to execute git fetch after the remote information is set up.
+type RemoteAddOptions struct {
+	// Indicates whether to execute git fetch after the remote information is set
+	// up.
 	Fetch bool
 	// Indicates whether to add remote as mirror with --mirror=fetch.
 	MirrorFetch bool
-	// The timeout duration before giving up for each shell command execution.
-	// The default timeout duration will be used when not supplied.
+	// The timeout duration before giving up for each shell command execution. The
+	// default timeout duration will be used when not supplied.
 	Timeout time.Duration
 }
 
-// AddRemote adds a new remote to the repository in given path.
-func RepoAddRemote(repoPath, name, url string, opts ...AddRemoteOptions) error {
-	var opt AddRemoteOptions
+// Deprecated: Use RemoteAddOptions instead.
+type AddRemoteOptions = RemoteAddOptions
+
+// RemoteAdd adds a new remote to the repository in given path.
+func RemoteAdd(repoPath, name, url string, opts ...RemoteAddOptions) error {
+	var opt RemoteAddOptions
 	if len(opts) > 0 {
 		opt = opts[0]
 	}
@@ -110,22 +117,37 @@ func RepoAddRemote(repoPath, name, url string, opts ...AddRemoteOptions) error {
 	return err
 }
 
-// AddRemote adds a new remote to the repository.
-func (r *Repository) AddRemote(name, url string, opts ...AddRemoteOptions) error {
-	return RepoAddRemote(r.path, name, url, opts...)
+// Deprecated: Use RemoteAdd instead.
+func RepoAddRemote(repoPath, name, url string, opts ...RemoteAddOptions) error {
+	return RemoteAdd(repoPath, name, url, opts...)
 }
 
-// RemoveRemoteOptions contains arguments for removing a remote from the repository.
+// RemoteAdd adds a new remote to the repository.
+func (r *Repository) RemoteAdd(name, url string, opts ...RemoteAddOptions) error {
+	return RemoteAdd(r.path, name, url, opts...)
+}
+
+// Deprecated: Use RemoteAdd instead.
+func (r *Repository) AddRemote(name, url string, opts ...RemoteAddOptions) error {
+	return RemoteAdd(r.path, name, url, opts...)
+}
+
+// RemoteRemoveOptions contains arguments for removing a remote from the
+// repository.
+//
 // Docs: https://git-scm.com/docs/git-remote#Documentation/git-remote.txt-emremoveem
-type RemoveRemoteOptions struct {
-	// The timeout duration before giving up for each shell command execution.
-	// The default timeout duration will be used when not supplied.
+type RemoteRemoveOptions struct {
+	// The timeout duration before giving up for each shell command execution. The
+	// default timeout duration will be used when not supplied.
 	Timeout time.Duration
 }
 
-// RepoRemoveRemote removes a remote from the repository in given path.
-func RepoRemoveRemote(repoPath, name string, opts ...RemoveRemoteOptions) error {
-	var opt RemoveRemoteOptions
+// Deprecated: Use RemoteRemoveOptions instead.
+type RemoveRemoteOptions = RemoteRemoveOptions
+
+// RemoteRemove removes a remote from the repository in given path.
+func RemoteRemove(repoPath, name string, opts ...RemoteRemoveOptions) error {
+	var opt RemoteRemoveOptions
 	if len(opts) > 0 {
 		opt = opts[0]
 	}
@@ -142,16 +164,27 @@ func RepoRemoveRemote(repoPath, name string, opts ...RemoveRemoteOptions) error 
 	return nil
 }
 
-// RemoveRemote removes a remote from the repository.
-func (r *Repository) RemoveRemote(name string, opts ...RemoveRemoteOptions) error {
-	return RepoRemoveRemote(r.path, name, opts...)
+// Deprecated: Use RemoteRemove instead.
+func RepoRemoveRemote(repoPath, name string, opts ...RemoteRemoveOptions) error {
+	return RemoteRemove(repoPath, name, opts...)
+}
+
+// RemoteRemove removes a remote from the repository.
+func (r *Repository) RemoteRemove(name string, opts ...RemoteRemoveOptions) error {
+	return RemoteRemove(r.path, name, opts...)
+}
+
+// Deprecated: Use RemoteRemove instead.
+func (r *Repository) RemoveRemote(name string, opts ...RemoteRemoveOptions) error {
+	return RemoteRemove(r.path, name, opts...)
 }
 
 // RemotesOptions contains arguments for listing remotes of the repository.
+// /
 // Docs: https://git-scm.com/docs/git-remote#_commands
 type RemotesOptions struct {
-	// The timeout duration before giving up for each shell command execution.
-	// The default timeout duration will be used when not supplied.
+	// The timeout duration before giving up for each shell command execution. The
+	// default timeout duration will be used when not supplied.
 	Timeout time.Duration
 }
 
@@ -185,8 +218,8 @@ type RemoteGetURLOptions struct {
 	// Indicates whether to get all URLs, including lists that are not part of main
 	// URLs. This option is independent of the Push option.
 	All bool
-	// The timeout duration before giving up for each shell command execution.
-	// The default timeout duration will be used when not supplied.
+	// The timeout duration before giving up for each shell command execution. The
+	// default timeout duration will be used when not supplied.
 	Timeout time.Duration
 }
 
@@ -226,12 +259,13 @@ type RemoteSetURLOptions struct {
 	Push bool
 	// The regex to match existing URLs to replace (instead of first).
 	Regex string
-	// The timeout duration before giving up for each shell command execution.
-	// The default timeout duration will be used when not supplied.
+	// The timeout duration before giving up for each shell command execution. The
+	// default timeout duration will be used when not supplied.
 	Timeout time.Duration
 }
 
-// RemoteSetURL sets first URL of the remote with given name of the repository in given path.
+// RemoteSetURL sets first URL of the remote with given name of the repository
+// in given path.
 func RemoteSetURL(repoPath, name, newurl string, opts ...RemoteSetURLOptions) error {
 	var opt RemoteSetURLOptions
 	if len(opts) > 0 {
@@ -261,7 +295,8 @@ func RemoteSetURL(repoPath, name, newurl string, opts ...RemoteSetURLOptions) er
 	return nil
 }
 
-// RemoteSetURL sets the first URL of the remote with given name of the repository.
+// RemoteSetURL sets the first URL of the remote with given name of the
+// repository.
 func (r *Repository) RemoteSetURL(name, newurl string, opts ...RemoteSetURLOptions) error {
 	return RemoteSetURL(r.path, name, newurl, opts...)
 }
@@ -273,13 +308,13 @@ func (r *Repository) RemoteSetURL(name, newurl string, opts ...RemoteSetURLOptio
 type RemoteSetURLAddOptions struct {
 	// Indicates whether to get push URLs instead of fetch URLs.
 	Push bool
-	// The timeout duration before giving up for each shell command execution.
-	// The default timeout duration will be used when not supplied.
+	// The timeout duration before giving up for each shell command execution. The
+	// default timeout duration will be used when not supplied.
 	Timeout time.Duration
 }
 
-// RemoteSetURLAdd appends an URL to the remote with given name of the repository in
-// given path. Use RemoteSetURL to overwrite the URL(s) instead.
+// RemoteSetURLAdd appends an URL to the remote with given name of the
+// repository in given path. Use RemoteSetURL to overwrite the URL(s) instead.
 func RemoteSetURLAdd(repoPath, name, newurl string, opts ...RemoteSetURLAddOptions) error {
 	var opt RemoteSetURLAddOptions
 	if len(opts) > 0 {
@@ -300,8 +335,8 @@ func RemoteSetURLAdd(repoPath, name, newurl string, opts ...RemoteSetURLAddOptio
 	return err
 }
 
-// RemoteSetURLAdd appends an URL to the remote with given name of the repository.
-// Use RemoteSetURL to overwrite the URL(s) instead.
+// RemoteSetURLAdd appends an URL to the remote with given name of the
+// repository. Use RemoteSetURL to overwrite the URL(s) instead.
 func (r *Repository) RemoteSetURLAdd(name, newurl string, opts ...RemoteSetURLAddOptions) error {
 	return RemoteSetURLAdd(r.path, name, newurl, opts...)
 }
@@ -313,8 +348,8 @@ func (r *Repository) RemoteSetURLAdd(name, newurl string, opts ...RemoteSetURLAd
 type RemoteSetURLDeleteOptions struct {
 	// Indicates whether to get push URLs instead of fetch URLs.
 	Push bool
-	// The timeout duration before giving up for each shell command execution.
-	// The default timeout duration will be used when not supplied.
+	// The timeout duration before giving up for each shell command execution. The
+	// default timeout duration will be used when not supplied.
 	Timeout time.Duration
 }
 
