@@ -65,7 +65,7 @@ func TestRepository_Tags_VersionSort(t *testing.T) {
 	}
 	defer cleanup()
 
-	err = r.CreateTag("v3.0.0", "master", CreateTagOptions{})
+	err = r.CreateTag("v3.0.0", "master")
 	if err != nil {
 		t.Fatal(err)
 	}
