@@ -75,6 +75,32 @@ func TestRepository_CreateTag(t *testing.T) {
 	assert.True(t, r.HasReference(RefsTags+"v2.0.0"))
 }
 
+func TestRepository_CreateAnnotatedTag(t *testing.T) {
+	r, cleanup, err := setupTempRepo()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer cleanup()
+
+	assert.False(t, r.HasReference(RefsTags+"v2.0.0"))
+
+	err = r.CreateTag("v2.0.0", "master", CreateTagOptions{
+		Annotated: true,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	assert.True(t, r.HasReference(RefsTags+"v2.0.0"))
+
+	tag, err := r.Tag("v2.0.0")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	assert.NotNil(t, tag.tagger)
+}
+
 func TestRepository_DeleteTag(t *testing.T) {
 	r, cleanup, err := setupTempRepo()
 	if err != nil {

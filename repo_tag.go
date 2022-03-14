@@ -198,6 +198,10 @@ type CreateTagOptions struct {
 	// The timeout duration before giving up for each shell command execution. The
 	// default timeout duration will be used when not supplied.
 	Timeout time.Duration
+	// Annotated marks a tag as annotated rather than lightweight.
+	Annotated bool
+	// Message specifies a tagging message for the annotated tag. It is ignored when tag is not annotated.
+	Message string
 }
 
 // CreateTag creates a new tag on given revision.
@@ -207,7 +211,16 @@ func (r *Repository) CreateTag(name, rev string, opts ...CreateTagOptions) error
 		opt = opts[0]
 	}
 
-	_, err := NewCommand("tag", name, rev).RunInDirWithTimeout(opt.Timeout, r.path)
+	cmd := NewCommand("tag")
+	if opt.Annotated {
+		cmd.AddArgs("-a", name)
+		cmd.AddArgs("--message", opt.Message)
+	} else {
+		cmd.AddArgs(name)
+	}
+	cmd.AddArgs(rev)
+
+	_, err := cmd.RunInDirWithTimeout(opt.Timeout, r.path)
 	return err
 }
 
