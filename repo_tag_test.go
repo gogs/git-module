@@ -69,7 +69,7 @@ func TestRepository_Tags_VersionSort(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = r.CreateTag("v2.0.0", "master")
+	err = r.CreateTag("v2.999.0", "master")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -82,7 +82,11 @@ func TestRepository_Tags_VersionSort(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	if len(tags) < 2 {
+		t.FailNow()
+	}
 	assert.Equal(t, "v3.0.0", tags[0])
+	assert.Equal(t, "v2.999.0", tags[1])
 }
 
 func TestRepository_CreateTag(t *testing.T) {
