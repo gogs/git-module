@@ -83,7 +83,7 @@ func TestRepository_Tags_VersionSort(t *testing.T) {
 	}
 
 	if len(tags) < 2 {
-		t.FailNow()
+		t.Fatalf("Should have at least two tags but got %d", len(tags))
 	}
 	assert.Equal(t, "v3.0.0", tags[0])
 	assert.Equal(t, "v2.999.0", tags[1])
