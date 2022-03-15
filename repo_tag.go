@@ -199,7 +199,7 @@ type CreateTagOptions struct {
 	Annotated bool
 	// Message specifies a tagging message for the annotated tag. It is ignored when tag is not annotated.
 	Message string
-	// Author is the author of the changes if that's not the same as committer.
+	// Author is the author of the tag. It is ignored when tag is not annotated.
 	Author *Signature
 	// The timeout duration before giving up for each shell command execution. The
 	// default timeout duration will be used when not supplied.
@@ -217,13 +217,13 @@ func (r *Repository) CreateTag(name, rev string, opts ...CreateTagOptions) error
 	if opt.Annotated {
 		cmd.AddArgs("-a", name)
 		cmd.AddArgs("--message", opt.Message)
+		if opt.Author != nil {
+			cmd.AddCommitter(opt.Author)
+		}
 	} else {
 		cmd.AddArgs(name)
 	}
 
-	if opt.Author != nil {
-		cmd.AddCommitter(opt.Author)
-	}
 	cmd.AddArgs(rev)
 
 	_, err := cmd.RunInDirWithTimeout(opt.Timeout, r.path)
