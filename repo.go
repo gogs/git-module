@@ -428,7 +428,7 @@ func CreateCommit(repoPath string, committer *Signature, message string, opts ..
 	}
 
 	cmd := NewCommand("commit")
-	cmd.AddEnvs("GIT_COMMITTER_NAME="+committer.Name, "GIT_COMMITTER_EMAIL="+committer.Email)
+	cmd.AddCommitter(committer)
 
 	if opt.Author == nil {
 		opt.Author = committer

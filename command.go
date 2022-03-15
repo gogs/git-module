@@ -50,6 +50,12 @@ func (c *Command) AddEnvs(envs ...string) *Command {
 	return c
 }
 
+// AddCommitter appends given committer to the command.
+func (c *Command) AddCommitter(committer *Signature) *Command {
+	c.AddEnvs("GIT_COMMITTER_NAME="+committer.Name, "GIT_COMMITTER_EMAIL="+committer.Email)
+	return c
+}
+
 // DefaultTimeout is the default timeout duration for all commands.
 const DefaultTimeout = time.Minute
 
