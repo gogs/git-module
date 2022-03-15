@@ -102,7 +102,9 @@ func TestRepository_CreateAnnotatedTag(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	assert.NotNil(t, tag.tagger)
+	assert.Equal(t, "alice", tag.tagger.Name)
+	assert.Equal(t, "alice@example.com", tag.tagger.Email)
+	assert.False(t, tag.tagger.When.IsZero())
 }
 
 func TestRepository_DeleteTag(t *testing.T) {
