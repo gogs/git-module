@@ -97,17 +97,17 @@ func (r *Repository) RawDiff(rev string, diffType RawDiffFormat, w io.Writer, op
 	switch diffType {
 	case RawDiffNormal:
 		if commit.ParentsCount() == 0 {
-			cmd.AddArgs("show", rev)
+			cmd.AddArgs("show", "--full-index", rev)
 		} else {
 			c, _ := commit.Parent(0)
-			cmd.AddArgs("diff", "-M", c.ID.String(), rev)
+			cmd.AddArgs("diff", "--full-index", "-M", c.ID.String(), rev)
 		}
 	case RawDiffPatch:
 		if commit.ParentsCount() == 0 {
-			cmd.AddArgs("format-patch", "--no-signature", "--stdout", "--root", rev)
+			cmd.AddArgs("format-patch", "--full-index", "--no-signature", "--stdout", "--root", rev)
 		} else {
 			c, _ := commit.Parent(0)
-			cmd.AddArgs("format-patch", "--no-signature", "--stdout", rev+"..."+c.ID.String())
+			cmd.AddArgs("format-patch", "--full-index", "--no-signature", "--stdout", rev+"..."+c.ID.String())
 		}
 	default:
 		return fmt.Errorf("invalid diffType: %s", diffType)
@@ -135,5 +135,5 @@ func (r *Repository) DiffBinary(base, head string, opts ...DiffBinaryOptions) ([
 		opt = opts[0]
 	}
 
-	return NewCommand("diff", "--binary", base, head).RunInDirWithTimeout(opt.Timeout, r.path)
+	return NewCommand("diff", "--full-index", "--binary", base, head).RunInDirWithTimeout(opt.Timeout, r.path)
 }
