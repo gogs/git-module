@@ -108,7 +108,7 @@ type DiffFile struct {
 	// The type of the file.
 	Type DiffFileType
 	// The index (SHA1 hash) of the file. For a changed/new file, it is the new SHA,
-	// and for a deleted file it is the old SHA.
+	// and for a deleted file it becomes "000000".
 	Index string
 	// OldIndex is the old index (SHA1 hash) of the file.
 	OldIndex string
