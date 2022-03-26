@@ -108,8 +108,10 @@ type DiffFile struct {
 	// The type of the file.
 	Type DiffFileType
 	// The index (SHA1 hash) of the file. For a changed/new file, it is the new SHA,
-	// and for a deleted file it is the old SHA.
+	// and for a deleted file it becomes "000000".
 	Index string
+	// OldIndex is the old index (SHA1 hash) of the file.
+	OldIndex string
 	// The sections in the file.
 	Sections []*DiffSection
 
@@ -117,6 +119,9 @@ type DiffFile struct {
 	numDeletions int
 
 	oldName string
+
+	mode    EntryMode
+	oldMode EntryMode
 
 	isBinary     bool
 	isSubmodule  bool
@@ -156,6 +161,16 @@ func (f *DiffFile) IsRenamed() bool {
 // OldName returns previous name before renaming.
 func (f *DiffFile) OldName() string {
 	return f.oldName
+}
+
+// Mode returns the mode of the file.
+func (f *DiffFile) Mode() EntryMode {
+	return f.mode
+}
+
+// OldMode returns the old mode of the file if it's changed.
+func (f *DiffFile) OldMode() EntryMode {
+	return f.oldMode
 }
 
 // IsBinary returns true if the file is in binary format.
@@ -268,8 +283,9 @@ func (p *diffParser) parseFileHeader() (*DiffFile, error) {
 	}
 
 	file := &DiffFile{
-		Name: a,
-		Type: DiffFileChange,
+		Name:    a,
+		oldName: b,
+		Type:    DiffFileChange,
 	}
 
 	// Check file diff type and submodule
@@ -291,9 +307,25 @@ checkType:
 		case strings.HasPrefix(line, "new file"):
 			file.Type = DiffFileAdd
 			file.isSubmodule = strings.HasSuffix(line, " 160000")
+			fields := strings.Fields(line)
+			if len(fields) > 0 {
+				mode, _ := strconv.ParseUint(fields[len(fields)-1], 8, 64)
+				file.mode = EntryMode(mode)
+				if file.oldMode == 0 {
+					file.oldMode = file.mode
+				}
+			}
 		case strings.HasPrefix(line, "deleted"):
 			file.Type = DiffFileDelete
 			file.isSubmodule = strings.HasSuffix(line, " 160000")
+			fields := strings.Fields(line)
+			if len(fields) > 0 {
+				mode, _ := strconv.ParseUint(fields[len(fields)-1], 8, 64)
+				file.mode = EntryMode(mode)
+				if file.oldMode == 0 {
+					file.oldMode = file.mode
+				}
+			}
 		case strings.HasPrefix(line, "index"): // e.g. index ee791be..9997571 100644
 			fields := strings.Fields(line[6:])
 			shas := strings.Split(fields[0], "..")
@@ -301,10 +333,12 @@ checkType:
 				return nil, errors.New("malformed index: expect two SHAs in the form of <old>..<new>")
 			}
 
-			if file.IsDeleted() {
-				file.Index = shas[0]
-			} else {
-				file.Index = shas[1]
+			file.OldIndex = shas[0]
+			file.Index = shas[1]
+			if len(fields) > 1 {
+				mode, _ := strconv.ParseUint(fields[1], 8, 64)
+				file.mode = EntryMode(mode)
+				file.oldMode = EntryMode(mode)
 			}
 			break checkType
 		case strings.HasPrefix(line, "similarity index "):
@@ -316,8 +350,18 @@ checkType:
 			if strings.HasSuffix(line, "100%") {
 				break checkType
 			}
+		case strings.HasPrefix(line, "new mode"):
+			fields := strings.Fields(line)
+			if len(fields) > 0 {
+				mode, _ := strconv.ParseUint(fields[len(fields)-1], 8, 64)
+				file.mode = EntryMode(mode)
+			}
 		case strings.HasPrefix(line, "old mode"):
-			break checkType
+			fields := strings.Fields(line)
+			if len(fields) > 0 {
+				mode, _ := strconv.ParseUint(fields[len(fields)-1], 8, 64)
+				file.oldMode = EntryMode(mode)
+			}
 		}
 	}
 

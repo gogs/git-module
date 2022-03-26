@@ -29,14 +29,17 @@ func TestRepository_Diff(t *testing.T) {
 					{
 						Name:         "fix.txt",
 						Type:         DiffFileDelete,
-						Index:        "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+						Index:        "0000000000000000000000000000000000000000",
+						OldIndex:     "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
 						Sections:     nil,
 						numAdditions: 0,
 						numDeletions: 0,
-						oldName:      "",
+						oldName:      "fix.txt",
 						isBinary:     false,
 						isSubmodule:  false,
 						isIncomplete: false,
+						mode:         0100644,
+						oldMode:      0100644,
 					},
 				},
 				totalAdditions: 0,
@@ -49,9 +52,10 @@ func TestRepository_Diff(t *testing.T) {
 			expDiff: &Diff{
 				Files: []*DiffFile{
 					{
-						Name:  "README.txt",
-						Type:  DiffFileAdd,
-						Index: "1e24b564bf2298965d8037af42d3ae15ad7d225a",
+						Name:     "README.txt",
+						Type:     DiffFileAdd,
+						Index:    "1e24b564bf2298965d8037af42d3ae15ad7d225a",
+						OldIndex: "0000000000000000000000000000000000000000",
 						Sections: []*DiffSection{
 							{
 								Lines: []*DiffLine{
@@ -131,15 +135,18 @@ func TestRepository_Diff(t *testing.T) {
 						},
 						numAdditions: 11,
 						numDeletions: 0,
-						oldName:      "",
+						oldName:      "README.txt",
 						isBinary:     false,
 						isSubmodule:  false,
 						isIncomplete: false,
+						mode:         0100644,
+						oldMode:      0100644,
 					},
 					{
-						Name:  "resources/labels.properties",
-						Type:  DiffFileAdd,
-						Index: "fbdcfef007c0c09061199e687087b18c3cf8e083",
+						Name:     "resources/labels.properties",
+						Type:     DiffFileAdd,
+						Index:    "fbdcfef007c0c09061199e687087b18c3cf8e083",
+						OldIndex: "0000000000000000000000000000000000000000",
 						Sections: []*DiffSection{
 							{
 								Lines: []*DiffLine{
@@ -177,15 +184,18 @@ func TestRepository_Diff(t *testing.T) {
 						},
 						numAdditions: 4,
 						numDeletions: 0,
-						oldName:      "",
+						oldName:      "resources/labels.properties",
 						isBinary:     false,
 						isSubmodule:  false,
 						isIncomplete: false,
+						mode:         0100644,
+						oldMode:      0100644,
 					},
 					{
-						Name:  "src/Main.groovy",
-						Type:  DiffFileAdd,
-						Index: "51680791956b43effdb2f16bccd2b4752d66078f",
+						Name:     "src/Main.groovy",
+						Type:     DiffFileAdd,
+						Index:    "51680791956b43effdb2f16bccd2b4752d66078f",
+						OldIndex: "0000000000000000000000000000000000000000",
 						Sections: []*DiffSection{
 							{
 								Lines: []*DiffLine{
@@ -235,10 +245,12 @@ func TestRepository_Diff(t *testing.T) {
 						},
 						numAdditions: 6,
 						numDeletions: 0,
-						oldName:      "",
+						oldName:      "src/Main.groovy",
 						isBinary:     false,
 						isSubmodule:  false,
 						isIncomplete: false,
+						mode:         0100644,
+						oldMode:      0100644,
 					},
 				},
 				totalAdditions: 21,
@@ -256,14 +268,17 @@ func TestRepository_Diff(t *testing.T) {
 					{
 						Name:         "fix.txt",
 						Type:         DiffFileDelete,
-						Index:        "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+						Index:        "0000000000000000000000000000000000000000",
+						OldIndex:     "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
 						Sections:     nil,
 						numAdditions: 0,
 						numDeletions: 0,
-						oldName:      "",
+						oldName:      "fix.txt",
 						isBinary:     false,
 						isSubmodule:  false,
 						isIncomplete: false,
+						mode:         0100644,
+						oldMode:      0100644,
 					},
 				},
 				totalAdditions: 0,
@@ -306,7 +321,7 @@ func TestRepository_RawDiff(t *testing.T) {
 			diffType: RawDiffNormal,
 			expOutput: `diff --git a/fix.txt b/fix.txt
 deleted file mode 100644
-index e69de29..0000000
+index e69de29bb2d1d6434b8b29ae775ad8c2e48c5391..0000000000000000000000000000000000000000
 `,
 		},
 		{
@@ -322,7 +337,7 @@ Subject: [PATCH] Delete fix.txt
 
 diff --git a/fix.txt b/fix.txt
 deleted file mode 100644
-index e69de29..0000000
+index e69de29bb2d1d6434b8b29ae775ad8c2e48c5391..0000000000000000000000000000000000000000
 `,
 		},
 		{
@@ -340,7 +355,7 @@ Date:   Mon Nov 24 21:22:01 2008 -0700
 
 diff --git a/README.txt b/README.txt
 new file mode 100644
-index 0000000..1e24b56
+index 0000000000000000000000000000000000000000..1e24b564bf2298965d8037af42d3ae15ad7d225a
 --- /dev/null
 +++ b/README.txt
 @@ -0,0 +1,11 @@
@@ -358,7 +373,7 @@ index 0000000..1e24b56
 \ No newline at end of file
 diff --git a/resources/labels.properties b/resources/labels.properties
 new file mode 100644
-index 0000000..fbdcfef
+index 0000000000000000000000000000000000000000..fbdcfef007c0c09061199e687087b18c3cf8e083
 --- /dev/null
 +++ b/resources/labels.properties
 @@ -0,0 +1,4 @@
@@ -368,7 +383,7 @@ index 0000000..fbdcfef
 +cli.usage=This application doesn't use a command line interface
 diff --git a/src/Main.groovy b/src/Main.groovy
 new file mode 100644
-index 0000000..5168079
+index 0000000000000000000000000000000000000000..51680791956b43effdb2f16bccd2b4752d66078f
 --- /dev/null
 +++ b/src/Main.groovy
 @@ -0,0 +1,6 @@
@@ -401,7 +416,7 @@ Subject: [PATCH] Addition of the README and basic Groovy source samples.
 
 diff --git a/README.txt b/README.txt
 new file mode 100644
-index 0000000..1e24b56
+index 0000000000000000000000000000000000000000..1e24b564bf2298965d8037af42d3ae15ad7d225a
 --- /dev/null
 +++ b/README.txt
 @@ -0,0 +1,11 @@
@@ -419,7 +434,7 @@ index 0000000..1e24b56
 \ No newline at end of file
 diff --git a/resources/labels.properties b/resources/labels.properties
 new file mode 100644
-index 0000000..fbdcfef
+index 0000000000000000000000000000000000000000..fbdcfef007c0c09061199e687087b18c3cf8e083
 --- /dev/null
 +++ b/resources/labels.properties
 @@ -0,0 +1,4 @@
@@ -429,7 +444,7 @@ index 0000000..fbdcfef
 +cli.usage=This application doesn't use a command line interface
 diff --git a/src/Main.groovy b/src/Main.groovy
 new file mode 100644
-index 0000000..5168079
+index 0000000000000000000000000000000000000000..51680791956b43effdb2f16bccd2b4752d66078f
 --- /dev/null
 +++ b/src/Main.groovy
 @@ -0,0 +1,6 @@
@@ -475,7 +490,7 @@ func TestRepository_DiffBinary(t *testing.T) {
 			head: "4e59b72440188e7c2578299fc28ea425fbe9aece",
 			expOutput: `diff --git a/.gitmodules b/.gitmodules
 new file mode 100644
-index 0000000..6abde17
+index 0000000000000000000000000000000000000000..6abde17f49a6d43df40366e57d8964fee0dfda11
 --- /dev/null
 +++ b/.gitmodules
 @@ -0,0 +1,3 @@
@@ -484,7 +499,7 @@ index 0000000..6abde17
 +	url = https://github.com/gogs/docs-api.git
 diff --git a/gogs/docs-api b/gogs/docs-api
 new file mode 160000
-index 0000000..6b08f76
+index 0000000000000000000000000000000000000000..6b08f76a5313fa3d26859515b30aa17a5faa2807
 --- /dev/null
 +++ b/gogs/docs-api
 @@ -0,0 +1 @@
