@@ -22,6 +22,12 @@ type Command struct {
 	envs []string
 }
 
+// CommandOptions contains options for running a command.
+type CommandOptions struct {
+	Args []string
+	Envs []string
+}
+
 // String returns the string representation of the command.
 func (c *Command) String() string {
 	if len(c.args) == 0 {
@@ -47,6 +53,15 @@ func (c *Command) AddArgs(args ...string) *Command {
 // AddEnvs appends given environment variables to the command.
 func (c *Command) AddEnvs(envs ...string) *Command {
 	c.envs = append(c.envs, envs...)
+	return c
+}
+
+// AddOptions adds options to the command.
+func (c *Command) AddOptions(opts ...CommandOptions) *Command {
+	for _, opt := range opts {
+		c.AddArgs(opt.Args...)
+		c.AddEnvs(opt.Envs...)
+	}
 	return c
 }
 

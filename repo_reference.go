@@ -178,6 +178,8 @@ type ShowRefOptions struct {
 	// The timeout duration before giving up for each shell command execution. The
 	// default timeout duration will be used when not supplied.
 	Timeout time.Duration
+	// The additional options to be passed to the underlying git.
+	CommandOptions
 }
 
 // ShowRef returns a list of references in the repository.
@@ -187,7 +189,7 @@ func (r *Repository) ShowRef(opts ...ShowRefOptions) ([]*Reference, error) {
 		opt = opts[0]
 	}
 
-	cmd := NewCommand("show-ref")
+	cmd := NewCommand("show-ref").AddOptions(opt.CommandOptions)
 	if opt.Heads {
 		cmd.AddArgs("--heads")
 	}

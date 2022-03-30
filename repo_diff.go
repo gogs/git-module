@@ -21,6 +21,8 @@ type DiffOptions struct {
 	// The timeout duration before giving up for each shell command execution. The
 	// default timeout duration will be used when not supplied.
 	Timeout time.Duration
+	// The additional options to be passed to the underlying git.
+	CommandOptions
 }
 
 // Diff returns a parsed diff object between given commits of the repository.
@@ -39,13 +41,19 @@ func (r *Repository) Diff(rev string, maxFiles, maxFileLines, maxLineChars int, 
 	if opt.Base == "" {
 		// First commit of repository
 		if commit.ParentsCount() == 0 {
-			cmd.AddArgs("show", "--full-index", rev)
+			cmd = cmd.AddArgs("show").
+				AddOptions(opt.CommandOptions).
+				AddArgs("--full-index", rev)
 		} else {
 			c, _ := commit.Parent(0)
-			cmd.AddArgs("diff", "--full-index", "-M", c.ID.String(), rev)
+			cmd = cmd.AddArgs("diff").
+				AddOptions(opt.CommandOptions).
+				AddArgs("--full-index", "-M", c.ID.String(), rev)
 		}
 	} else {
-		cmd.AddArgs("diff", "--full-index", "-M", opt.Base, rev)
+		cmd = cmd.AddArgs("diff").
+			AddOptions(opt.CommandOptions).
+			AddArgs("--full-index", "-M", opt.Base, rev)
 	}
 
 	stdout, w := io.Pipe()
@@ -78,6 +86,8 @@ type RawDiffOptions struct {
 	// The timeout duration before giving up for each shell command execution. The
 	// default timeout duration will be used when not supplied.
 	Timeout time.Duration
+	// The additional options to be passed to the underlying git.
+	CommandOptions
 }
 
 // RawDiff dumps diff of repository in given revision directly to given
@@ -97,17 +107,25 @@ func (r *Repository) RawDiff(rev string, diffType RawDiffFormat, w io.Writer, op
 	switch diffType {
 	case RawDiffNormal:
 		if commit.ParentsCount() == 0 {
-			cmd.AddArgs("show", "--full-index", rev)
+			cmd = cmd.AddArgs("show").
+				AddOptions(opt.CommandOptions).
+				AddArgs("--full-index", rev)
 		} else {
 			c, _ := commit.Parent(0)
-			cmd.AddArgs("diff", "--full-index", "-M", c.ID.String(), rev)
+			cmd = cmd.AddArgs("diff").
+				AddOptions(opt.CommandOptions).
+				AddArgs("--full-index", "-M", c.ID.String(), rev)
 		}
 	case RawDiffPatch:
 		if commit.ParentsCount() == 0 {
-			cmd.AddArgs("format-patch", "--full-index", "--no-signature", "--stdout", "--root", rev)
+			cmd = cmd.AddArgs("format-patch").
+				AddOptions(opt.CommandOptions).
+				AddArgs("--full-index", "--no-signature", "--stdout", "--root", rev)
 		} else {
 			c, _ := commit.Parent(0)
-			cmd.AddArgs("format-patch", "--full-index", "--no-signature", "--stdout", rev+"..."+c.ID.String())
+			cmd = cmd.AddArgs("format-patch").
+				AddOptions(opt.CommandOptions).
+				AddArgs("--full-index", "--no-signature", "--stdout", rev+"..."+c.ID.String())
 		}
 	default:
 		return fmt.Errorf("invalid diffType: %s", diffType)
@@ -125,6 +143,8 @@ type DiffBinaryOptions struct {
 	// The timeout duration before giving up for each shell command execution. The
 	// default timeout duration will be used when not supplied.
 	Timeout time.Duration
+	// The additional options to be passed to the underlying git.
+	CommandOptions
 }
 
 // DiffBinary returns binary patch between base and head revisions that could be
@@ -135,5 +155,8 @@ func (r *Repository) DiffBinary(base, head string, opts ...DiffBinaryOptions) ([
 		opt = opts[0]
 	}
 
-	return NewCommand("diff", "--full-index", "--binary", base, head).RunInDirWithTimeout(opt.Timeout, r.path)
+	return NewCommand("diff").
+		AddOptions(opt.CommandOptions).
+		AddArgs("--full-index", "--binary", base, head).
+		RunInDirWithTimeout(opt.Timeout, r.path)
 }
