@@ -60,6 +60,8 @@ type InitOptions struct {
 	// The timeout duration before giving up for each shell command execution. The
 	// default timeout duration will be used when not supplied.
 	Timeout time.Duration
+	// The additional options to be passed to the underlying git.
+	CommandOptions
 }
 
 // Init initializes a new Git repository.
@@ -74,7 +76,7 @@ func Init(path string, opts ...InitOptions) error {
 		return err
 	}
 
-	cmd := NewCommand("init")
+	cmd := NewCommand("init").AddOptions(opt.CommandOptions)
 	if opt.Bare {
 		cmd.AddArgs("--bare")
 	}
@@ -116,6 +118,8 @@ type CloneOptions struct {
 	// The timeout duration before giving up for each shell command execution. The
 	// default timeout duration will be used when not supplied.
 	Timeout time.Duration
+	// The additional options to be passed to the underlying git.
+	CommandOptions
 }
 
 // Clone clones the repository from remote URL to the destination.
@@ -130,7 +134,7 @@ func Clone(url, dst string, opts ...CloneOptions) error {
 		return err
 	}
 
-	cmd := NewCommand("clone")
+	cmd := NewCommand("clone").AddOptions(opt.CommandOptions)
 	if opt.Mirror {
 		cmd.AddArgs("--mirror")
 	}
@@ -160,6 +164,8 @@ type FetchOptions struct {
 	// The timeout duration before giving up for each shell command execution. The
 	// default timeout duration will be used when not supplied.
 	Timeout time.Duration
+	// The additional options to be passed to the underlying git.
+	CommandOptions
 }
 
 // Fetch fetches updates for the repository.
@@ -169,7 +175,7 @@ func (r *Repository) Fetch(opts ...FetchOptions) error {
 		opt = opts[0]
 	}
 
-	cmd := NewCommand("fetch")
+	cmd := NewCommand("fetch").AddOptions(opt.CommandOptions)
 	if opt.Prune {
 		cmd.AddArgs("--prune")
 	}
@@ -193,6 +199,8 @@ type PullOptions struct {
 	// The timeout duration before giving up for each shell command execution. The
 	// default timeout duration will be used when not supplied.
 	Timeout time.Duration
+	// The additional options to be passed to the underlying git.
+	CommandOptions
 }
 
 // Pull pulls updates for the repository.
@@ -202,7 +210,7 @@ func (r *Repository) Pull(opts ...PullOptions) error {
 		opt = opts[0]
 	}
 
-	cmd := NewCommand("pull")
+	cmd := NewCommand("pull").AddOptions(opt.CommandOptions)
 	if opt.Rebase {
 		cmd.AddArgs("--rebase")
 	}
@@ -224,11 +232,11 @@ func (r *Repository) Pull(opts ...PullOptions) error {
 //
 // Docs: https://git-scm.com/docs/git-push
 type PushOptions struct {
-	// The environment variables set for the push.
-	Envs []string
 	// The timeout duration before giving up for each shell command execution. The
 	// default timeout duration will be used when not supplied.
 	Timeout time.Duration
+	// The additional options to be passed to the underlying git.
+	CommandOptions
 }
 
 // Push pushes local changes to given remote and branch for the repository in
@@ -239,9 +247,8 @@ func Push(repoPath, remote, branch string, opts ...PushOptions) error {
 		opt = opts[0]
 	}
 
-	_, err := NewCommand("push", remote, branch).
-		AddEnvs(opt.Envs...).
-		RunInDirWithTimeout(opt.Timeout, repoPath)
+	cmd := NewCommand("push").AddOptions(opt.CommandOptions).AddArgs(remote, branch)
+	_, err := cmd.RunInDirWithTimeout(opt.Timeout, repoPath)
 	return err
 }
 
@@ -264,6 +271,8 @@ type CheckoutOptions struct {
 	// The timeout duration before giving up for each shell command execution. The
 	// default timeout duration will be used when not supplied.
 	Timeout time.Duration
+	// The additional options to be passed to the underlying git.
+	CommandOptions
 }
 
 // Checkout checks out to given branch for the repository in given path.
@@ -273,7 +282,7 @@ func Checkout(repoPath, branch string, opts ...CheckoutOptions) error {
 		opt = opts[0]
 	}
 
-	cmd := NewCommand("checkout")
+	cmd := NewCommand("checkout").AddOptions(opt.CommandOptions)
 	if opt.BaseBranch != "" {
 		cmd.AddArgs("-b")
 	}
@@ -305,6 +314,8 @@ type ResetOptions struct {
 	// The timeout duration before giving up for each shell command execution. The
 	// default timeout duration will be used when not supplied.
 	Timeout time.Duration
+	// The additional options to be passed to the underlying git.
+	CommandOptions
 }
 
 // Reset resets working tree to given revision for the repository in given path.
@@ -319,7 +330,7 @@ func Reset(repoPath, rev string, opts ...ResetOptions) error {
 		cmd.AddArgs("--hard")
 	}
 
-	_, err := cmd.AddArgs(rev).RunInDir(repoPath)
+	_, err := cmd.AddOptions(opt.CommandOptions).AddArgs(rev).RunInDir(repoPath)
 	return err
 }
 
@@ -341,6 +352,8 @@ type MoveOptions struct {
 	// The timeout duration before giving up for each shell command execution. The
 	// default timeout duration will be used when not supplied.
 	Timeout time.Duration
+	// The additional options to be passed to the underlying git.
+	CommandOptions
 }
 
 // Move moves a file, a directory, or a symlink file or directory from source to
@@ -351,7 +364,7 @@ func Move(repoPath, src, dst string, opts ...MoveOptions) error {
 		opt = opts[0]
 	}
 
-	_, err := NewCommand("mv", src, dst).RunInDirWithTimeout(opt.Timeout, repoPath)
+	_, err := NewCommand("mv").AddOptions(opt.CommandOptions).AddArgs(src, dst).RunInDirWithTimeout(opt.Timeout, repoPath)
 	return err
 }
 
@@ -377,6 +390,8 @@ type AddOptions struct {
 	// The timeout duration before giving up for each shell command execution. The
 	// default timeout duration will be used when not supplied.
 	Timeout time.Duration
+	// The additional options to be passed to the underlying git.
+	CommandOptions
 }
 
 // Add adds local changes to index for the repository in given path.
@@ -386,7 +401,7 @@ func Add(repoPath string, opts ...AddOptions) error {
 		opt = opts[0]
 	}
 
-	cmd := NewCommand("add")
+	cmd := NewCommand("add").AddOptions(opt.CommandOptions)
 	if opt.All {
 		cmd.AddArgs("--all")
 	}
@@ -417,6 +432,8 @@ type CommitOptions struct {
 	// The timeout duration before giving up for each shell command execution. The
 	// default timeout duration will be used when not supplied.
 	Timeout time.Duration
+	// The additional options to be passed to the underlying git.
+	CommandOptions
 }
 
 // CreateCommit commits local changes with given author, committer and message
@@ -433,8 +450,9 @@ func CreateCommit(repoPath string, committer *Signature, message string, opts ..
 	if opt.Author == nil {
 		opt.Author = committer
 	}
-	cmd.AddArgs(fmt.Sprintf("--author='%s <%s>'", opt.Author.Name, opt.Author.Email))
-	cmd.AddArgs("-m", message)
+	cmd = cmd.AddArgs(fmt.Sprintf("--author='%s <%s>'", opt.Author.Name, opt.Author.Email)).
+		AddArgs("-m", message).
+		AddOptions(opt.CommandOptions)
 
 	_, err := cmd.RunInDirWithTimeout(opt.Timeout, repoPath)
 	// No stderr but exit status 1 means nothing to commit.
@@ -469,6 +487,8 @@ type ShowNameStatusOptions struct {
 	// The timeout duration before giving up for each shell command execution. The
 	// default timeout duration will be used when not supplied.
 	Timeout time.Duration
+	// The additional options to be passed to the underlying git.
+	CommandOptions
 }
 
 // ShowNameStatus returns name status of given revision of the repository in
@@ -503,7 +523,10 @@ func ShowNameStatus(repoPath, rev string, opts ...ShowNameStatusOptions) (*NameS
 	}()
 
 	stderr := new(bytes.Buffer)
-	err := NewCommand("show", "--name-status", "--pretty=format:''", rev).RunInDirPipelineWithTimeout(opt.Timeout, w, stderr, repoPath)
+	cmd := NewCommand("show", "--name-status", "--pretty=format:''").
+		AddOptions(opt.CommandOptions).
+		AddArgs(rev)
+	err := cmd.RunInDirPipelineWithTimeout(opt.Timeout, w, stderr, repoPath)
 	_ = w.Close() // Close writer to exit parsing goroutine
 	if err != nil {
 		return nil, concatenateError(err, stderr.String())
@@ -530,6 +553,8 @@ type RevParseOptions struct {
 	// The timeout duration before giving up for each shell command execution. The
 	// default timeout duration will be used when not supplied.
 	Timeout time.Duration
+	// The additional options to be passed to the underlying git.
+	CommandOptions
 }
 
 // RevParse returns full length (40) commit ID by given revision in the
@@ -540,7 +565,10 @@ func (r *Repository) RevParse(rev string, opts ...RevParseOptions) (string, erro
 		opt = opts[0]
 	}
 
-	commitID, err := NewCommand("rev-parse", rev).RunInDirWithTimeout(opt.Timeout, r.path)
+	commitID, err := NewCommand("rev-parse").
+		AddOptions(opt.CommandOptions).
+		AddArgs(rev).
+		RunInDirWithTimeout(opt.Timeout, r.path)
 	if err != nil {
 		if strings.Contains(err.Error(), "exit status 128") {
 			return "", ErrRevisionNotExist
@@ -569,6 +597,8 @@ type CountObjectsOptions struct {
 	// The timeout duration before giving up for each shell command execution. The
 	// default timeout duration will be used when not supplied.
 	Timeout time.Duration
+	// The additional options to be passed to the underlying git.
+	CommandOptions
 }
 
 // CountObjects returns disk usage report of the repository in given path.
@@ -578,7 +608,9 @@ func CountObjects(repoPath string, opts ...CountObjectsOptions) (*CountObject, e
 		opt = opts[0]
 	}
 
-	stdout, err := NewCommand("count-objects", "-v").RunInDirWithTimeout(opt.Timeout, repoPath)
+	stdout, err := NewCommand("count-objects", "-v").
+		AddOptions(opt.CommandOptions).
+		RunInDirWithTimeout(opt.Timeout, repoPath)
 	if err != nil {
 		return nil, err
 	}
@@ -627,11 +659,11 @@ func (r *Repository) CountObjects(opts ...CountObjectsOptions) (*CountObject, er
 //
 // Docs: https://git-scm.com/docs/git-fsck
 type FsckOptions struct {
-	// The additional arguments to be applied.
-	Args []string
 	// The timeout duration before giving up for each shell command execution. The
 	// default timeout duration will be used when not supplied.
 	Timeout time.Duration
+	// The additional options to be passed to the underlying git.
+	CommandOptions
 }
 
 // Fsck verifies the connectivity and validity of the objects in the database
@@ -642,10 +674,7 @@ func Fsck(repoPath string, opts ...FsckOptions) error {
 		opt = opts[0]
 	}
 
-	cmd := NewCommand("fsck")
-	if len(opt.Args) > 0 {
-		cmd.AddArgs(opt.Args...)
-	}
+	cmd := NewCommand("fsck").AddOptions(opt.CommandOptions)
 	_, err := cmd.RunInDirWithTimeout(opt.Timeout, repoPath)
 	return err
 }

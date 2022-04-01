@@ -73,6 +73,8 @@ type CatFileCommitOptions struct {
 	// The timeout duration before giving up for each shell command execution.
 	// The default timeout duration will be used when not supplied.
 	Timeout time.Duration
+	// The additional options to be passed to the underlying git.
+	CommandOptions
 }
 
 // CatFileCommit returns the commit corresponding to the given revision of the
@@ -95,7 +97,10 @@ func (r *Repository) CatFileCommit(rev string, opts ...CatFileCommitOptions) (*C
 		return nil, err
 	}
 
-	stdout, err := NewCommand("cat-file", "commit", commitID).RunInDirWithTimeout(opt.Timeout, r.path)
+	stdout, err := NewCommand("cat-file").
+		AddOptions(opt.CommandOptions).
+		AddArgs("commit", commitID).
+		RunInDirWithTimeout(opt.Timeout, r.path)
 	if err != nil {
 		return nil, err
 	}
@@ -118,6 +123,8 @@ type CatFileTypeOptions struct {
 	// The timeout duration before giving up for each shell command execution. The
 	// default timeout duration will be used when not supplied.
 	Timeout time.Duration
+	// The additional options to be passed to the underlying git.
+	CommandOptions
 }
 
 // CatFileType returns the object type of given revision of the repository.
@@ -127,7 +134,10 @@ func (r *Repository) CatFileType(rev string, opts ...CatFileTypeOptions) (Object
 		opt = opts[0]
 	}
 
-	typ, err := NewCommand("cat-file", "-t", rev).RunInDirWithTimeout(opt.Timeout, r.path)
+	typ, err := NewCommand("cat-file").
+		AddOptions(opt.CommandOptions).
+		AddArgs("-t", rev).
+		RunInDirWithTimeout(opt.Timeout, r.path)
 	if err != nil {
 		return "", err
 	}
@@ -166,6 +176,8 @@ type LogOptions struct {
 	// The timeout duration before giving up for each shell command execution. The
 	// default timeout duration will be used when not supplied.
 	Timeout time.Duration
+	// The additional options to be passed to the underlying git.
+	CommandOptions
 }
 
 func escapePath(path string) string {
@@ -205,7 +217,9 @@ func (r *Repository) Log(rev string, opts ...LogOptions) ([]*Commit, error) {
 		opt = opts[0]
 	}
 
-	cmd := NewCommand("log", "--pretty="+LogFormatHashOnly, rev)
+	cmd := NewCommand("log").
+		AddOptions(opt.CommandOptions).
+		AddArgs("--pretty="+LogFormatHashOnly, rev)
 	if opt.MaxCount > 0 {
 		cmd.AddArgs("--max-count=" + strconv.Itoa(opt.MaxCount))
 	}
@@ -242,6 +256,8 @@ type CommitByRevisionOptions struct {
 	// The timeout duration before giving up for each shell command execution. The
 	// default timeout duration will be used when not supplied.
 	Timeout time.Duration
+	// The additional options to be passed to the underlying git.
+	CommandOptions
 }
 
 // CommitByRevision returns a commit by given revision.
@@ -252,9 +268,10 @@ func (r *Repository) CommitByRevision(rev string, opts ...CommitByRevisionOption
 	}
 
 	commits, err := r.Log(rev, LogOptions{
-		MaxCount: 1,
-		Path:     opt.Path,
-		Timeout:  opt.Timeout,
+		MaxCount:       1,
+		Path:           opt.Path,
+		Timeout:        opt.Timeout,
+		CommandOptions: opt.CommandOptions,
 	})
 	if err != nil {
 		if strings.Contains(err.Error(), "bad revision") {
@@ -277,6 +294,8 @@ type CommitsByPageOptions struct {
 	// The timeout duration before giving up for each shell command execution. The
 	// default timeout duration will be used when not supplied.
 	Timeout time.Duration
+	// The additional options to be passed to the underlying git.
+	CommandOptions
 }
 
 // CommitsByPage returns a paginated list of commits in the state of given
@@ -288,10 +307,11 @@ func (r *Repository) CommitsByPage(rev string, page, size int, opts ...CommitsBy
 	}
 
 	return r.Log(rev, LogOptions{
-		MaxCount: size,
-		Skip:     (page - 1) * size,
-		Path:     opt.Path,
-		Timeout:  opt.Timeout,
+		MaxCount:       size,
+		Skip:           (page - 1) * size,
+		Path:           opt.Path,
+		Timeout:        opt.Timeout,
+		CommandOptions: opt.CommandOptions,
 	})
 }
 
@@ -306,6 +326,8 @@ type SearchCommitsOptions struct {
 	// The timeout duration before giving up for each shell command execution. The
 	// default timeout duration will be used when not supplied.
 	Timeout time.Duration
+	// The additional options to be passed to the underlying git.
+	CommandOptions
 }
 
 // SearchCommits searches commit message with given pattern in the state of
@@ -322,6 +344,7 @@ func (r *Repository) SearchCommits(rev, pattern string, opts ...SearchCommitsOpt
 		RegexpIgnoreCase: true,
 		Path:             opt.Path,
 		Timeout:          opt.Timeout,
+		CommandOptions:   opt.CommandOptions,
 	})
 }
 
@@ -335,6 +358,8 @@ type CommitsSinceOptions struct {
 	// The timeout duration before giving up for each shell command execution. The
 	// default timeout duration will be used when not supplied.
 	Timeout time.Duration
+	// The additional options to be passed to the underlying git.
+	CommandOptions
 }
 
 // CommitsSince returns a list of commits since given time. The returned list is
@@ -346,9 +371,10 @@ func (r *Repository) CommitsSince(rev string, since time.Time, opts ...CommitsSi
 	}
 
 	return r.Log(rev, LogOptions{
-		Since:   since,
-		Path:    opt.Path,
-		Timeout: opt.Timeout,
+		Since:          since,
+		Path:           opt.Path,
+		Timeout:        opt.Timeout,
+		CommandOptions: opt.CommandOptions,
 	})
 }
 
@@ -363,6 +389,8 @@ type DiffNameOnlyOptions struct {
 	// The timeout duration before giving up for each shell command execution. The
 	// default timeout duration will be used when not supplied.
 	Timeout time.Duration
+	// The additional options to be passed to the underlying git.
+	CommandOptions
 }
 
 // DiffNameOnly returns a list of changed files between base and head revisions
@@ -373,7 +401,9 @@ func DiffNameOnly(repoPath, base, head string, opts ...DiffNameOnlyOptions) ([]s
 		opt = opts[0]
 	}
 
-	cmd := NewCommand("diff", "--name-only")
+	cmd := NewCommand("diff").
+		AddOptions(opt.CommandOptions).
+		AddArgs("--name-only")
 	if opt.NeedsMergeBase {
 		cmd.AddArgs(base + "..." + head)
 	} else {
@@ -421,6 +451,8 @@ type RevListCountOptions struct {
 	// The timeout duration before giving up for each shell command execution. The
 	// default timeout duration will be used when not supplied.
 	Timeout time.Duration
+	// The additional options to be passed to the underlying git.
+	CommandOptions
 }
 
 // RevListCount returns number of total commits up to given refspec of the
@@ -435,7 +467,9 @@ func (r *Repository) RevListCount(refspecs []string, opts ...RevListCountOptions
 		return 0, errors.New("must have at least one refspec")
 	}
 
-	cmd := NewCommand("rev-list", "--count")
+	cmd := NewCommand("rev-list").
+		AddOptions(opt.CommandOptions).
+		AddArgs("--count")
 	cmd.AddArgs(refspecs...)
 	cmd.AddArgs("--")
 	if opt.Path != "" {
@@ -459,6 +493,8 @@ type RevListOptions struct {
 	// The timeout duration before giving up for each shell command execution. The
 	// default timeout duration will be used when not supplied.
 	Timeout time.Duration
+	// The additional options to be passed to the underlying git.
+	CommandOptions
 }
 
 // RevList returns a list of commits based on given refspecs in reverse
@@ -473,7 +509,7 @@ func (r *Repository) RevList(refspecs []string, opts ...RevListOptions) ([]*Comm
 		return nil, errors.New("must have at least one refspec")
 	}
 
-	cmd := NewCommand("rev-list")
+	cmd := NewCommand("rev-list").AddOptions(opt.CommandOptions)
 	cmd.AddArgs(refspecs...)
 	cmd.AddArgs("--")
 	if opt.Path != "" {
@@ -495,6 +531,8 @@ type LatestCommitTimeOptions struct {
 	// The timeout duration before giving up for each shell command execution. The
 	// default timeout duration will be used when not supplied.
 	Timeout time.Duration
+	// The additional options to be passed to the underlying git.
+	CommandOptions
 }
 
 // LatestCommitTime returns the time of latest commit of the repository.
@@ -504,11 +542,13 @@ func (r *Repository) LatestCommitTime(opts ...LatestCommitTimeOptions) (time.Tim
 		opt = opts[0]
 	}
 
-	cmd := NewCommand("for-each-ref",
-		"--count=1",
-		"--sort=-committerdate",
-		"--format=%(committerdate:iso8601)",
-	)
+	cmd := NewCommand("for-each-ref").
+		AddOptions(opt.CommandOptions).
+		AddArgs(
+			"--count=1",
+			"--sort=-committerdate",
+			"--format=%(committerdate:iso8601)",
+		)
 	if opt.Branch != "" {
 		cmd.AddArgs(RefsHeads + opt.Branch)
 	}

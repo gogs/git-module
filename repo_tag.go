@@ -105,6 +105,8 @@ type TagOptions struct {
 	// The timeout duration before giving up for each shell command execution. The
 	// default timeout duration will be used when not supplied.
 	Timeout time.Duration
+	// The additional options to be passed to the underlying git.
+	CommandOptions
 }
 
 // Tag returns a Git tag by given name, e.g. "v1.0.0".
@@ -116,9 +118,10 @@ func (r *Repository) Tag(name string, opts ...TagOptions) (*Tag, error) {
 
 	refsepc := RefsTags + name
 	refs, err := r.ShowRef(ShowRefOptions{
-		Tags:     true,
-		Patterns: []string{refsepc},
-		Timeout:  opt.Timeout,
+		Tags:           true,
+		Patterns:       []string{refsepc},
+		Timeout:        opt.Timeout,
+		CommandOptions: opt.CommandOptions,
 	})
 	if err != nil {
 		return nil, err
@@ -150,6 +153,8 @@ type TagsOptions struct {
 	// The timeout duration before giving up for each shell command execution. The
 	// default timeout duration will be used when not supplied.
 	Timeout time.Duration
+	// The additional options to be passed to the underlying git.
+	CommandOptions
 }
 
 // RepoTags returns a list of tags of the repository in given path.
@@ -164,7 +169,7 @@ func RepoTags(repoPath string, opts ...TagsOptions) ([]string, error) {
 		return nil, err
 	}
 
-	cmd := NewCommand("tag", "--list")
+	cmd := NewCommand("tag", "--list").AddOptions(opt.CommandOptions)
 
 	var sorted bool
 	if opt.SortKey != "" {
@@ -218,6 +223,8 @@ type CreateTagOptions struct {
 	// The timeout duration before giving up for each shell command execution. The
 	// default timeout duration will be used when not supplied.
 	Timeout time.Duration
+	// The additional options to be passed to the underlying git.
+	CommandOptions
 }
 
 // CreateTag creates a new tag on given revision.
@@ -227,7 +234,7 @@ func (r *Repository) CreateTag(name, rev string, opts ...CreateTagOptions) error
 		opt = opts[0]
 	}
 
-	cmd := NewCommand("tag")
+	cmd := NewCommand("tag").AddOptions(opt.CommandOptions)
 	if opt.Annotated {
 		cmd.AddArgs("-a", name)
 		cmd.AddArgs("--message", opt.Message)

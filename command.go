@@ -22,6 +22,12 @@ type Command struct {
 	envs []string
 }
 
+// CommandOptions contains options for running a command.
+type CommandOptions struct {
+	Args []string
+	Envs []string
+}
+
 // String returns the string representation of the command.
 func (c *Command) String() string {
 	if len(c.args) == 0 {
@@ -47,6 +53,15 @@ func (c *Command) AddArgs(args ...string) *Command {
 // AddEnvs appends given environment variables to the command.
 func (c *Command) AddEnvs(envs ...string) *Command {
 	c.envs = append(c.envs, envs...)
+	return c
+}
+
+// AddOptions adds options to the command.
+func (c *Command) AddOptions(opts ...CommandOptions) *Command {
+	for _, opt := range opts {
+		c.AddArgs(opt.Args...)
+		c.AddEnvs(opt.Envs...)
+	}
 	return c
 }
 
@@ -87,36 +102,52 @@ func (w *limitDualWriter) Write(p []byte) (int, error) {
 	return w.w.Write(p)
 }
 
-// RunInDirPipelineWithTimeout executes the command in given directory and
-// timeout duration. It pipes stdout and stderr to supplied io.Writer.
-// DefaultTimeout will be used if the timeout duration is less than
+// RunInDirOptions contains options for running a command in a directory.
+type RunInDirOptions struct {
+	// Stdin is the input to the command.
+	Stdin io.Reader
+	// Stdout is the outputs from the command.
+	Stdout io.Writer
+	// Stderr is the error output from the command.
+	Stderr io.Writer
+	// Timeout is the duration to wait before timing out.
+	Timeout time.Duration
+}
+
+// RunInDirWithOptions executes the command in given directory and options. It
+// pipes stdin from supplied io.Reader, and pipes stdout and stderr to supplied
+// io.Writer. DefaultTimeout will be used if the timeout duration is less than
 // time.Nanosecond (i.e. less than or equal to 0). It returns an ErrExecTimeout
 // if the execution was timed out.
-func (c *Command) RunInDirPipelineWithTimeout(timeout time.Duration, stdout, stderr io.Writer, dir string) (err error) {
-	if timeout < time.Nanosecond {
-		timeout = DefaultTimeout
+func (c *Command) RunInDirWithOptions(dir string, opts ...RunInDirOptions) (err error) {
+	var opt RunInDirOptions
+	if len(opts) > 0 {
+		opt = opts[0]
+	}
+	if opt.Timeout < time.Nanosecond {
+		opt.Timeout = DefaultTimeout
 	}
 
 	buf := new(bytes.Buffer)
-	w := stdout
+	w := opt.Stdout
 	if logOutput != nil {
 		buf.Grow(512)
 		w = &limitDualWriter{
 			W: buf,
 			N: int64(buf.Cap()),
-			w: stdout,
+			w: opt.Stdout,
 		}
 	}
 
 	defer func() {
 		if len(dir) == 0 {
-			log("[timeout: %v] %s\n%s", timeout, c, buf.Bytes())
+			log("[timeout: %v] %s\n%s", opt.Timeout, c, buf.Bytes())
 		} else {
-			log("[timeout: %v] %s: %s\n%s", timeout, dir, c, buf.Bytes())
+			log("[timeout: %v] %s: %s\n%s", opt.Timeout, dir, c, buf.Bytes())
 		}
 	}()
 
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	ctx, cancel := context.WithTimeout(context.Background(), opt.Timeout)
 	defer func() {
 		cancel()
 		if err == context.DeadlineExceeded {
@@ -129,8 +160,9 @@ func (c *Command) RunInDirPipelineWithTimeout(timeout time.Duration, stdout, std
 		cmd.Env = append(os.Environ(), c.envs...)
 	}
 	cmd.Dir = dir
+	cmd.Stdin = opt.Stdin
 	cmd.Stdout = w
-	cmd.Stderr = stderr
+	cmd.Stderr = opt.Stderr
 	if err = cmd.Start(); err != nil {
 		return err
 	}
@@ -153,6 +185,21 @@ func (c *Command) RunInDirPipelineWithTimeout(timeout time.Duration, stdout, std
 	case err = <-result:
 		return err
 	}
+
+}
+
+// RunInDirPipelineWithTimeout executes the command in given directory and
+// timeout duration. It pipes stdout and stderr to supplied io.Writer.
+// DefaultTimeout will be used if the timeout duration is less than
+// time.Nanosecond (i.e. less than or equal to 0). It returns an ErrExecTimeout
+// if the execution was timed out.
+func (c *Command) RunInDirPipelineWithTimeout(timeout time.Duration, stdout, stderr io.Writer, dir string) (err error) {
+	return c.RunInDirWithOptions(dir, RunInDirOptions{
+		Stdin:   nil,
+		Stdout:  stdout,
+		Stderr:  stderr,
+		Timeout: timeout,
+	})
 }
 
 // RunInDirPipeline executes the command in given directory and default timeout

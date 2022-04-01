@@ -92,6 +92,8 @@ type LsTreeOptions struct {
 	// The timeout duration before giving up for each shell command execution. The
 	// default timeout duration will be used when not supplied.
 	Timeout time.Duration
+	// The additional options to be passed to the underlying git.
+	CommandOptions
 }
 
 // LsTree returns the tree object in the repository by given revision.
@@ -111,7 +113,10 @@ func (r *Repository) LsTree(rev string, opts ...LsTreeOptions) (*Tree, error) {
 		repo: r,
 	}
 
-	stdout, err := NewCommand("ls-tree", rev).RunInDirWithTimeout(opt.Timeout, r.path)
+	stdout, err := NewCommand("ls-tree").
+		AddOptions(opt.CommandOptions).
+		AddArgs(rev).
+		RunInDirWithTimeout(opt.Timeout, r.path)
 	if err != nil {
 		return nil, err
 	}

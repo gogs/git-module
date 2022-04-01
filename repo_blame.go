@@ -15,6 +15,8 @@ type BlameOptions struct {
 	// The timeout duration before giving up for each shell command execution. The
 	// default timeout duration will be used when not supplied.
 	Timeout time.Duration
+	// The additional options to be passed to the underlying git.
+	CommandOptions
 }
 
 // BlameFile returns blame results of the file with the given revision of the
@@ -25,7 +27,10 @@ func (r *Repository) BlameFile(rev, file string, opts ...BlameOptions) (*Blame, 
 		opt = opts[0]
 	}
 
-	stdout, err := NewCommand("blame", "-l", "-s", rev, "--", file).RunInDirWithTimeout(opt.Timeout, r.path)
+	stdout, err := NewCommand("blame").
+		AddOptions(opt.CommandOptions).
+		AddArgs("-l", "-s", rev, "--", file).
+		RunInDirWithTimeout(opt.Timeout, r.path)
 	if err != nil {
 		return nil, err
 	}

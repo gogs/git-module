@@ -26,6 +26,8 @@ type LsRemoteOptions struct {
 	// The timeout duration before giving up for each shell command execution. The
 	// default timeout duration will be used when not supplied.
 	Timeout time.Duration
+	// The additional options to be passed to the underlying git.
+	CommandOptions
 }
 
 // LsRemote returns a list references in the remote repository.
@@ -35,7 +37,7 @@ func LsRemote(url string, opts ...LsRemoteOptions) ([]*Reference, error) {
 		opt = opts[0]
 	}
 
-	cmd := NewCommand("ls-remote", "--quiet")
+	cmd := NewCommand("ls-remote", "--quiet").AddOptions(opt.CommandOptions)
 	if opt.Heads {
 		cmd.AddArgs("--heads")
 	}
@@ -93,6 +95,8 @@ type RemoteAddOptions struct {
 	// The timeout duration before giving up for each shell command execution. The
 	// default timeout duration will be used when not supplied.
 	Timeout time.Duration
+	// The additional options to be passed to the underlying git.
+	CommandOptions
 }
 
 // Deprecated: Use RemoteAddOptions instead.
@@ -105,7 +109,7 @@ func RemoteAdd(repoPath, name, url string, opts ...RemoteAddOptions) error {
 		opt = opts[0]
 	}
 
-	cmd := NewCommand("remote", "add")
+	cmd := NewCommand("remote", "add").AddOptions(opt.CommandOptions)
 	if opt.Fetch {
 		cmd.AddArgs("-f")
 	}
@@ -140,6 +144,8 @@ type RemoteRemoveOptions struct {
 	// The timeout duration before giving up for each shell command execution. The
 	// default timeout duration will be used when not supplied.
 	Timeout time.Duration
+	// The additional options to be passed to the underlying git.
+	CommandOptions
 }
 
 // Deprecated: Use RemoteRemoveOptions instead.
@@ -152,7 +158,10 @@ func RemoteRemove(repoPath, name string, opts ...RemoteRemoveOptions) error {
 		opt = opts[0]
 	}
 
-	_, err := NewCommand("remote", "remove", name).RunInDirWithTimeout(opt.Timeout, repoPath)
+	_, err := NewCommand("remote", "remove").
+		AddOptions(opt.CommandOptions).
+		AddArgs(name).
+		RunInDirWithTimeout(opt.Timeout, repoPath)
 	if err != nil {
 		// the error status may differ from git clients
 		if strings.Contains(err.Error(), "error: No such remote") ||
@@ -186,6 +195,8 @@ type RemotesOptions struct {
 	// The timeout duration before giving up for each shell command execution. The
 	// default timeout duration will be used when not supplied.
 	Timeout time.Duration
+	// The additional options to be passed to the underlying git.
+	CommandOptions
 }
 
 // Remotes lists remotes of the repository in given path.
@@ -195,7 +206,9 @@ func Remotes(repoPath string, opts ...RemotesOptions) ([]string, error) {
 		opt = opts[0]
 	}
 
-	stdout, err := NewCommand("remote").RunInDirWithTimeout(opt.Timeout, repoPath)
+	stdout, err := NewCommand("remote").
+		AddOptions(opt.CommandOptions).
+		RunInDirWithTimeout(opt.Timeout, repoPath)
 	if err != nil {
 		return nil, err
 	}
@@ -221,6 +234,8 @@ type RemoteGetURLOptions struct {
 	// The timeout duration before giving up for each shell command execution. The
 	// default timeout duration will be used when not supplied.
 	Timeout time.Duration
+	// The additional options to be passed to the underlying git.
+	CommandOptions
 }
 
 // RemoteGetURL retrieves URL(s) of a remote of the repository in given path.
@@ -230,7 +245,7 @@ func RemoteGetURL(repoPath, name string, opts ...RemoteGetURLOptions) ([]string,
 		opt = opts[0]
 	}
 
-	cmd := NewCommand("remote", "get-url")
+	cmd := NewCommand("remote", "get-url").AddOptions(opt.CommandOptions)
 	if opt.Push {
 		cmd.AddArgs("--push")
 	}
@@ -262,6 +277,8 @@ type RemoteSetURLOptions struct {
 	// The timeout duration before giving up for each shell command execution. The
 	// default timeout duration will be used when not supplied.
 	Timeout time.Duration
+	// The additional options to be passed to the underlying git.
+	CommandOptions
 }
 
 // RemoteSetURL sets first URL of the remote with given name of the repository
@@ -272,7 +289,7 @@ func RemoteSetURL(repoPath, name, newurl string, opts ...RemoteSetURLOptions) er
 		opt = opts[0]
 	}
 
-	cmd := NewCommand("remote", "set-url")
+	cmd := NewCommand("remote", "set-url").AddOptions(opt.CommandOptions)
 	if opt.Push {
 		cmd.AddArgs("--push")
 	}
@@ -311,6 +328,8 @@ type RemoteSetURLAddOptions struct {
 	// The timeout duration before giving up for each shell command execution. The
 	// default timeout duration will be used when not supplied.
 	Timeout time.Duration
+	// The additional options to be passed to the underlying git.
+	CommandOptions
 }
 
 // RemoteSetURLAdd appends an URL to the remote with given name of the
@@ -321,7 +340,9 @@ func RemoteSetURLAdd(repoPath, name, newurl string, opts ...RemoteSetURLAddOptio
 		opt = opts[0]
 	}
 
-	cmd := NewCommand("remote", "set-url", "--add")
+	cmd := NewCommand("remote", "set-url").
+		AddOptions(opt.CommandOptions).
+		AddArgs("--add")
 	if opt.Push {
 		cmd.AddArgs("--push")
 	}
@@ -351,6 +372,8 @@ type RemoteSetURLDeleteOptions struct {
 	// The timeout duration before giving up for each shell command execution. The
 	// default timeout duration will be used when not supplied.
 	Timeout time.Duration
+	// The additional options to be passed to the underlying git.
+	CommandOptions
 }
 
 // RemoteSetURLDelete deletes the remote with given name of the repository in
@@ -361,7 +384,9 @@ func RemoteSetURLDelete(repoPath, name, regex string, opts ...RemoteSetURLDelete
 		opt = opts[0]
 	}
 
-	cmd := NewCommand("remote", "set-url", "--delete")
+	cmd := NewCommand("remote", "set-url").
+		AddOptions(opt.CommandOptions).
+		AddArgs("--delete")
 	if opt.Push {
 		cmd.AddArgs("--push")
 	}

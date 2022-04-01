@@ -16,6 +16,8 @@ type MergeBaseOptions struct {
 	// The timeout duration before giving up for each shell command execution. The
 	// default timeout duration will be used when not supplied.
 	Timeout time.Duration
+	// The additional options to be passed to the underlying git.
+	CommandOptions
 }
 
 // MergeBase returns merge base between base and head revisions of the
@@ -26,7 +28,10 @@ func MergeBase(repoPath, base, head string, opts ...MergeBaseOptions) (string, e
 		opt = opts[0]
 	}
 
-	stdout, err := NewCommand("merge-base", base, head).RunInDirWithTimeout(opt.Timeout, repoPath)
+	stdout, err := NewCommand("merge-base").
+		AddOptions(opt.CommandOptions).
+		AddArgs(base, head).
+		RunInDirWithTimeout(opt.Timeout, repoPath)
 	if err != nil {
 		if strings.Contains(err.Error(), "exit status 1") {
 			return "", ErrNoMergeBase
