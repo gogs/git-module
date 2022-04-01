@@ -115,8 +115,8 @@ type RunInDirOptions struct {
 }
 
 // RunInDirWithOptions executes the command in given directory and options. It
-// pipes stdin to supplied io.Reader, and stdout, and stderr to supplied
-// io.Writer.  DefaultTimeout will be used if the timeout duration is less than
+// pipes stdin from supplied io.Reader, and pipes stdout and stderr to supplied
+// io.Writer. DefaultTimeout will be used if the timeout duration is less than
 // time.Nanosecond (i.e. less than or equal to 0). It returns an ErrExecTimeout
 // if the execution was timed out.
 func (c *Command) RunInDirWithOptions(dir string, opts ...RunInDirOptions) (err error) {
