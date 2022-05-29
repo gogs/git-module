@@ -4,6 +4,11 @@ coverage:
     project:
       default:
         threshold: 1%
+        informational: true
+    patch:
+      defualt:
+        only_pulls: true
+        informational: true
 
 comment:
   layout: 'diff'
