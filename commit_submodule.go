@@ -64,7 +64,7 @@ func (c *Commit) Submodules() (Submodules, error) {
 			if len(path) > 0 && len(url) > 0 {
 				mod := &Submodule{
 					Name: path,
-					URL: url,
+					URL:  url,
 				}
 
 				mod.Commit, c.submodulesErr = c.repo.RevParse(c.id.String() + ":" + mod.Name)
