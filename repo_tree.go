@@ -97,25 +97,30 @@ type LsTreeOptions struct {
 }
 
 // LsTree returns the tree object in the repository by given revision.
-func (r *Repository) LsTree(rev string, opts ...LsTreeOptions) (*Tree, error) {
+func (r *Repository) LsTree(treeID string, opts ...LsTreeOptions) (*Tree, error) {
 	var opt LsTreeOptions
 	if len(opts) > 0 {
 		opt = opts[0]
 	}
 
+	cache, ok := r.cachedTrees.Get(treeID)
+	if ok {
+		log("Cached tree hit: %s", treeID)
+		return cache.(*Tree), nil
+	}
 	var err error
-	rev, err = r.RevParse(rev, RevParseOptions{Timeout: opt.Timeout}) //nolint
+	treeID, err = r.RevParse(treeID, RevParseOptions{Timeout: opt.Timeout}) //nolint
 	if err != nil {
 		return nil, err
 	}
 	t := &Tree{
-		id:   MustIDFromString(rev),
+		id:   MustIDFromString(treeID),
 		repo: r,
 	}
 
 	stdout, err := NewCommand("ls-tree").
 		AddOptions(opt.CommandOptions).
-		AddArgs(rev).
+		AddArgs(treeID).
 		RunInDirWithTimeout(opt.Timeout, r.path)
 	if err != nil {
 		return nil, err
@@ -126,5 +131,6 @@ func (r *Repository) LsTree(rev string, opts ...LsTreeOptions) (*Tree, error) {
 		return nil, err
 	}
 
+	r.cachedTrees.Set(treeID, t)
 	return t, nil
 }

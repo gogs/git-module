@@ -23,6 +23,7 @@ type Repository struct {
 
 	cachedCommits *objectCache
 	cachedTags    *objectCache
+	cachedTrees   *objectCache
 }
 
 // Path returns the path of the repository.
@@ -98,6 +99,7 @@ func Open(repoPath string) (*Repository, error) {
 		path:          repoPath,
 		cachedCommits: newObjectCache(),
 		cachedTags:    newObjectCache(),
+		cachedTrees:   newObjectCache(),
 	}, nil
 }
 
