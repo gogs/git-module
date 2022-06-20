@@ -1,4 +1,4 @@
-// Copyright 2020 The Gogs Authors. All rights reserved.
+// Copyright 2022 The Gogs Authors. All rights reserved.
 // Use of this source code is governed by a MIT-style
 // license that can be found in the LICENSE file.
 
@@ -18,9 +18,7 @@ func TestRepository_CatFileBlob(t *testing.T) {
 
 	t.Run("get a blob", func(t *testing.T) {
 		b, err := testrepo.CatFileBlob("021a721a61a1de65865542c405796d1eb985f784")
-		if err != nil {
-			t.Fatal(err)
-		}
+		require.NoError(t, err)
 
 		assert.True(t, b.IsBlob())
 	})
