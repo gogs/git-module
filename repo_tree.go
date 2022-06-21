@@ -96,7 +96,7 @@ type LsTreeOptions struct {
 	CommandOptions
 }
 
-// LsTree returns the tree object in the repository by given revision.
+// LsTree returns the tree object in the repository by given tree ID.
 func (r *Repository) LsTree(treeID string, opts ...LsTreeOptions) (*Tree, error) {
 	var opt LsTreeOptions
 	if len(opts) > 0 {
@@ -108,6 +108,7 @@ func (r *Repository) LsTree(treeID string, opts ...LsTreeOptions) (*Tree, error)
 		log("Cached tree hit: %s", treeID)
 		return cache.(*Tree), nil
 	}
+
 	var err error
 	treeID, err = r.RevParse(treeID, RevParseOptions{Timeout: opt.Timeout}) //nolint
 	if err != nil {
