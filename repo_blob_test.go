@@ -17,6 +17,12 @@ func TestRepository_CatFileBlob(t *testing.T) {
 		assert.Equal(t, ErrNotBlob, err)
 	})
 
+	t.Run("get a blob, no full rev hash", func(t *testing.T) {
+		b, err := testrepo.CatFileBlob("021a")
+		require.NoError(t, err)
+		assert.True(t, b.IsBlob())
+	})
+
 	t.Run("get a blob", func(t *testing.T) {
 		b, err := testrepo.CatFileBlob("021a721a61a1de65865542c405796d1eb985f784")
 		require.NoError(t, err)

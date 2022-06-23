@@ -6,7 +6,7 @@ package git
 
 // CatFileBlob returns the blob corresponding to the given revision of the repository.
 func (repo *Repository) CatFileBlob(rev string) (*Blob, error) {
-	revHash, err := r.RevParse(rev, RevParseOptions{Timeout: opt.Timeout}) //nolint
+	rev, err := r.RevParse(rev, RevParseOptions{Timeout: opt.Timeout}) //nolint
 	if err != nil {
 		return nil, err
 	}
