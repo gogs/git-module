@@ -5,13 +5,13 @@
 package git
 
 // CatFileBlob returns the blob corresponding to the given revision of the repository.
-func (repo *Repository) CatFileBlob(rev string) (*Blob, error) {
+func (r *Repository) CatFileBlob(rev string) (*Blob, error) {
 	rev, err := r.RevParse(rev, RevParseOptions{Timeout: opt.Timeout}) //nolint
 	if err != nil {
 		return nil, err
 	}
 
-	typ, err := repo.CatFileType(rev)
+	typ, err := r.CatFileType(rev)
 	if err != nil {
 		return nil, err
 	}
@@ -26,7 +26,7 @@ func (repo *Repository) CatFileBlob(rev string) (*Blob, error) {
 			typ:  ObjectBlob,
 			id:   MustIDFromString(rev),
 			parent: &Tree{
-				repo: repo,
+				repo: r,
 			},
 		},
 	}, nil
