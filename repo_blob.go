@@ -11,7 +11,7 @@ func (repo *Repository) CatFileBlob(rev string) (*Blob, error) {
 		return nil, err
 	}
 
-	typ, err := repo.CatFileType(revHash)
+	typ, err := repo.CatFileType(rev)
 	if err != nil {
 		return nil, err
 	}
