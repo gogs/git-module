@@ -23,8 +23,10 @@ type Signature struct {
 // parseSignature parses signature information from the (uncompressed) commit
 // line, which looks like the following but without the "author " at the
 // beginning:
-//     author Patrick Gundlach <gundlach@speedata.de> 1378823654 +0200
-//     author Patrick Gundlach <gundlach@speedata.de> Thu Apr 07 22:13:13 2005 +0200
+//
+//	author Patrick Gundlach <gundlach@speedata.de> 1378823654 +0200
+//	author Patrick Gundlach <gundlach@speedata.de> Thu Apr 07 22:13:13 2005 +0200
+//
 // This method should only be used for parsing author and committer.
 func parseSignature(line []byte) (*Signature, error) {
 	emailStart := bytes.IndexByte(line, '<')
