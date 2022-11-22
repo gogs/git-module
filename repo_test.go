@@ -328,7 +328,7 @@ func TestRepository_Add(t *testing.T) {
 	// Make sure it does not blow up
 	if err := r.Add(AddOptions{
 		All:       true,
-		Pathsepcs: []string{"TESTFILE"},
+		Pathspecs: []string{"TESTFILE"},
 	}); err != nil {
 		t.Fatal(err)
 	}

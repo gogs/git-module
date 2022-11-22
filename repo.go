@@ -388,7 +388,7 @@ type AddOptions struct {
 	// Indicates whether to add all changes to index.
 	All bool
 	// The specific pathspecs to be added to index.
-	Pathsepcs []string
+	Pathspecs []string
 	// The timeout duration before giving up for each shell command execution. The
 	// default timeout duration will be used when not supplied.
 	Timeout time.Duration
@@ -407,9 +407,9 @@ func Add(repoPath string, opts ...AddOptions) error {
 	if opt.All {
 		cmd.AddArgs("--all")
 	}
-	if len(opt.Pathsepcs) > 0 {
+	if len(opt.Pathspecs) > 0 {
 		cmd.AddArgs("--")
-		cmd.AddArgs(opt.Pathsepcs...)
+		cmd.AddArgs(opt.Pathspecs...)
 	}
 	_, err := cmd.RunInDirWithTimeout(opt.Timeout, repoPath)
 	return err
