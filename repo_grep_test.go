@@ -115,12 +115,12 @@ func TestRepository_Grep_ExtendedRegexp(t *testing.T) {
 		{
 			Tree:   "HEAD",
 			Path:   "src/main/java/com/github/App.java",
-			Line:   5,
-			Column: 4,
-			Text:   ` * Hello world!`,
+			Line:   13,
+			Column: 30,
+			Text:   `        System.out.println( "Hello World!" );`,
 		},
 	}
-	got := testrepo.Grep(`Hello \w+`, GrepOptions{ExtendedRegexp: true})
+	got := testrepo.Grep(`Hello\sW\w+`, GrepOptions{ExtendedRegexp: true})
 	assert.Equal(t, want, got)
 }
 
