@@ -126,7 +126,7 @@ func (r *Repository) RawDiff(rev string, diffType RawDiffFormat, w io.Writer, op
 		if commit.ParentsCount() == 0 {
 			cmd = cmd.AddArgs("format-patch").
 				AddOptions(opt.CommandOptions).
-				AddArgs("--full-index", "--no-signature", "--stdout", "--root", rev)
+				AddArgs("--full-index", "--no-signoff", "--no-signature", "--stdout", "--root", rev)
 		} else {
 			c, err := commit.Parent(0)
 			if err != nil {
@@ -134,7 +134,7 @@ func (r *Repository) RawDiff(rev string, diffType RawDiffFormat, w io.Writer, op
 			}
 			cmd = cmd.AddArgs("format-patch").
 				AddOptions(opt.CommandOptions).
-				AddArgs("--full-index", "--no-signature", "--stdout", rev+"..."+c.ID.String())
+				AddArgs("--full-index", "--no-signoff", "--no-signature", "--stdout", rev+"..."+c.ID.String())
 		}
 	default:
 		return fmt.Errorf("invalid diffType: %s", diffType)
