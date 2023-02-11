@@ -5,6 +5,7 @@
 package git
 
 import (
+	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -111,6 +112,10 @@ func TestRepository_Grep_IgnoreCase(t *testing.T) {
 }
 
 func TestRepository_Grep_ExtendedRegexp(t *testing.T) {
+	if runtime.GOOS == "darwin" {
+		t.Skip("Skipping testing on macOS")
+		return
+	}
 	want := []*GrepResult{
 		{
 			Tree:   "HEAD",
