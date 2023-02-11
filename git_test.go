@@ -22,10 +22,9 @@ const repoPath = "testdata/testrepo.git"
 var testrepo *Repository
 
 func TestMain(m *testing.M) {
-	verbose := flag.Bool("verbose", false, "")
 	flag.Parse()
 
-	if *verbose {
+	if testing.Verbose() {
 		SetOutput(os.Stdout)
 	}
 
