@@ -141,9 +141,9 @@ type SymbolicRefOptions struct {
 }
 
 // SymbolicRef returns the reference name (e.g. "refs/heads/master") pointed by
-// the symbolic ref. It returns an empty string and nil error when doing set
-// operation.
-func (r *Repository) SymbolicRef(opts ...SymbolicRefOptions) (string, error) {
+// the symbolic ref in the repository in given path. It returns an empty string
+// and nil error when doing set operation.
+func SymbolicRef(repoPath string, opts ...SymbolicRefOptions) (string, error) {
 	var opt SymbolicRefOptions
 	if len(opts) > 0 {
 		opt = opts[0]
@@ -158,11 +158,18 @@ func (r *Repository) SymbolicRef(opts ...SymbolicRefOptions) (string, error) {
 		cmd.AddArgs(opt.Ref)
 	}
 
-	stdout, err := cmd.RunInDirWithTimeout(opt.Timeout, r.path)
+	stdout, err := cmd.RunInDirWithTimeout(opt.Timeout, repoPath)
 	if err != nil {
 		return "", err
 	}
 	return strings.TrimSpace(string(stdout)), nil
+}
+
+// SymbolicRef returns the reference name (e.g. "refs/heads/master") pointed by
+// the symbolic ref. It returns an empty string and nil error when doing set
+// operation.
+func (r *Repository) SymbolicRef(opts ...SymbolicRefOptions) (string, error) {
+	return SymbolicRef(r.path, opts...)
 }
 
 // ShowRefOptions contains optional arguments for listing references.
