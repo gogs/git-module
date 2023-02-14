@@ -243,10 +243,10 @@ func (es Entries) CommitsInfo(commit *Commit, opts ...CommitsInfoOptions) ([]*En
 
 				// Get extra information for submodules
 				if e.IsCommit() {
+					// Be tolerant to implicit submodules
 					info.Submodule, err = commit.Submodule(epath)
 					if err != nil {
-						setError(fmt.Errorf("get submodule %q: %v", epath, err))
-						return
+						info.Submodule = &Submodule{Name: epath}
 					}
 				}
 
