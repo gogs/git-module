@@ -20,12 +20,18 @@ type Command struct {
 	name string
 	args []string
 	envs []string
+	ctx  context.Context
 }
 
 // CommandOptions contains options for running a command.
+// If timeout is zero, DefaultTimeout will be used.
+// If timeout is less than zero, no timeout will be set.
+// If context is nil, context.Background() will be used.
 type CommandOptions struct {
-	Args []string
-	Envs []string
+	Args    []string
+	Envs    []string
+	Timeout time.Duration
+	Context context.Context
 }
 
 // String returns the string representation of the command.
@@ -38,9 +44,16 @@ func (c *Command) String() string {
 
 // NewCommand creates and returns a new Command with given arguments for "git".
 func NewCommand(args ...string) *Command {
+	return NewCommandWithContext(context.Background(), args...)
+}
+
+// NewCommandWithContext creates and returns a new Command with given arguments
+// and context for "git".
+func NewCommandWithContext(ctx context.Context, args ...string) *Command {
 	return &Command{
 		name: "git",
 		args: args,
+		ctx:  ctx,
 	}
 }
 
@@ -56,9 +69,17 @@ func (c *Command) AddEnvs(envs ...string) *Command {
 	return c
 }
 
+// WithContext sets the context for the command.
+func (c *Command) WithContext(ctx context.Context) *Command {
+	c.ctx = ctx
+	return c
+}
+
 // AddOptions adds options to the command.
+// Note: only the last option will take effect if there are duplicated options.
 func (c *Command) AddOptions(opts ...CommandOptions) *Command {
 	for _, opt := range opts {
+		c = c.WithContext(opt.Context)
 		c.AddArgs(opt.Args...)
 		c.AddEnvs(opt.Envs...)
 	}
@@ -124,7 +145,9 @@ func (c *Command) RunInDirWithOptions(dir string, opts ...RunInDirOptions) (err 
 	if len(opts) > 0 {
 		opt = opts[0]
 	}
-	if opt.Timeout < time.Nanosecond {
+	if opt.Timeout < 0 {
+		opt.Timeout = -1
+	} else if opt.Timeout == 0 {
 		opt.Timeout = DefaultTimeout
 	}
 
@@ -147,13 +170,21 @@ func (c *Command) RunInDirWithOptions(dir string, opts ...RunInDirOptions) (err 
 		}
 	}()
 
-	ctx, cancel := context.WithTimeout(context.Background(), opt.Timeout)
-	defer func() {
-		cancel()
-		if err == context.DeadlineExceeded {
-			err = ErrExecTimeout
-		}
-	}()
+	ctx := context.Background()
+	if c.ctx != nil {
+		ctx = c.ctx
+	}
+
+	if opt.Timeout > 0 {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, opt.Timeout)
+		defer func() {
+			cancel()
+			if err == context.DeadlineExceeded {
+				err = ErrExecTimeout
+			}
+		}()
+	}
 
 	cmd := exec.CommandContext(ctx, c.name, c.args...)
 	if len(c.envs) > 0 {
