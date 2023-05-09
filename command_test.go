@@ -60,6 +60,6 @@ func TestCommand_AddEnvs(t *testing.T) {
 }
 
 func TestCommand_RunWithTimeout(t *testing.T) {
-	_, err := NewCommand("version").RunWithTimeout(time.Nanosecond)
+	_, err := NewCommand("version").WithTimeout(time.Nanosecond).Run()
 	assert.Equal(t, ErrExecTimeout, err)
 }

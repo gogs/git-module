@@ -17,10 +17,11 @@ import (
 
 // Command contains the name, arguments and environment variables of a command.
 type Command struct {
-	name string
-	args []string
-	envs []string
-	ctx  context.Context
+	name    string
+	args    []string
+	envs    []string
+	timeout time.Duration
+	ctx     context.Context
 }
 
 // CommandOptions contains options for running a command.
@@ -69,17 +70,29 @@ func (c *Command) AddEnvs(envs ...string) *Command {
 	return c
 }
 
-// WithContext sets the context for the command.
-func (c *Command) WithContext(ctx context.Context) *Command {
+// WithContext returns a new Command with the given context.
+func (c Command) WithContext(ctx context.Context) *Command {
 	c.ctx = ctx
-	return c
+	return &c
+}
+
+// WithTimeout returns a new Command with given timeout.
+func (c Command) WithTimeout(timeout time.Duration) *Command {
+	c.timeout = timeout
+	return &c
+}
+
+// SetTimeout sets the timeout for the command.
+func (c *Command) SetTimeout(timeout time.Duration) {
+	c.timeout = timeout
 }
 
 // AddOptions adds options to the command.
 // Note: only the last option will take effect if there are duplicated options.
 func (c *Command) AddOptions(opts ...CommandOptions) *Command {
 	for _, opt := range opts {
-		c = c.WithContext(opt.Context)
+		c.timeout = opt.Timeout
+		c.ctx = opt.Context
 		c.AddArgs(opt.Args...)
 		c.AddEnvs(opt.Envs...)
 	}
@@ -132,6 +145,8 @@ type RunInDirOptions struct {
 	// Stderr is the error output from the command.
 	Stderr io.Writer
 	// Timeout is the duration to wait before timing out.
+	//
+	// Deprecated: Use CommandOptions.Timeout or *Command.WithTimeout instead.
 	Timeout time.Duration
 }
 
@@ -145,10 +160,15 @@ func (c *Command) RunInDirWithOptions(dir string, opts ...RunInDirOptions) (err 
 	if len(opts) > 0 {
 		opt = opts[0]
 	}
-	if opt.Timeout < 0 {
-		opt.Timeout = -1
-	} else if opt.Timeout == 0 {
-		opt.Timeout = DefaultTimeout
+
+	timeout := c.timeout
+	// TODO: remove this in newer version
+	if opt.Timeout > 0 {
+		timeout = opt.Timeout
+	}
+
+	if timeout == 0 {
+		timeout = DefaultTimeout
 	}
 
 	buf := new(bytes.Buffer)
@@ -164,9 +184,9 @@ func (c *Command) RunInDirWithOptions(dir string, opts ...RunInDirOptions) (err 
 
 	defer func() {
 		if len(dir) == 0 {
-			log("[timeout: %v] %s\n%s", opt.Timeout, c, buf.Bytes())
+			log("[timeout: %v] %s\n%s", timeout, c, buf.Bytes())
 		} else {
-			log("[timeout: %v] %s: %s\n%s", opt.Timeout, dir, c, buf.Bytes())
+			log("[timeout: %v] %s: %s\n%s", timeout, dir, c, buf.Bytes())
 		}
 	}()
 
@@ -175,9 +195,9 @@ func (c *Command) RunInDirWithOptions(dir string, opts ...RunInDirOptions) (err 
 		ctx = c.ctx
 	}
 
-	if opt.Timeout > 0 {
+	if timeout > 0 {
 		var cancel context.CancelFunc
-		ctx, cancel = context.WithTimeout(ctx, opt.Timeout)
+		ctx, cancel = context.WithTimeout(ctx, timeout)
 		defer func() {
 			cancel()
 			if err == context.DeadlineExceeded {
@@ -219,55 +239,72 @@ func (c *Command) RunInDirWithOptions(dir string, opts ...RunInDirOptions) (err 
 
 }
 
+// RunInDirPipeline executes the command in given directory and default timeout
+// duration. It pipes stdout and stderr to supplied io.Writer.
+func (c *Command) RunInDirPipeline(stdout, stderr io.Writer, dir string) error {
+	return c.RunInDirWithOptions(dir, RunInDirOptions{
+		Stdin:  nil,
+		Stdout: stdout,
+		Stderr: stderr,
+	})
+}
+
 // RunInDirPipelineWithTimeout executes the command in given directory and
 // timeout duration. It pipes stdout and stderr to supplied io.Writer.
 // DefaultTimeout will be used if the timeout duration is less than
 // time.Nanosecond (i.e. less than or equal to 0). It returns an ErrExecTimeout
 // if the execution was timed out.
+//
+// Deprecated: Use RunInDirPipeline and CommandOptions instead.
+// TODO: remove this in the next major version
 func (c *Command) RunInDirPipelineWithTimeout(timeout time.Duration, stdout, stderr io.Writer, dir string) (err error) {
-	return c.RunInDirWithOptions(dir, RunInDirOptions{
-		Stdin:   nil,
-		Stdout:  stdout,
-		Stderr:  stderr,
-		Timeout: timeout,
-	})
-}
-
-// RunInDirPipeline executes the command in given directory and default timeout
-// duration. It pipes stdout and stderr to supplied io.Writer.
-func (c *Command) RunInDirPipeline(stdout, stderr io.Writer, dir string) error {
-	return c.RunInDirPipelineWithTimeout(DefaultTimeout, stdout, stderr, dir)
+	if timeout != 0 {
+		c = c.WithTimeout(timeout)
+	}
+	return c.RunInDirPipeline(stdout, stderr, dir)
 }
 
 // RunInDirWithTimeout executes the command in given directory and timeout
 // duration. It returns stdout in []byte and error (combined with stderr).
+//
+// Deprecated: Use RunInDir and CommandOptions instead.
+// TODO: remove this in the next major version
 func (c *Command) RunInDirWithTimeout(timeout time.Duration, dir string) ([]byte, error) {
-	stdout := new(bytes.Buffer)
-	stderr := new(bytes.Buffer)
-	if err := c.RunInDirPipelineWithTimeout(timeout, stdout, stderr, dir); err != nil {
-		return nil, concatenateError(err, stderr.String())
+	if timeout != 0 {
+		c = c.WithTimeout(timeout)
 	}
-	return stdout.Bytes(), nil
+	return c.RunInDir(dir)
 }
 
 // RunInDir executes the command in given directory and default timeout
 // duration. It returns stdout and error (combined with stderr).
 func (c *Command) RunInDir(dir string) ([]byte, error) {
-	return c.RunInDirWithTimeout(DefaultTimeout, dir)
+	stdout := new(bytes.Buffer)
+	stderr := new(bytes.Buffer)
+	if err := c.RunInDirPipeline(stdout, stderr, dir); err != nil {
+		return nil, concatenateError(err, stderr.String())
+	}
+	return stdout.Bytes(), nil
 }
 
 // RunWithTimeout executes the command in working directory and given timeout
 // duration. It returns stdout in string and error (combined with stderr).
+//
+// Deprecated: Use RunInDir and CommandOptions instead.
+// TODO: remove this in the next major version
 func (c *Command) RunWithTimeout(timeout time.Duration) ([]byte, error) {
-	stdout, err := c.RunInDirWithTimeout(timeout, "")
-	if err != nil {
-		return nil, err
+	if timeout != 0 {
+		c = c.WithTimeout(timeout)
 	}
-	return stdout, nil
+	return c.Run()
 }
 
 // Run executes the command in working directory and default timeout duration.
 // It returns stdout in string and error (combined with stderr).
 func (c *Command) Run() ([]byte, error) {
-	return c.RunWithTimeout(DefaultTimeout)
+	stdout, err := c.RunInDir("")
+	if err != nil {
+		return nil, err
+	}
+	return stdout, nil
 }

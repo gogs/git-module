@@ -60,6 +60,8 @@ type InitOptions struct {
 	Bare bool
 	// The timeout duration before giving up for each shell command execution. The
 	// default timeout duration will be used when not supplied.
+	//
+	// Deprecated: Use CommandOptions.Timeout instead.
 	Timeout time.Duration
 	// The additional options to be passed to the underlying git.
 	CommandOptions
@@ -119,6 +121,8 @@ type CloneOptions struct {
 	Depth uint64
 	// The timeout duration before giving up for each shell command execution. The
 	// default timeout duration will be used when not supplied.
+	//
+	// Deprecated: Use CommandOptions.Timeout instead.
 	Timeout time.Duration
 	// The additional options to be passed to the underlying git.
 	CommandOptions
@@ -165,6 +169,8 @@ type FetchOptions struct {
 	Prune bool
 	// The timeout duration before giving up for each shell command execution. The
 	// default timeout duration will be used when not supplied.
+	//
+	// Deprecated: Use CommandOptions.Timeout instead.
 	Timeout time.Duration
 	// The additional options to be passed to the underlying git.
 	CommandOptions
@@ -200,6 +206,8 @@ type PullOptions struct {
 	Branch string
 	// The timeout duration before giving up for each shell command execution. The
 	// default timeout duration will be used when not supplied.
+	//
+	// Deprecated: Use CommandOptions.Timeout instead.
 	Timeout time.Duration
 	// The additional options to be passed to the underlying git.
 	CommandOptions
@@ -236,6 +244,8 @@ func (r *Repository) Pull(opts ...PullOptions) error {
 type PushOptions struct {
 	// The timeout duration before giving up for each shell command execution. The
 	// default timeout duration will be used when not supplied.
+	//
+	// Deprecated: Use CommandOptions.Timeout instead.
 	Timeout time.Duration
 	// The additional options to be passed to the underlying git.
 	CommandOptions
@@ -272,6 +282,8 @@ type CheckoutOptions struct {
 	BaseBranch string
 	// The timeout duration before giving up for each shell command execution. The
 	// default timeout duration will be used when not supplied.
+	//
+	// Deprecated: Use CommandOptions.Timeout instead.
 	Timeout time.Duration
 	// The additional options to be passed to the underlying git.
 	CommandOptions
@@ -315,6 +327,8 @@ type ResetOptions struct {
 	Hard bool
 	// The timeout duration before giving up for each shell command execution. The
 	// default timeout duration will be used when not supplied.
+	//
+	// Deprecated: Use CommandOptions.Timeout instead.
 	Timeout time.Duration
 	// The additional options to be passed to the underlying git.
 	CommandOptions
@@ -353,6 +367,8 @@ func (r *Repository) Reset(rev string, opts ...ResetOptions) error {
 type MoveOptions struct {
 	// The timeout duration before giving up for each shell command execution. The
 	// default timeout duration will be used when not supplied.
+	//
+	// Deprecated: Use CommandOptions.Timeout instead.
 	Timeout time.Duration
 	// The additional options to be passed to the underlying git.
 	CommandOptions
@@ -391,6 +407,8 @@ type AddOptions struct {
 	Pathspecs []string
 	// The timeout duration before giving up for each shell command execution. The
 	// default timeout duration will be used when not supplied.
+	//
+	// Deprecated: Use CommandOptions.Timeout instead.
 	Timeout time.Duration
 	// The additional options to be passed to the underlying git.
 	CommandOptions
@@ -433,6 +451,8 @@ type CommitOptions struct {
 	Author *Signature
 	// The timeout duration before giving up for each shell command execution. The
 	// default timeout duration will be used when not supplied.
+	//
+	// Deprecated: Use CommandOptions.Timeout instead.
 	Timeout time.Duration
 	// The additional options to be passed to the underlying git.
 	CommandOptions
@@ -488,6 +508,8 @@ type NameStatus struct {
 type ShowNameStatusOptions struct {
 	// The timeout duration before giving up for each shell command execution. The
 	// default timeout duration will be used when not supplied.
+	//
+	// Deprecated: Use CommandOptions.Timeout instead.
 	Timeout time.Duration
 	// The additional options to be passed to the underlying git.
 	CommandOptions
@@ -554,6 +576,8 @@ func (r *Repository) ShowNameStatus(rev string, opts ...ShowNameStatusOptions) (
 type RevParseOptions struct {
 	// The timeout duration before giving up for each shell command execution. The
 	// default timeout duration will be used when not supplied.
+	//
+	// Deprecated: Use CommandOptions.Timeout instead.
 	Timeout time.Duration
 	// The additional options to be passed to the underlying git.
 	CommandOptions
@@ -598,6 +622,8 @@ type CountObject struct {
 type CountObjectsOptions struct {
 	// The timeout duration before giving up for each shell command execution. The
 	// default timeout duration will be used when not supplied.
+	//
+	// Deprecated: Use CommandOptions.Timeout instead.
 	Timeout time.Duration
 	// The additional options to be passed to the underlying git.
 	CommandOptions
@@ -663,6 +689,8 @@ func (r *Repository) CountObjects(opts ...CountObjectsOptions) (*CountObject, er
 type FsckOptions struct {
 	// The timeout duration before giving up for each shell command execution. The
 	// default timeout duration will be used when not supplied.
+	//
+	// Deprecated: Use CommandOptions.Timeout instead.
 	Timeout time.Duration
 	// The additional options to be passed to the underlying git.
 	CommandOptions
