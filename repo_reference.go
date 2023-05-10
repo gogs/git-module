@@ -39,7 +39,11 @@ type Reference struct {
 type ShowRefVerifyOptions struct {
 	// The timeout duration before giving up for each shell command execution. The
 	// default timeout duration will be used when not supplied.
+	//
+	// Deprecated: Use CommandOptions.Timeout instead.
 	Timeout time.Duration
+	// The additional options to be passed to the underlying git.
+	CommandOptions
 }
 
 var ErrReferenceNotExist = errors.New("reference does not exist")
@@ -52,7 +56,8 @@ func ShowRefVerify(repoPath, ref string, opts ...ShowRefVerifyOptions) (string, 
 		opt = opts[0]
 	}
 
-	stdout, err := NewCommand("show-ref", "--verify", ref).RunInDirWithTimeout(opt.Timeout, repoPath)
+	cmd := NewCommand("show-ref", "--verify", ref).AddOptions(opt.CommandOptions)
+	stdout, err := cmd.RunInDirWithTimeout(opt.Timeout, repoPath)
 	if err != nil {
 		if strings.Contains(err.Error(), "not a valid ref") {
 			return "", ErrReferenceNotExist
@@ -137,7 +142,11 @@ type SymbolicRefOptions struct {
 	Ref string
 	// The timeout duration before giving up for each shell command execution. The
 	// default timeout duration will be used when not supplied.
+	//
+	// Deprecated: Use CommandOptions.Timeout instead.
 	Timeout time.Duration
+	// The additional options to be passed to the underlying git.
+	CommandOptions
 }
 
 // SymbolicRef returns the reference name (e.g. "refs/heads/master") pointed by
@@ -149,7 +158,7 @@ func SymbolicRef(repoPath string, opts ...SymbolicRefOptions) (string, error) {
 		opt = opts[0]
 	}
 
-	cmd := NewCommand("symbolic-ref")
+	cmd := NewCommand("symbolic-ref").AddOptions(opt.CommandOptions)
 	if opt.Name == "" {
 		opt.Name = "HEAD"
 	}
@@ -184,6 +193,8 @@ type ShowRefOptions struct {
 	Patterns []string
 	// The timeout duration before giving up for each shell command execution. The
 	// default timeout duration will be used when not supplied.
+	//
+	// Deprecated: Use CommandOptions.Timeout instead.
 	Timeout time.Duration
 	// The additional options to be passed to the underlying git.
 	CommandOptions
@@ -250,7 +261,11 @@ type DeleteBranchOptions struct {
 	Force bool
 	// The timeout duration before giving up for each shell command execution. The
 	// default timeout duration will be used when not supplied.
+	//
+	// Deprecated: Use CommandOptions.Timeout instead.
 	Timeout time.Duration
+	// The additional options to be passed to the underlying git.
+	CommandOptions
 }
 
 // DeleteBranch deletes the branch from the repository in given path.
@@ -260,7 +275,7 @@ func DeleteBranch(repoPath, name string, opts ...DeleteBranchOptions) error {
 		opt = opts[0]
 	}
 
-	cmd := NewCommand("branch")
+	cmd := NewCommand("branch").AddOptions(opt.CommandOptions)
 	if opt.Force {
 		cmd.AddArgs("-D")
 	} else {

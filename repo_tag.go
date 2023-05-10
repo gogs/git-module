@@ -104,6 +104,8 @@ func (r *Repository) getTag(timeout time.Duration, id *SHA1) (*Tag, error) {
 type TagOptions struct {
 	// The timeout duration before giving up for each shell command execution. The
 	// default timeout duration will be used when not supplied.
+	//
+	// Deprecated: Use CommandOptions.Timeout instead.
 	Timeout time.Duration
 	// The additional options to be passed to the underlying git.
 	CommandOptions
@@ -152,6 +154,8 @@ type TagsOptions struct {
 	Pattern string
 	// The timeout duration before giving up for each shell command execution. The
 	// default timeout duration will be used when not supplied.
+	//
+	// Deprecated: Use CommandOptions.Timeout instead.
 	Timeout time.Duration
 	// The additional options to be passed to the underlying git.
 	CommandOptions
@@ -222,6 +226,8 @@ type CreateTagOptions struct {
 	Author *Signature
 	// The timeout duration before giving up for each shell command execution. The
 	// default timeout duration will be used when not supplied.
+	//
+	// Deprecated: Use CommandOptions.Timeout instead.
 	Timeout time.Duration
 	// The additional options to be passed to the underlying git.
 	CommandOptions
@@ -257,7 +263,11 @@ func (r *Repository) CreateTag(name, rev string, opts ...CreateTagOptions) error
 type DeleteTagOptions struct {
 	// The timeout duration before giving up for each shell command execution.
 	// The default timeout duration will be used when not supplied.
+	//
+	// Deprecated: Use CommandOptions.Timeout instead.
 	Timeout time.Duration
+	// The additional options to be passed to the underlying git.
+	CommandOptions
 }
 
 // DeleteTag deletes a tag from the repository.
@@ -267,6 +277,8 @@ func (r *Repository) DeleteTag(name string, opts ...DeleteTagOptions) error {
 		opt = opts[0]
 	}
 
-	_, err := NewCommand("tag", "--delete", name).RunInDirWithTimeout(opt.Timeout, r.path)
+	_, err := NewCommand("tag", "--delete", name).
+		AddOptions(opt.CommandOptions).
+		RunInDirWithTimeout(opt.Timeout, r.path)
 	return err
 }
