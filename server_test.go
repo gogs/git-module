@@ -1,3 +1,7 @@
+// Copyright 2023 The Gogs Authors. All rights reserved.
+// Use of this source code is governed by a MIT-style
+// license that can be found in the LICENSE file.
+
 package git
 
 import (
@@ -6,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestUpdateServerInfo(t *testing.T) {
@@ -18,10 +23,11 @@ func TestUpdateServerInfo(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run("update-server-info", func(t *testing.T) {
-			_, err := UpdateServerInfo(test.path, UpdateServerInfoOptions{Force: true})
-			assert.NoError(t, err)
-			_, err = os.Stat(filepath.Join(test.path, "info", "refs"))
-			assert.NoError(t, err)
+			err := os.RemoveAll(filepath.Join(test.path, "info"))
+			require.NoError(t, err)
+			err = UpdateServerInfo(test.path, UpdateServerInfoOptions{Force: true})
+			require.NoError(t, err)
+			assert.True(t, isFile(filepath.Join(test.path, "info", "refs")))
 		})
 	}
 }

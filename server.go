@@ -22,7 +22,7 @@ type UpdateServerInfoOptions struct {
 
 // UpdateServerInfo updates the auxiliary info file on the server side for the
 // repository in given path.
-func UpdateServerInfo(path string, opts ...UpdateServerInfoOptions) ([]byte, error) {
+func UpdateServerInfo(path string, opts ...UpdateServerInfoOptions) error {
 	var opt UpdateServerInfoOptions
 	if len(opts) > 0 {
 		opt = opts[0]
@@ -31,8 +31,8 @@ func UpdateServerInfo(path string, opts ...UpdateServerInfoOptions) ([]byte, err
 	if opt.Force {
 		cmd.AddArgs("--force")
 	}
-	cmd.AddArgs(".")
-	return cmd.RunInDirWithTimeout(opt.Timeout, path)
+	_, err := cmd.RunInDirWithTimeout(opt.Timeout, path)
+	return err
 }
 
 // ReceivePackOptions contains optional arguments for receiving the info pushed
