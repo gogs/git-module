@@ -1,20 +1,27 @@
+// Copyright 2023 The Gogs Authors. All rights reserved.
+// Use of this source code is governed by a MIT-style
+// license that can be found in the LICENSE file.
+
 package git
 
 import "time"
 
-// UpdateServerInfoOptions represents the available UpdateServerInfo() options.
+// UpdateServerInfoOptions contains optional arguments for updating auxiliary
+// info file on the server side.
+//
+// Docs: https://git-scm.com/docs/git-update-server-info
 type UpdateServerInfoOptions struct {
-	// Force indicates to overwrite the existing server info.
+	// Indicates whether to overwrite the existing server info.
 	Force bool
-	// Timeout represents the maximum time in duration that the command is allowed to run.
-	//
-	// Deprecated: Use CommandOptions.Timeout instead.
+	// The timeout duration before giving up for each shell command execution. The
+	// default timeout duration will be used when not supplied.
 	Timeout time.Duration
 	// The additional options to be passed to the underlying git.
 	CommandOptions
 }
 
-// UpdateServerInfo updates the server info in the repository.
+// UpdateServerInfo updates the auxiliary info file on the server side for the
+// repository in given path.
 func UpdateServerInfo(path string, opts ...UpdateServerInfoOptions) ([]byte, error) {
 	var opt UpdateServerInfoOptions
 	if len(opts) > 0 {
@@ -28,22 +35,23 @@ func UpdateServerInfo(path string, opts ...UpdateServerInfoOptions) ([]byte, err
 	return cmd.RunInDirWithTimeout(opt.Timeout, path)
 }
 
-// ReceivePackOptions represents the available options for ReceivePack().
+// ReceivePackOptions contains optional arguments for receiving the info pushed
+// to the repository.
+//
+// Docs: https://git-scm.com/docs/git-receive-pack
 type ReceivePackOptions struct {
-	// Quiet is true for not printing anything to stdout.
+	// Indicates whether to suppress the log output.
 	Quiet bool
-	// Timeout represents the maximum time in duration that the command is allowed to run.
-	//
-	// Deprecated: Use CommandOptions.Timeout instead.
+	// Indicates whether to generate the "info/refs" used by the "git http-backend".
+	HTTPBackendInfoRefs bool
+	// The timeout duration before giving up for each shell command execution. The
+	// default timeout duration will be used when not supplied.
 	Timeout time.Duration
-	// HttpBackendInfoRefs indicates generating the info/refs in the
-	// http-backend. This is used for smart http.
-	HttpBackendInfoRefs bool
 	// The additional options to be passed to the underlying git.
 	CommandOptions
 }
 
-// RecevePack receives the packfile from the client.
+// ReceivePack receives what is pushed into the repository in given path.
 func ReceivePack(path string, opts ...ReceivePackOptions) ([]byte, error) {
 	var opt ReceivePackOptions
 	if len(opts) > 0 {
@@ -53,31 +61,33 @@ func ReceivePack(path string, opts ...ReceivePackOptions) ([]byte, error) {
 	if opt.Quiet {
 		cmd.AddArgs("--quiet")
 	}
-	if opt.HttpBackendInfoRefs {
+	if opt.HTTPBackendInfoRefs {
 		cmd.AddArgs("--http-backend-info-refs")
 	}
 	cmd.AddArgs(".")
 	return cmd.RunInDirWithTimeout(opt.Timeout, path)
 }
 
-// UploadPackOptions represents the available options for UploadPack().
+// UploadPackOptions contains optional arguments for sending the packfile to the
+// client.
+//
+// Docs: https://git-scm.com/docs/git-upload-pack
 type UploadPackOptions struct {
-	// Quit after a single request/response exchange.
+	// Indicates whether to quit after a single request/response exchange.
 	StatelessRPC bool
-	// Do not try <directory>/.git/ if <directory> is no Git directory.
+	// Indicates whether to not try "<directory>/.git/" if "<directory>" is not a
+	// Git directory.
 	Strict bool
-	// Interrupt transfer after <n> seconds of inactivity.
-	// Note: this is different from CommandOptions.Timeout which is the maximum
-	// time in duration that the command is allowed to run.
+	// Indicates whether to generate the "info/refs" used by the "git http-backend".
+	HTTPBackendInfoRefs bool
+	// The timeout duration before giving up for each shell command execution. The
+	// default timeout duration will be used when not supplied.
 	Timeout time.Duration
-	// HttpBackendInfoRefs indicates generating the info/refs in the
-	// http-backend. This is used for smart http.
-	HttpBackendInfoRefs bool
 	// The additional options to be passed to the underlying git.
 	CommandOptions
 }
 
-// UploadPack uploads the packfile to the client.
+// UploadPack sends the packfile to the client for the repository in given path.
 func UploadPack(path string, opts ...UploadPackOptions) ([]byte, error) {
 	var opt UploadPackOptions
 	if len(opts) > 0 {
@@ -93,24 +103,27 @@ func UploadPack(path string, opts ...UploadPackOptions) ([]byte, error) {
 	if opt.Timeout > 0 {
 		cmd.AddArgs("--timeout", opt.Timeout.String())
 	}
-	if opt.HttpBackendInfoRefs {
+	if opt.HTTPBackendInfoRefs {
 		cmd.AddArgs("--http-backend-info-refs")
 	}
 	cmd.AddArgs(".")
 	return cmd.RunInDirWithTimeout(opt.Timeout, path)
 }
 
-// UploadArchiveOptions represents the available options for UploadArchive().
+// UploadArchiveOptions contains optional arguments for sending the archive to
+// the client.
+//
+// Docs: https://git-scm.com/docs/git-upload-archive
 type UploadArchiveOptions struct {
-	// Timeout represents the maximum time in duration that the command is allowed to run.
-	//
-	// Deprecated: Use CommandOptions.Timeout instead.
+	// The timeout duration before giving up for each shell command execution. The
+	// default timeout duration will be used when not supplied.
 	Timeout time.Duration
 	// The additional options to be passed to the underlying git.
 	CommandOptions
 }
 
-// UploadArchive uploads the archive to the client.
+// UploadArchive sends the archive to the client for the repository in given
+// path.
 func UploadArchive(path string, opts ...UploadArchiveOptions) ([]byte, error) {
 	var opt UploadArchiveOptions
 	if len(opts) > 0 {
