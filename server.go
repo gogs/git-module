@@ -4,7 +4,9 @@
 
 package git
 
-import "time"
+import (
+	"time"
+)
 
 // UpdateServerInfoOptions contains optional arguments for updating auxiliary
 // info file on the server side.
