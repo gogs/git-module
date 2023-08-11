@@ -111,27 +111,3 @@ func UploadPack(path string, opts ...UploadPackOptions) ([]byte, error) {
 	cmd.AddArgs(".")
 	return cmd.RunInDirWithTimeout(opt.Timeout, path)
 }
-
-// UploadArchiveOptions contains optional arguments for sending the archive to
-// the client.
-//
-// Docs: https://git-scm.com/docs/git-upload-archive
-type UploadArchiveOptions struct {
-	// The timeout duration before giving up for each shell command execution. The
-	// default timeout duration will be used when not supplied.
-	Timeout time.Duration
-	// The additional options to be passed to the underlying git.
-	CommandOptions
-}
-
-// UploadArchive sends the archive to the client for the repository in given
-// path.
-func UploadArchive(path string, opts ...UploadArchiveOptions) ([]byte, error) {
-	var opt UploadArchiveOptions
-	if len(opts) > 0 {
-		opt = opts[0]
-	}
-	cmd := NewCommand("upload-archive").AddOptions(opt.CommandOptions)
-	cmd.AddArgs(".")
-	return cmd.RunInDirWithTimeout(opt.Timeout, path)
-}

@@ -40,4 +40,3 @@ func TestUploadPack(t *testing.T) {
 	const contains = "multi_ack thin-pack side-band side-band-64k ofs-delta shallow deepen-since deepen-not deepen-relative no-progress include-tag multi_ack_detailed no-done symref=HEAD:refs/heads/master object-format=sha1 agent=git/"
 	assert.Contains(t, string(got), contains)
 }
-
