@@ -255,7 +255,7 @@ func (r *Repository) Branches() ([]string, error) {
 
 // DeleteBranchOptions contains optional arguments for deleting a branch.
 //
-// // Docs: https://git-scm.com/docs/git-branch
+// Docs: https://git-scm.com/docs/git-branch
 type DeleteBranchOptions struct {
 	// Indicates whether to force delete the branch.
 	Force bool
