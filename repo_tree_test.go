@@ -11,17 +11,36 @@ import (
 )
 
 func TestRepository_LsTree(t *testing.T) {
-	// Make sure it does not blow up
-	tree, err := testrepo.LsTree("master", LsTreeOptions{})
-	if err != nil {
-		t.Fatal(err)
+	tests := []struct {
+		options LsTreeOptions
+	}{
+		{
+			options: LsTreeOptions{},
+		},
+		{
+			options: LsTreeOptions{
+				CommandOptions: CommandOptions{
+					Args: []string{"-z"},
+				},
+			},
+		},
 	}
-	assert.NotNil(t, tree)
 
-	// Tree ID for "gogs/" directory
-	tree, err = testrepo.LsTree("fcf7087e732bfe3c25328248a9bf8c3ccd85bed4", LsTreeOptions{})
-	if err != nil {
-		t.Fatal(err)
+	for _, test := range tests {
+		t.Run("", func(t *testing.T) {
+			// Make sure it does not blow up
+			tree, err := testrepo.LsTree("master", test.options)
+			if err != nil {
+				t.Fatal(err)
+			}
+			assert.NotNil(t, tree)
+
+			// Tree ID for "gogs/" directory
+			tree, err = testrepo.LsTree("fcf7087e732bfe3c25328248a9bf8c3ccd85bed4", test.options)
+			if err != nil {
+				t.Fatal(err)
+			}
+			assert.NotNil(t, tree)
+		})
 	}
-	assert.NotNil(t, tree)
 }
