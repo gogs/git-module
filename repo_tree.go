@@ -7,6 +7,7 @@ package git
 import (
 	"bytes"
 	"fmt"
+	"strings"
 	"time"
 )
 
@@ -31,7 +32,7 @@ var (
 
 // parseTree parses tree information from the (uncompressed) raw data of the
 // tree object.
-func parseTree(t *Tree, data []byte) ([]*TreeEntry, error) {
+func parseTree(t *Tree, data []byte, lineTerminator byte) ([]*TreeEntry, error) {
 	entries := make([]*TreeEntry, 0, 10)
 	l := len(data)
 	pos := 0
@@ -70,7 +71,7 @@ func parseTree(t *Tree, data []byte) ([]*TreeEntry, error) {
 		entry.id = id
 		pos += step + 1 // Skip half of SHA1.
 
-		step = bytes.IndexByte(data[pos:], '\n')
+		step = bytes.IndexByte(data[pos:], lineTerminator)
 
 		// In case entry name is surrounded by double quotes(it happens only in git-shell).
 		if data[pos] == '"' {
@@ -129,7 +130,19 @@ func (r *Repository) LsTree(treeID string, opts ...LsTreeOptions) (*Tree, error)
 		return nil, err
 	}
 
-	t.entries, err = parseTree(t, stdout)
+	outputVerbatim := false
+	for _, arg := range opt.CommandOptions.Args {
+		if strings.TrimSpace(arg) == "-z" {
+			outputVerbatim = true
+			break
+		}
+	}
+	var lineTerminator byte = '\n'
+	if outputVerbatim {
+		lineTerminator = '\u0000'
+	}
+
+	t.entries, err = parseTree(t, stdout, lineTerminator)
 	if err != nil {
 		return nil, err
 	}
