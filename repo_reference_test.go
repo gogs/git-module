@@ -168,7 +168,7 @@ func TestRepository_SymbolicRef(t *testing.T) {
 
 	// Set a symbolic reference
 	_, err = r.SymbolicRef(SymbolicRefOptions{
-		Name: "TEST-REF",
+		Name: "TEST_REF",
 		Ref:  RefsHeads + "develop",
 	})
 	if err != nil {
@@ -177,7 +177,7 @@ func TestRepository_SymbolicRef(t *testing.T) {
 
 	// Get the symbolic reference we just set
 	ref, err = r.SymbolicRef(SymbolicRefOptions{
-		Name: "TEST-REF",
+		Name: "TEST_REF",
 	})
 	if err != nil {
 		t.Fatal(err)
