@@ -62,18 +62,4 @@ jobs:
         with:
           go-version: ${{ matrix.go-version }}
       - name: Run tests with coverage
-        continue-on-error: true
-        run: go test -shuffle=on -v -race -coverprofile=coverage -covermode=atomic -json ./... > test-report.json
-        env:
-          PGPORT: 5432
-          PGHOST: localhost
-          PGUSER: postgres
-          PGPASSWORD: postgres
-          PGDATABASE: postgres
-          PGSSLMODE: disable
-          REDIS_HOST: localhost
-          REDIS_PORT: 6379
-      - name: Analyze test report
-        run: |
-          go install github.com/mfridman/tparse@latest
-          tparse -all -file=test-report.json
+        run: go test -v -race -coverprofile=coverage -covermode=atomic ./...
