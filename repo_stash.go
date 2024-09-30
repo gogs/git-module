@@ -12,10 +12,8 @@ import (
 type Stash struct {
 	// Index is the index of the stash.
 	Index int
-
 	// Message is the message of the stash.
 	Message string
-
 	// Files is the list of files in the stash.
 	Files []string
 }
@@ -36,44 +34,43 @@ func (r *Repository) StashList(opts ...StashListOptions) ([]*Stash, error) {
 		opt = opts[0]
 	}
 
-	stash := make([]*Stash, 0)
+	stashes := make([]*Stash, 0)
 	cmd := NewCommand("stash", "list", "--name-only").AddOptions(opt.CommandOptions)
 	stdout, stderr := new(bytes.Buffer), new(bytes.Buffer)
 	if err := cmd.RunInDirPipeline(stdout, stderr, r.path); err != nil {
 		return nil, concatenateError(err, stderr.String())
 	}
 
-	var entry *Stash
+	var stash *Stash
 	lines := strings.Split(stdout.String(), "\n")
 	for i := 0; i < len(lines); i++ {
 		line := strings.TrimSpace(lines[i])
 		// Init entry
 		if match := stashLineRegexp.FindStringSubmatch(line); len(match) == 3 {
-			if entry != nil {
-				stash = append(stash, entry)
+			// Append the previous stash
+			if stash != nil {
+				stashes = append(stashes, stash)
 			}
 
 			idx, err := strconv.Atoi(match[1])
 			if err != nil {
 				idx = -1
 			}
-			entry = &Stash{
+			stash = &Stash{
 				Index:   idx,
 				Message: match[2],
 				Files:   make([]string, 0),
 			}
-		} else if entry != nil && line != "" {
-			entry.Files = append(entry.Files, line)
-		} else {
-			continue
+		} else if stash != nil && line != "" {
+			stash.Files = append(stash.Files, line)
 		}
 	}
 
-	if entry != nil {
-		stash = append(stash, entry)
+	// Append the last stash
+	if stash != nil {
+		stashes = append(stashes, stash)
 	}
-
-	return stash, nil
+	return stashes, nil
 }
 
 // StashDiff returns a parsed diff object for the given stash index.
@@ -90,7 +87,7 @@ func (r *Repository) StashDiff(index int, maxFiles, maxFileLines, maxLineChars i
 	go StreamParseDiff(stdout, done, maxFiles, maxFileLines, maxLineChars)
 
 	stderr := new(bytes.Buffer)
-	err := cmd.RunInDirPipelineWithTimeout(opt.Timeout, w, stderr, r.path)
+	err := cmd.RunInDirPipeline(w, stderr, r.path)
 	_ = w.Close() // Close writer to exit parsing goroutine
 	if err != nil {
 		return nil, concatenateError(err, stderr.String())
