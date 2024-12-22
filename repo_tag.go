@@ -248,6 +248,8 @@ func (r *Repository) CreateTag(name, rev string, opts ...CreateTagOptions) error
 			cmd.AddCommitter(opt.Author)
 		}
 	} else {
+		// 🚨 SECURITY: Prevent including unintended options in the path to the Git command.
+		cmd.AddArgs("--end-of-options")
 		cmd.AddArgs(name)
 	}
 
