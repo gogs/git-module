@@ -96,6 +96,7 @@ func (r *Repository) Grep(pattern string, opts ...GrepOptions) []*GrepResult {
 	if opt.ExtendedRegexp {
 		cmd.AddArgs("--extended-regexp")
 	}
+	cmd.AddArgs("--end-of-options")
 	cmd.AddArgs(pattern, opt.Tree)
 	if opt.Pathspec != "" {
 		cmd.AddArgs("--", opt.Pathspec)

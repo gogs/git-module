@@ -83,6 +83,7 @@ func Init(path string, opts ...InitOptions) error {
 	if opt.Bare {
 		cmd.AddArgs("--bare")
 	}
+	cmd.AddArgs("--end-of-options")
 	_, err = cmd.RunInDirWithTimeout(opt.Timeout, path)
 	return err
 }
@@ -157,6 +158,7 @@ func Clone(url, dst string, opts ...CloneOptions) error {
 		cmd.AddArgs("--depth", strconv.FormatUint(opt.Depth, 10))
 	}
 
+	cmd.AddArgs("--end-of-options")
 	_, err = cmd.AddArgs(url, dst).RunWithTimeout(opt.Timeout)
 	return err
 }
@@ -259,7 +261,7 @@ func Push(repoPath, remote, branch string, opts ...PushOptions) error {
 		opt = opts[0]
 	}
 
-	cmd := NewCommand("push").AddOptions(opt.CommandOptions).AddArgs(remote, branch)
+	cmd := NewCommand("push").AddOptions(opt.CommandOptions).AddArgs("--end-of-options", remote, branch)
 	_, err := cmd.RunInDirWithTimeout(opt.Timeout, repoPath)
 	return err
 }
@@ -346,7 +348,7 @@ func Reset(repoPath, rev string, opts ...ResetOptions) error {
 		cmd.AddArgs("--hard")
 	}
 
-	_, err := cmd.AddOptions(opt.CommandOptions).AddArgs(rev).RunInDir(repoPath)
+	_, err := cmd.AddOptions(opt.CommandOptions).AddArgs("--end-of-options", rev).RunInDir(repoPath)
 	return err
 }
 
@@ -382,7 +384,7 @@ func Move(repoPath, src, dst string, opts ...MoveOptions) error {
 		opt = opts[0]
 	}
 
-	_, err := NewCommand("mv").AddOptions(opt.CommandOptions).AddArgs(src, dst).RunInDirWithTimeout(opt.Timeout, repoPath)
+	_, err := NewCommand("mv").AddOptions(opt.CommandOptions).AddArgs("--end-of-options", src, dst).RunInDirWithTimeout(opt.Timeout, repoPath)
 	return err
 }
 
@@ -549,7 +551,7 @@ func ShowNameStatus(repoPath, rev string, opts ...ShowNameStatusOptions) (*NameS
 	stderr := new(bytes.Buffer)
 	cmd := NewCommand("show", "--name-status", "--pretty=format:''").
 		AddOptions(opt.CommandOptions).
-		AddArgs(rev)
+		AddArgs("--end-of-options", rev)
 	err := cmd.RunInDirPipelineWithTimeout(opt.Timeout, w, stderr, repoPath)
 	_ = w.Close() // Close writer to exit parsing goroutine
 	if err != nil {

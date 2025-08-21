@@ -221,7 +221,7 @@ func (r *Repository) Log(rev string, opts ...LogOptions) ([]*Commit, error) {
 
 	cmd := NewCommand("log").
 		AddOptions(opt.CommandOptions).
-		AddArgs("--pretty="+LogFormatHashOnly, rev)
+		AddArgs("--pretty=" + LogFormatHashOnly)
 	if opt.MaxCount > 0 {
 		cmd.AddArgs("--max-count=" + strconv.Itoa(opt.MaxCount))
 	}
@@ -237,6 +237,7 @@ func (r *Repository) Log(rev string, opts ...LogOptions) ([]*Commit, error) {
 	if opt.RegexpIgnoreCase {
 		cmd.AddArgs("--regexp-ignore-case")
 	}
+	cmd.AddArgs("--end-of-options", rev)
 	cmd.AddArgs("--")
 	if opt.Path != "" {
 		cmd.AddArgs(escapePath(opt.Path))
@@ -406,6 +407,7 @@ func DiffNameOnly(repoPath, base, head string, opts ...DiffNameOnlyOptions) ([]s
 	cmd := NewCommand("diff").
 		AddOptions(opt.CommandOptions).
 		AddArgs("--name-only")
+	cmd.AddArgs("--end-of-options")
 	if opt.NeedsMergeBase {
 		cmd.AddArgs(base + "..." + head)
 	} else {
@@ -471,7 +473,8 @@ func (r *Repository) RevListCount(refspecs []string, opts ...RevListCountOptions
 
 	cmd := NewCommand("rev-list").
 		AddOptions(opt.CommandOptions).
-		AddArgs("--count")
+		AddArgs("--count").
+		AddArgs("--end-of-options")
 	cmd.AddArgs(refspecs...)
 	cmd.AddArgs("--")
 	if opt.Path != "" {
@@ -512,6 +515,7 @@ func (r *Repository) RevList(refspecs []string, opts ...RevListOptions) ([]*Comm
 	}
 
 	cmd := NewCommand("rev-list").AddOptions(opt.CommandOptions)
+	cmd.AddArgs("--end-of-options")
 	cmd.AddArgs(refspecs...)
 	cmd.AddArgs("--")
 	if opt.Path != "" {

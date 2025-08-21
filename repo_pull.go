@@ -32,6 +32,7 @@ func MergeBase(repoPath, base, head string, opts ...MergeBaseOptions) (string, e
 
 	stdout, err := NewCommand("merge-base").
 		AddOptions(opt.CommandOptions).
+		AddArgs("--end-of-options").
 		AddArgs(base, head).
 		RunInDirWithTimeout(opt.Timeout, repoPath)
 	if err != nil {
