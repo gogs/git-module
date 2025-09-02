@@ -4,7 +4,7 @@ go 1.24
 
 require (
 	github.com/mcuadros/go-version v0.0.0-20190308113854-92cdf37c5b75
-	github.com/stretchr/testify v1.10.0
+	github.com/stretchr/testify v1.11.1
 	golang.org/x/sync v0.16.0
 )
 
