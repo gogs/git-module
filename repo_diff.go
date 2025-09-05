@@ -45,7 +45,7 @@ func (r *Repository) Diff(rev string, maxFiles, maxFileLines, maxLineChars int, 
 		if commit.ParentsCount() == 0 {
 			cmd = cmd.AddArgs("show").
 				AddOptions(opt.CommandOptions).
-				AddArgs("--full-index", rev)
+				AddArgs("--full-index", "--end-of-options", rev)
 		} else {
 			c, err := commit.Parent(0)
 			if err != nil {
@@ -53,12 +53,12 @@ func (r *Repository) Diff(rev string, maxFiles, maxFileLines, maxLineChars int, 
 			}
 			cmd = cmd.AddArgs("diff").
 				AddOptions(opt.CommandOptions).
-				AddArgs("--full-index", "-M", c.ID.String(), rev)
+				AddArgs("--full-index", "-M", c.ID.String(), "--end-of-options", rev)
 		}
 	} else {
 		cmd = cmd.AddArgs("diff").
 			AddOptions(opt.CommandOptions).
-			AddArgs("--full-index", "-M", opt.Base, rev)
+			AddArgs("--full-index", "-M", opt.Base, "--end-of-options", rev)
 	}
 
 	stdout, w := io.Pipe()
@@ -114,7 +114,7 @@ func (r *Repository) RawDiff(rev string, diffType RawDiffFormat, w io.Writer, op
 		if commit.ParentsCount() == 0 {
 			cmd = cmd.AddArgs("show").
 				AddOptions(opt.CommandOptions).
-				AddArgs("--full-index", rev)
+				AddArgs("--full-index", "--end-of-options", rev)
 		} else {
 			c, err := commit.Parent(0)
 			if err != nil {
@@ -122,13 +122,13 @@ func (r *Repository) RawDiff(rev string, diffType RawDiffFormat, w io.Writer, op
 			}
 			cmd = cmd.AddArgs("diff").
 				AddOptions(opt.CommandOptions).
-				AddArgs("--full-index", "-M", c.ID.String(), rev)
+				AddArgs("--full-index", "-M", c.ID.String(), "--end-of-options", rev)
 		}
 	case RawDiffPatch:
 		if commit.ParentsCount() == 0 {
 			cmd = cmd.AddArgs("format-patch").
 				AddOptions(opt.CommandOptions).
-				AddArgs("--full-index", "--no-signoff", "--no-signature", "--stdout", "--root", rev)
+				AddArgs("--full-index", "--no-signoff", "--no-signature", "--stdout", "--root", "--end-of-options", rev)
 		} else {
 			c, err := commit.Parent(0)
 			if err != nil {
@@ -136,7 +136,7 @@ func (r *Repository) RawDiff(rev string, diffType RawDiffFormat, w io.Writer, op
 			}
 			cmd = cmd.AddArgs("format-patch").
 				AddOptions(opt.CommandOptions).
-				AddArgs("--full-index", "--no-signoff", "--no-signature", "--stdout", rev+"..."+c.ID.String())
+				AddArgs("--full-index", "--no-signoff", "--no-signature", "--stdout", "--end-of-options", rev+"..."+c.ID.String())
 		}
 	default:
 		return fmt.Errorf("invalid diffType: %s", diffType)
