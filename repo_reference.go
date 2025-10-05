@@ -56,7 +56,7 @@ func ShowRefVerify(repoPath, ref string, opts ...ShowRefVerifyOptions) (string, 
 		opt = opts[0]
 	}
 
-	cmd := NewCommand("show-ref", "--verify", ref).AddOptions(opt.CommandOptions)
+	cmd := NewCommand("show-ref", "--verify", "--end-of-options", ref).AddOptions(opt.CommandOptions)
 	stdout, err := cmd.RunInDirWithTimeout(opt.Timeout, repoPath)
 	if err != nil {
 		if strings.Contains(err.Error(), "not a valid ref") {
@@ -162,6 +162,7 @@ func SymbolicRef(repoPath string, opts ...SymbolicRefOptions) (string, error) {
 	if opt.Name == "" {
 		opt.Name = "HEAD"
 	}
+	cmd.AddArgs("--end-of-options")
 	cmd.AddArgs(opt.Name)
 	if opt.Ref != "" {
 		cmd.AddArgs(opt.Ref)
@@ -281,6 +282,7 @@ func DeleteBranch(repoPath, name string, opts ...DeleteBranchOptions) error {
 	} else {
 		cmd.AddArgs("-d")
 	}
+	cmd.AddArgs("--end-of-options")
 	_, err := cmd.AddArgs(name).RunInDirWithTimeout(opt.Timeout, repoPath)
 	return err
 }
