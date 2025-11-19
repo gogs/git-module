@@ -249,9 +249,7 @@ func (r *Repository) CreateTag(name, rev string, opts ...CreateTagOptions) error
 		}
 		cmd.AddArgs("--end-of-options")
 	} else {
-		// 🚨 SECURITY: Prevent including unintended options in the path to the Git command.
-		cmd.AddArgs("--end-of-options")
-		cmd.AddArgs(name)
+		cmd.AddArgs("--end-of-options", name)
 	}
 
 	cmd.AddArgs(rev)
