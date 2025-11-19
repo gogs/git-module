@@ -49,7 +49,7 @@ func LsRemote(url string, opts ...LsRemoteOptions) ([]*Reference, error) {
 	if opt.Refs {
 		cmd.AddArgs("--refs")
 	}
-	cmd.AddArgs(url)
+	cmd.AddArgs("--end-of-options", url)
 	if len(opt.Patterns) > 0 {
 		cmd.AddArgs(opt.Patterns...)
 	}
@@ -121,7 +121,7 @@ func RemoteAdd(repoPath, name, url string, opts ...RemoteAddOptions) error {
 		cmd.AddArgs("--mirror=fetch")
 	}
 
-	_, err := cmd.AddArgs(name, url).RunInDirWithTimeout(opt.Timeout, repoPath)
+	_, err := cmd.AddArgs("--end-of-options", name, url).RunInDirWithTimeout(opt.Timeout, repoPath)
 	return err
 }
 
@@ -166,7 +166,7 @@ func RemoteRemove(repoPath, name string, opts ...RemoteRemoveOptions) error {
 
 	_, err := NewCommand("remote", "remove").
 		AddOptions(opt.CommandOptions).
-		AddArgs(name).
+		AddArgs("--end-of-options", name).
 		RunInDirWithTimeout(opt.Timeout, repoPath)
 	if err != nil {
 		// the error status may differ from git clients
@@ -263,7 +263,7 @@ func RemoteGetURL(repoPath, name string, opts ...RemoteGetURLOptions) ([]string,
 		cmd.AddArgs("--all")
 	}
 
-	stdout, err := cmd.AddArgs(name).RunInDirWithTimeout(opt.Timeout, repoPath)
+	stdout, err := cmd.AddArgs("--end-of-options", name).RunInDirWithTimeout(opt.Timeout, repoPath)
 	if err != nil {
 		return nil, err
 	}
@@ -306,7 +306,7 @@ func RemoteSetURL(repoPath, name, newurl string, opts ...RemoteSetURLOptions) er
 		cmd.AddArgs("--push")
 	}
 
-	cmd.AddArgs(name, newurl)
+	cmd.AddArgs("--end-of-options", name, newurl)
 
 	if opt.Regex != "" {
 		cmd.AddArgs(opt.Regex)
@@ -361,7 +361,7 @@ func RemoteSetURLAdd(repoPath, name, newurl string, opts ...RemoteSetURLAddOptio
 		cmd.AddArgs("--push")
 	}
 
-	cmd.AddArgs(name, newurl)
+	cmd.AddArgs("--end-of-options", name, newurl)
 
 	_, err := cmd.RunInDirWithTimeout(opt.Timeout, repoPath)
 	if err != nil && strings.Contains(err.Error(), "Will not delete all non-push URLs") {
@@ -407,7 +407,7 @@ func RemoteSetURLDelete(repoPath, name, regex string, opts ...RemoteSetURLDelete
 		cmd.AddArgs("--push")
 	}
 
-	cmd.AddArgs(name, regex)
+	cmd.AddArgs("--end-of-options", name, regex)
 
 	_, err := cmd.RunInDirWithTimeout(opt.Timeout, repoPath)
 	if err != nil && strings.Contains(err.Error(), "Will not delete all non-push URLs") {

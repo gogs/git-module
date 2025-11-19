@@ -247,10 +247,9 @@ func (r *Repository) CreateTag(name, rev string, opts ...CreateTagOptions) error
 		if opt.Author != nil {
 			cmd.AddCommitter(opt.Author)
 		}
-	} else {
-		// 🚨 SECURITY: Prevent including unintended options in the path to the Git command.
 		cmd.AddArgs("--end-of-options")
-		cmd.AddArgs(name)
+	} else {
+		cmd.AddArgs("--end-of-options", name)
 	}
 
 	cmd.AddArgs(rev)
@@ -279,7 +278,7 @@ func (r *Repository) DeleteTag(name string, opts ...DeleteTagOptions) error {
 		opt = opts[0]
 	}
 
-	_, err := NewCommand("tag", "--delete", name).
+	_, err := NewCommand("tag", "--delete", "--end-of-options", name).
 		AddOptions(opt.CommandOptions).
 		RunInDirWithTimeout(opt.Timeout, r.path)
 	return err
