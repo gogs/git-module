@@ -237,8 +237,7 @@ func (r *Repository) Log(rev string, opts ...LogOptions) ([]*Commit, error) {
 	if opt.RegexpIgnoreCase {
 		cmd.AddArgs("--regexp-ignore-case")
 	}
-	cmd.AddArgs("--end-of-options", rev)
-	cmd.AddArgs("--")
+	cmd.AddArgs("--end-of-options", rev, "--")
 	if opt.Path != "" {
 		cmd.AddArgs(escapePath(opt.Path))
 	}
