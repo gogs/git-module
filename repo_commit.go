@@ -472,8 +472,10 @@ func (r *Repository) RevListCount(refspecs []string, opts ...RevListCountOptions
 
 	cmd := NewCommand("rev-list").
 		AddOptions(opt.CommandOptions).
-		AddArgs("--count").
-		AddArgs("--end-of-options")
+		AddArgs(
+			"--count",
+			"--end-of-options",
+		)
 	cmd.AddArgs(refspecs...)
 	cmd.AddArgs("--")
 	if opt.Path != "" {
