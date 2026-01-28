@@ -10,28 +10,42 @@ import (
 	"time"
 )
 
-// UnescapeChars reverses escaped characters.
+// UnescapeChars reverses escaped characters in quoted output from Git.
 func UnescapeChars(in []byte) []byte {
-	if bytes.ContainsAny(in, "\\\t") {
+	if !bytes.ContainsRune(in, '\\') {
 		return in
 	}
 
-	out := bytes.Replace(in, escapedSlash, regularSlash, -1)
-	out = bytes.Replace(out, escapedTab, regularTab, -1)
+	out := make([]byte, 0, len(in))
+	for i := 0; i < len(in); i++ {
+		if in[i] == '\\' && i+1 < len(in) {
+			switch in[i+1] {
+			case '\\':
+				out = append(out, '\\')
+				i++
+			case '"':
+				out = append(out, '"')
+				i++
+			case 't':
+				out = append(out, '\t')
+				i++
+			case 'n':
+				out = append(out, '\n')
+				i++
+			default:
+				out = append(out, in[i])
+			}
+		} else {
+			out = append(out, in[i])
+		}
+	}
 	return out
 }
 
-// Predefine []byte variables to avoid runtime allocations.
-var (
-	escapedSlash = []byte(`\\`)
-	regularSlash = []byte(`\`)
-	escapedTab   = []byte(`\t`)
-	regularTab   = []byte("\t")
-)
-
 // parseTree parses tree information from the (uncompressed) raw data of the
-// tree object.
-func parseTree(t *Tree, data []byte) ([]*TreeEntry, error) {
+// tree object. The lineTerminator specifies the character used to separate
+// entries ('\n' for normal output, '\x00' for verbatim output).
+func parseTree(t *Tree, data []byte, lineTerminator byte) ([]*TreeEntry, error) {
 	entries := make([]*TreeEntry, 0, 10)
 	l := len(data)
 	pos := 0
@@ -70,9 +84,7 @@ func parseTree(t *Tree, data []byte) ([]*TreeEntry, error) {
 		entry.id = id
 		pos += step + 1 // Skip half of SHA1.
 
-		step = bytes.IndexByte(data[pos:], '\n')
-
-		// In case entry name is surrounded by double quotes(it happens only in git-shell).
+		step = bytes.IndexByte(data[pos:], lineTerminator)
 		if data[pos] == '"' {
 			entry.name = string(UnescapeChars(data[pos+1 : pos+step-1]))
 		} else {
@@ -89,12 +101,15 @@ func parseTree(t *Tree, data []byte) ([]*TreeEntry, error) {
 //
 // Docs: https://git-scm.com/docs/git-ls-tree
 type LsTreeOptions struct {
+	// Verbatim outputs filenames unquoted using the -z flag. This avoids issues
+	// with special characters in filenames that would otherwise be quoted by Git.
+	Verbatim bool
 	// The timeout duration before giving up for each shell command execution. The
 	// default timeout duration will be used when not supplied.
 	//
 	// Deprecated: Use CommandOptions.Timeout instead.
 	Timeout time.Duration
-	// The additional options to be passed to the underlying git.
+	// The additional options to be passed to the underlying Git.
 	CommandOptions
 }
 
@@ -121,7 +136,11 @@ func (r *Repository) LsTree(treeID string, opts ...LsTreeOptions) (*Tree, error)
 		repo: r,
 	}
 
-	stdout, err := NewCommand("ls-tree").
+	cmd := NewCommand("ls-tree")
+	if opt.Verbatim {
+		cmd.AddArgs("-z")
+	}
+	stdout, err := cmd.
 		AddOptions(opt.CommandOptions).
 		AddArgs(treeID).
 		RunInDirWithTimeout(opt.Timeout, r.path)
@@ -129,7 +148,11 @@ func (r *Repository) LsTree(treeID string, opts ...LsTreeOptions) (*Tree, error)
 		return nil, err
 	}
 
-	t.entries, err = parseTree(t, stdout)
+	lineTerminator := byte('\n')
+	if opt.Verbatim {
+		lineTerminator = 0
+	}
+	t.entries, err = parseTree(t, stdout, lineTerminator)
 	if err != nil {
 		return nil, err
 	}
