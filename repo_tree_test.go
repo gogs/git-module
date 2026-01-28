@@ -7,6 +7,7 @@ package git
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -54,6 +55,10 @@ func TestUnescapeChars(t *testing.T) {
 }
 
 func TestRepository_LsTree(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip(`Windows does not allow '"' in filenames`)
+	}
+
 	path := tempPath()
 	defer os.RemoveAll(path)
 
