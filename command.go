@@ -199,6 +199,15 @@ func (c *Command) RunInDirWithOptions(dir string, opts ...RunInDirOptions) (err 
 		}
 		return ctx.Err()
 	case err = <-result:
+		// Normalize errors when the context may have expired around the same time.
+		if err != nil {
+			if ctxErr := ctx.Err(); ctxErr != nil {
+				if ctxErr == context.DeadlineExceeded {
+					return ErrExecTimeout
+				}
+				return ctxErr
+			}
+		}
 		return err
 	}
 
@@ -225,7 +234,7 @@ func (c *Command) RunInDir(dir string) ([]byte, error) {
 	return stdout.Bytes(), nil
 }
 
-// Run executes the command in working directory. It returns stdout in string and
+// Run executes the command in working directory. It returns stdout and
 // error (combined with stderr).
 func (c *Command) Run() ([]byte, error) {
 	stdout, err := c.RunInDir("")

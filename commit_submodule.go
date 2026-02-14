@@ -59,12 +59,16 @@ func (c *Commit) Submodules(ctx context.Context) (Submodules, error) {
 			continue
 		}
 
-		fields := strings.Split(scanner.Text(), "=")
-		switch strings.TrimSpace(fields[0]) {
+		key, value, ok := strings.Cut(scanner.Text(), "=")
+		if !ok {
+			continue
+		}
+
+		switch strings.TrimSpace(key) {
 		case "path":
-			path = strings.TrimSpace(fields[1])
+			path = strings.TrimSpace(value)
 		case "url":
-			url = strings.TrimSpace(fields[1])
+			url = strings.TrimSpace(value)
 		}
 
 		if len(path) > 0 && len(url) > 0 {
@@ -81,6 +85,10 @@ func (c *Commit) Submodules(ctx context.Context) (Submodules, error) {
 			submodules.Set(path, mod)
 			inSection = false
 		}
+	}
+
+	if err := scanner.Err(); err != nil {
+		return nil, err
 	}
 
 	c.submodules = submodules

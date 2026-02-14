@@ -42,35 +42,40 @@ func log(format string, args ...interface{}) {
 var (
 	// gitVersion stores the Git binary version.
 	// NOTE: To check Git version should call BinVersion not this global variable.
-	gitVersion     string
-	gitVersionOnce sync.Once
-	gitVersionErr  error
+	gitVersion    string
+	gitVersionMu  sync.Mutex
+	gitVersionSet bool
 )
 
 // BinVersion returns current Git binary version that is used by this module.
+// Successful results are cached; failed attempts are not cached, allowing
+// retries with a fresh context.
 func BinVersion(ctx context.Context) (string, error) {
-	gitVersionOnce.Do(func() {
-		var stdout []byte
-		stdout, gitVersionErr = NewCommand(ctx, "version").Run()
-		if gitVersionErr != nil {
-			return
-		}
+	gitVersionMu.Lock()
+	defer gitVersionMu.Unlock()
 
-		fields := strings.Fields(string(stdout))
-		if len(fields) < 3 {
-			gitVersionErr = fmt.Errorf("not enough output: %s", stdout)
-			return
-		}
+	if gitVersionSet {
+		return gitVersion, nil
+	}
 
-		// Handle special case on Windows.
-		i := strings.Index(fields[2], "windows")
-		if i >= 1 {
-			gitVersion = fields[2][:i-1]
-			return
-		}
+	stdout, err := NewCommand(ctx, "version").Run()
+	if err != nil {
+		return "", err
+	}
 
+	fields := strings.Fields(string(stdout))
+	if len(fields) < 3 {
+		return "", fmt.Errorf("not enough output: %s", stdout)
+	}
+
+	// Handle special case on Windows.
+	i := strings.Index(fields[2], "windows")
+	if i >= 1 {
+		gitVersion = fields[2][:i-1]
+	} else {
 		gitVersion = fields[2]
-	})
+	}
 
-	return gitVersion, gitVersionErr
+	gitVersionSet = true
+	return gitVersion, nil
 }
