@@ -6,6 +6,7 @@ package git
 
 import (
 	"context"
+	"io"
 	"testing"
 	"time"
 
@@ -64,8 +65,70 @@ func TestCommand_AddEnvs(t *testing.T) {
 }
 
 func TestCommand_RunWithContextTimeout(t *testing.T) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Nanosecond)
-	defer cancel()
-	_, err := NewCommand(ctx, "version").Run()
-	assert.Equal(t, ErrExecTimeout, err)
+	t.Run("context already expired before start", func(t *testing.T) {
+		ctx, cancel := context.WithTimeout(context.Background(), time.Nanosecond)
+		defer cancel()
+		time.Sleep(time.Millisecond) // ensure deadline has passed
+		_, err := NewCommand(ctx, "version").Run()
+		assert.Equal(t, ErrExecTimeout, err)
+	})
+
+	t.Run("context deadline fires mid-execution", func(t *testing.T) {
+		ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+		defer cancel()
+
+		// Use a blocking reader so the command starts successfully and blocks
+		// reading stdin until the context deadline fires.
+		err := NewCommand(ctx, "hash-object", "--stdin").RunInDirWithOptions("", RunInDirOptions{
+			Stdin:  blockingReader{cancel: ctx.Done()},
+			Stdout: io.Discard,
+			Stderr: io.Discard,
+		})
+		assert.Equal(t, ErrExecTimeout, err)
+	})
+}
+
+// blockingReader is an io.Reader that blocks until its cancel channel is
+// closed, simulating a stdin that never provides data. When cancelled it
+// returns io.EOF so that exec's stdin copy goroutine can exit cleanly,
+// allowing cmd.Wait() to return.
+type blockingReader struct {
+	cancel <-chan struct{}
+}
+
+func (r blockingReader) Read(p []byte) (int, error) {
+	<-r.cancel
+	return 0, io.EOF
+}
+
+func TestCommand_RunWithContextCancellation(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+
+	// Cancel in the background after a short delay so the command is already
+	// running when cancellation arrives. Close done to unblock the reader.
+	done := make(chan struct{})
+	go func() {
+		time.Sleep(50 * time.Millisecond)
+		cancel()
+		close(done)
+	}()
+
+	err := NewCommand(ctx, "hash-object", "--stdin").RunInDirWithOptions("", RunInDirOptions{
+		Stdin:  blockingReader{cancel: done},
+		Stdout: io.Discard,
+		Stderr: io.Discard,
+	})
+	assert.ErrorIs(t, err, context.Canceled)
+	// Must NOT be ErrExecTimeout — cancellation is distinct from deadline.
+	assert.NotEqual(t, ErrExecTimeout, err)
+}
+
+func TestCommand_DefaultTimeoutApplied(t *testing.T) {
+	// A plain context.Background() has no deadline. The command should still
+	// succeed because DefaultTimeout (1 min) is applied automatically and
+	// "git version" completes well within that.
+	ctx := context.Background()
+	stdout, err := NewCommand(ctx, "version").Run()
+	assert.NoError(t, err)
+	assert.Contains(t, string(stdout), "git version")
 }
