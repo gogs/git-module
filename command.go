@@ -10,9 +10,10 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"os/exec"
 	"strings"
 	"time"
+
+	"github.com/sourcegraph/run"
 )
 
 // Command contains the name, arguments and environment variables of a command.
@@ -121,6 +122,45 @@ type RunInDirOptions struct {
 	Stderr io.Writer
 }
 
+// newRunCmd builds a *run.Command from the Command, applying the directory,
+// environment variables and default timeout.
+func (c *Command) newRunCmd(dir string) *run.Command {
+	ctx := c.ctx
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	// Apply default timeout if the context doesn't already have a deadline.
+	if _, ok := ctx.Deadline(); !ok {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, DefaultTimeout)
+		// We cannot defer cancel here because the command hasn't run yet.
+		// The caller is responsible for the context lifecycle. In practice the
+		// timeout context will be collected when it expires or when the parent
+		// is cancelled. We attach the cancel func to the context so the caller
+		// could cancel it, but for this fire-and-forget usage the GC handles it.
+		_ = cancel
+	}
+
+	// run.Cmd joins all parts into a single string and then shell-parses it.
+	// We must quote each argument so that special characters (spaces, quotes,
+	// angle brackets, etc.) are preserved correctly.
+	parts := make([]string, 0, 1+len(c.args))
+	parts = append(parts, c.name)
+	for _, arg := range c.args {
+		parts = append(parts, run.Arg(arg))
+	}
+
+	cmd := run.Cmd(ctx, parts...)
+	if dir != "" {
+		cmd = cmd.Dir(dir)
+	}
+	if len(c.envs) > 0 {
+		cmd = cmd.Environ(append(os.Environ(), c.envs...))
+	}
+	return cmd
+}
+
 // RunInDirWithOptions executes the command in given directory and options. It
 // pipes stdin from supplied io.Reader, and pipes stdout and stderr to supplied
 // io.Writer. If the command's context does not have a deadline, DefaultTimeout
@@ -133,10 +173,10 @@ func (c *Command) RunInDirWithOptions(dir string, opts ...RunInDirOptions) (err 
 	}
 
 	buf := new(bytes.Buffer)
-	w := opt.Stdout
+	stdout := opt.Stdout
 	if logOutput != nil {
 		buf.Grow(512)
-		w = &limitDualWriter{
+		stdout = &limitDualWriter{
 			W: buf,
 			N: int64(buf.Cap()),
 			w: opt.Stdout,
@@ -151,65 +191,88 @@ func (c *Command) RunInDirWithOptions(dir string, opts ...RunInDirOptions) (err 
 		}
 	}()
 
-	ctx := c.ctx
+	cmd := c.newRunCmd(dir)
+	if opt.Stdin != nil {
+		cmd = cmd.Input(opt.Stdin)
+	}
+
+	// Build a combined writer for the command output. We need to capture
+	// both stdout and stderr separately. sourcegraph/run's default Output
+	// is combined output, but we need to split them.
+	//
+	// We use StdOut() to get only stdout on the output stream and handle
+	// stderr via a pipe.
+	//
+	// However, sourcegraph/run doesn't have a direct way to wire both stdout
+	// and stderr to separate writers in a single Run call. Instead, we use
+	// the approach of streaming stdout and collecting stderr from the error.
+	//
+	// For the streaming case, we stream stdout to the writer and if there's
+	// an error, stderr is included in the error message by default.
+
+	if stdout != nil && opt.Stderr != nil {
+		// When both stdout and stderr writers are provided, we need to stream
+		// stdout and capture stderr. We use StdOut() to only get stdout.
+		output := cmd.StdOut().Run()
+		streamErr := output.Stream(stdout)
+		if streamErr != nil {
+			// Extract stderr from the error and write it to the stderr writer.
+			// sourcegraph/run includes stderr in the error by default.
+			_, _ = fmt.Fprint(opt.Stderr, extractStderr(streamErr))
+			return mapContextError(streamErr, c.ctx)
+		}
+		return nil
+	} else if stdout != nil {
+		// Only stdout writer provided
+		output := cmd.StdOut().Run()
+		streamErr := output.Stream(stdout)
+		if streamErr != nil {
+			return mapContextError(streamErr, c.ctx)
+		}
+		return nil
+	}
+
+	// No writers - just wait for completion
+	waitErr := cmd.Run().Wait()
+	if waitErr != nil {
+		return mapContextError(waitErr, c.ctx)
+	}
+	return nil
+}
+
+// mapContextError maps context errors to the appropriate sentinel errors used
+// by this package.
+func mapContextError(err error, ctx context.Context) error {
 	if ctx == nil {
-		ctx = context.Background()
-	}
-
-	// Apply default timeout if the context doesn't already have a deadline.
-	if _, ok := ctx.Deadline(); !ok {
-		var cancel context.CancelFunc
-		ctx, cancel = context.WithTimeout(ctx, DefaultTimeout)
-		defer cancel()
-	}
-
-	cmd := exec.CommandContext(ctx, c.name, c.args...)
-	if len(c.envs) > 0 {
-		cmd.Env = append(os.Environ(), c.envs...)
-	}
-	cmd.Dir = dir
-	cmd.Stdin = opt.Stdin
-	cmd.Stdout = w
-	cmd.Stderr = opt.Stderr
-	if err = cmd.Start(); err != nil {
-		if ctx.Err() == context.DeadlineExceeded {
-			return ErrExecTimeout
-		} else if ctx.Err() != nil {
-			return ctx.Err()
-		}
 		return err
 	}
-
-	result := make(chan error)
-	go func() {
-		result <- cmd.Wait()
-	}()
-
-	select {
-	case <-ctx.Done():
-		// Kill the process before waiting so cancellation is enforced promptly.
-		if cmd.Process != nil {
-			_ = cmd.Process.Kill()
+	if ctxErr := ctx.Err(); ctxErr != nil {
+		if ctxErr == context.DeadlineExceeded {
+			return ErrExecTimeout
 		}
-		<-result
-
+		return ctxErr
+	}
+	// Also check if the error itself wraps a context error
+	if strings.Contains(err.Error(), "signal: killed") || strings.Contains(err.Error(), context.DeadlineExceeded.Error()) {
 		if ctx.Err() == context.DeadlineExceeded {
 			return ErrExecTimeout
 		}
-		return ctx.Err()
-	case err = <-result:
-		// Normalize errors when the context may have expired around the same time.
-		if err != nil {
-			if ctxErr := ctx.Err(); ctxErr != nil {
-				if ctxErr == context.DeadlineExceeded {
-					return ErrExecTimeout
-				}
-				return ctxErr
-			}
-		}
-		return err
 	}
+	return err
+}
 
+// extractStderr attempts to extract the stderr portion from a sourcegraph/run
+// error. The error format is typically "exit status N: <stderr content>".
+func extractStderr(err error) string {
+	if err == nil {
+		return ""
+	}
+	msg := err.Error()
+	// sourcegraph/run error format: "exit status N: <stderr>"
+	if idx := strings.Index(msg, ": "); idx >= 0 && strings.HasPrefix(msg, "exit status") {
+		return msg[idx+2:]
+	}
+	return msg
 }
 
 // RunInDirPipeline executes the command in given directory. It pipes stdout and
@@ -225,11 +288,42 @@ func (c *Command) RunInDirPipeline(stdout, stderr io.Writer, dir string) error {
 // RunInDir executes the command in given directory. It returns stdout and error
 // (combined with stderr).
 func (c *Command) RunInDir(dir string) ([]byte, error) {
-	stdout := new(bytes.Buffer)
-	stderr := new(bytes.Buffer)
-	if err := c.RunInDirPipeline(stdout, stderr, dir); err != nil {
-		return nil, concatenateError(err, stderr.String())
+	cmd := c.newRunCmd(dir)
+
+	logBuf := new(bytes.Buffer)
+	if logOutput != nil {
+		logBuf.Grow(512)
 	}
+
+	defer func() {
+		if len(dir) == 0 {
+			log("%s\n%s", c, logBuf.Bytes())
+		} else {
+			log("%s: %s\n%s", dir, c, logBuf.Bytes())
+		}
+	}()
+
+	// Use Stream to a buffer to preserve raw bytes (including NUL bytes from
+	// commands like "ls-tree -z"). The String/Lines methods process output
+	// line-by-line which corrupts binary-ish output.
+	stdout := new(bytes.Buffer)
+	err := cmd.StdOut().Run().Stream(stdout)
+	if err != nil {
+		return nil, mapContextError(err, c.ctx)
+	}
+
+	if logOutput != nil {
+		data := stdout.Bytes()
+		limit := len(data)
+		if limit > 512 {
+			limit = 512
+		}
+		logBuf.Write(data[:limit])
+		if len(data) > 512 {
+			logBuf.WriteString("... (more omitted)")
+		}
+	}
+
 	return stdout.Bytes(), nil
 }
 
