@@ -111,10 +111,10 @@ func (r *Repository) Tag(ctx context.Context, name string, opts ...TagOptions) (
 		opt = opts[0]
 	}
 
-	refsepc := RefsTags + name
+	refspec := RefsTags + name
 	refs, err := r.ShowRef(ctx, ShowRefOptions{
 		Tags:           true,
-		Patterns:       []string{refsepc},
+		Patterns:       []string{refspec},
 		CommandOptions: opt.CommandOptions,
 	})
 	if err != nil {
@@ -132,7 +132,7 @@ func (r *Repository) Tag(ctx context.Context, name string, opts ...TagOptions) (
 	if err != nil {
 		return nil, err
 	}
-	tag.refspec = refsepc
+	tag.refspec = refspec
 	return tag, nil
 }
 

@@ -86,14 +86,17 @@ func (e *TreeEntry) Name() string {
 	return e.name
 }
 
-// Size returns the size of thr entry.
-func (e *TreeEntry) Size() int64 {
+// Size returns the size of the entry. It runs a git command to determine the
+// size on first call, using the provided context for cancellation/timeout. The
+// result is cached for subsequent calls (the context is only used on the first
+// invocation).
+func (e *TreeEntry) Size(ctx context.Context) int64 {
 	e.sizeOnce.Do(func() {
 		if e.IsTree() {
 			return
 		}
 
-		stdout, err := NewCommand(context.TODO(), "cat-file", "-s", e.id.String()).RunInDir(e.parent.repo.path)
+		stdout, err := NewCommand(ctx, "cat-file", "-s", e.id.String()).RunInDir(e.parent.repo.path)
 		if err != nil {
 			return
 		}

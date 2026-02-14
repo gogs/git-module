@@ -63,7 +63,7 @@ func TestCommand_AddEnvs(t *testing.T) {
 	assert.Equal(t, []string{"GIT_DIR=/tmp", "HOME=/Users/unknwon", "GIT_EDITOR=code"}, cmd.envs)
 }
 
-func TestCommand_RunWithTimeout(t *testing.T) {
+func TestCommand_RunWithContextTimeout(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Nanosecond)
 	defer cancel()
 	_, err := NewCommand(ctx, "version").Run()

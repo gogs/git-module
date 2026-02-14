@@ -23,12 +23,12 @@ func (r *Repository) CatFileBlob(ctx context.Context, rev string, opts ...CatFil
 		opt = opts[0]
 	}
 
-	rev, err := r.RevParse(ctx, rev) //nolint
+	rev, err := r.RevParse(ctx, rev, RevParseOptions{CommandOptions: opt.CommandOptions}) //nolint
 	if err != nil {
 		return nil, err
 	}
 
-	typ, err := r.CatFileType(ctx, rev)
+	typ, err := r.CatFileType(ctx, rev, CatFileTypeOptions{CommandOptions: opt.CommandOptions})
 	if err != nil {
 		return nil, err
 	}
@@ -37,7 +37,6 @@ func (r *Repository) CatFileBlob(ctx context.Context, rev string, opts ...CatFil
 		return nil, ErrNotBlob
 	}
 
-	_ = opt // CommandOptions reserved for future use
 	return &Blob{
 		TreeEntry: &TreeEntry{
 			mode: EntryBlob,

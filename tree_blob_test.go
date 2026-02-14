@@ -36,12 +36,12 @@ func TestTree_Blob(t *testing.T) {
 	}
 
 	t.Run("not a blob", func(t *testing.T) {
-		_, err := tree.Blob("src")
+		_, err := tree.Blob(ctx, "src")
 		assert.Equal(t, ErrNotBlob, err)
 	})
 
 	t.Run("get a blob", func(t *testing.T) {
-		b, err := tree.Blob("README.txt")
+		b, err := tree.Blob(ctx, "README.txt")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -50,7 +50,7 @@ func TestTree_Blob(t *testing.T) {
 	})
 
 	t.Run("get an executable as blob", func(t *testing.T) {
-		b, err := tree.Blob("run.sh")
+		b, err := tree.Blob(ctx, "run.sh")
 		if err != nil {
 			t.Fatal(err)
 		}

@@ -48,8 +48,8 @@ func (t *Tree) TreeEntry(ctx context.Context, subpath string, opts ...LsTreeOpti
 }
 
 // Blob returns the blob object by given subpath of the tree.
-func (t *Tree) Blob(subpath string, opts ...LsTreeOptions) (*Blob, error) {
-	e, err := t.TreeEntry(context.TODO(), subpath, opts...)
+func (t *Tree) Blob(ctx context.Context, subpath string, opts ...LsTreeOptions) (*Blob, error) {
+	e, err := t.TreeEntry(ctx, subpath, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -62,8 +62,8 @@ func (t *Tree) Blob(subpath string, opts ...LsTreeOptions) (*Blob, error) {
 }
 
 // BlobByIndex returns blob object by given index.
-func (t *Tree) BlobByIndex(index string) (*Blob, error) {
-	typ, err := t.repo.CatFileType(context.TODO(), index)
+func (t *Tree) BlobByIndex(ctx context.Context, index string) (*Blob, error) {
+	typ, err := t.repo.CatFileType(ctx, index)
 	if err != nil {
 		return nil, err
 	}
@@ -72,7 +72,7 @@ func (t *Tree) BlobByIndex(index string) (*Blob, error) {
 		return nil, ErrNotBlob
 	}
 
-	id, err := t.repo.RevParse(context.TODO(), index)
+	id, err := t.repo.RevParse(ctx, index)
 	if err != nil {
 		return nil, err
 	}

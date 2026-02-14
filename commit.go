@@ -27,9 +27,9 @@ type Commit struct {
 	parents []*SHA1
 	*Tree
 
-	submodules     Submodules
-	submodulesOnce sync.Once
-	submodulesErr  error
+	submodules    Submodules
+	submodulesMu  sync.Mutex
+	submodulesSet bool
 }
 
 // Summary returns first line of commit message.
@@ -164,13 +164,13 @@ func (c *Commit) isImageFile(ctx context.Context, blob *Blob, err error) (bool, 
 
 // IsImageFile returns true if the blob of the commit is an image by subpath.
 func (c *Commit) IsImageFile(ctx context.Context, subpath string) (bool, error) {
-	blob, err := c.Blob(subpath)
+	blob, err := c.Blob(ctx, subpath)
 	return c.isImageFile(ctx, blob, err)
 }
 
 // IsImageFileByIndex returns true if the blob of the commit is an image by
 // index.
 func (c *Commit) IsImageFileByIndex(ctx context.Context, index string) (bool, error) {
-	blob, err := c.BlobByIndex(index)
+	blob, err := c.BlobByIndex(ctx, index)
 	return c.isImageFile(ctx, blob, err)
 }

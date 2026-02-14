@@ -41,7 +41,7 @@ func TestRefShortName(t *testing.T) {
 func TestRepository_ShowRefVerify(t *testing.T) {
 	ctx := context.Background()
 
-	t.Run("reference does not exsit", func(t *testing.T) {
+	t.Run("reference does not exist", func(t *testing.T) {
 		rev, err := testrepo.ShowRefVerify(ctx, "bad_reference")
 		assert.NotNil(t, err)
 		assert.Empty(t, rev)
@@ -58,7 +58,7 @@ func TestRepository_ShowRefVerify(t *testing.T) {
 func TestRepository_BranchCommitID(t *testing.T) {
 	ctx := context.Background()
 
-	t.Run("branch does not exsit", func(t *testing.T) {
+	t.Run("branch does not exist", func(t *testing.T) {
 		rev, err := testrepo.BranchCommitID(ctx, "bad_branch")
 		assert.NotNil(t, err)
 		assert.Empty(t, rev)
@@ -75,7 +75,7 @@ func TestRepository_BranchCommitID(t *testing.T) {
 func TestRepository_TagCommitID(t *testing.T) {
 	ctx := context.Background()
 
-	t.Run("tag does not exsit", func(t *testing.T) {
+	t.Run("tag does not exist", func(t *testing.T) {
 		rev, err := testrepo.TagCommitID(ctx, "bad_tag")
 		assert.NotNil(t, err)
 		assert.Empty(t, rev)

@@ -172,8 +172,10 @@ func (c *Command) RunInDirWithOptions(dir string, opts ...RunInDirOptions) (err 
 	cmd.Stdout = w
 	cmd.Stderr = opt.Stderr
 	if err = cmd.Start(); err != nil {
-		if ctx.Err() != nil {
+		if ctx.Err() == context.DeadlineExceeded {
 			return ErrExecTimeout
+		} else if ctx.Err() != nil {
+			return ctx.Err()
 		}
 		return err
 	}
@@ -192,7 +194,10 @@ func (c *Command) RunInDirWithOptions(dir string, opts ...RunInDirOptions) (err 
 			}
 		}
 
-		return ErrExecTimeout
+		if ctx.Err() == context.DeadlineExceeded {
+			return ErrExecTimeout
+		}
+		return ctx.Err()
 	case err = <-result:
 		return err
 	}
