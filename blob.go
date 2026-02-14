@@ -22,7 +22,9 @@ func (b *Blob) Bytes(ctx context.Context) ([]byte, error) {
 	stderr := new(bytes.Buffer)
 
 	// Preallocate memory to save ~50% memory usage on big files.
-	stdout.Grow(int(b.Size(ctx)))
+	if size := b.Size(ctx); size > 0 && size < int64(^uint(0)>>1) {
+		stdout.Grow(int(size))
+	}
 
 	if err := b.Pipeline(ctx, stdout, stderr); err != nil {
 		return nil, concatenateError(err, stderr.String())
