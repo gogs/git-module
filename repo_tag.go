@@ -159,8 +159,8 @@ type TagsOptions struct {
 	CommandOptions
 }
 
-// RepoTags returns a list of tags of the repository in given path.
-func RepoTags(repoPath string, opts ...TagsOptions) ([]string, error) {
+// Tags returns a list of tags of the repository.
+func (r *Repository) Tags(opts ...TagsOptions) ([]string, error) {
 	var opt TagsOptions
 	if len(opts) > 0 {
 		opt = opts[0]
@@ -178,7 +178,7 @@ func RepoTags(repoPath string, opts ...TagsOptions) ([]string, error) {
 		cmd.AddArgs(opt.Pattern)
 	}
 
-	stdout, err := cmd.RunInDirWithTimeout(opt.Timeout, repoPath)
+	stdout, err := cmd.RunInDirWithTimeout(opt.Timeout, r.path)
 	if err != nil {
 		return nil, err
 	}
@@ -187,11 +187,6 @@ func RepoTags(repoPath string, opts ...TagsOptions) ([]string, error) {
 	tags = tags[:len(tags)-1]
 
 	return tags, nil
-}
-
-// Tags returns a list of tags of the repository.
-func (r *Repository) Tags(opts ...TagsOptions) ([]string, error) {
-	return RepoTags(r.path, opts...)
 }
 
 // CreateTagOptions contains optional arguments for creating a tag.

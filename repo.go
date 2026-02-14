@@ -253,27 +253,16 @@ type PushOptions struct {
 	CommandOptions
 }
 
-// Push pushes local changes to given remote and branch for the repository in
-// given path.
-func Push(repoPath, remote, branch string, opts ...PushOptions) error {
+// Push pushes local changes to given remote and branch for the repository.
+func (r *Repository) Push(remote, branch string, opts ...PushOptions) error {
 	var opt PushOptions
 	if len(opts) > 0 {
 		opt = opts[0]
 	}
 
 	cmd := NewCommand("push").AddOptions(opt.CommandOptions).AddArgs("--end-of-options", remote, branch)
-	_, err := cmd.RunInDirWithTimeout(opt.Timeout, repoPath)
+	_, err := cmd.RunInDirWithTimeout(opt.Timeout, r.path)
 	return err
-}
-
-// Deprecated: Use Push instead.
-func RepoPush(repoPath, remote, branch string, opts ...PushOptions) error {
-	return Push(repoPath, remote, branch, opts...)
-}
-
-// Push pushes local changes to given remote and branch for the repository.
-func (r *Repository) Push(remote, branch string, opts ...PushOptions) error {
-	return Push(r.path, remote, branch, opts...)
 }
 
 // CheckoutOptions contains optional arguments for checking out to a branch.
@@ -291,8 +280,8 @@ type CheckoutOptions struct {
 	CommandOptions
 }
 
-// Checkout checks out to given branch for the repository in given path.
-func Checkout(repoPath, branch string, opts ...CheckoutOptions) error {
+// Checkout checks out to given branch for the repository.
+func (r *Repository) Checkout(branch string, opts ...CheckoutOptions) error {
 	var opt CheckoutOptions
 	if len(opts) > 0 {
 		opt = opts[0]
@@ -307,18 +296,8 @@ func Checkout(repoPath, branch string, opts ...CheckoutOptions) error {
 		cmd.AddArgs(opt.BaseBranch)
 	}
 
-	_, err := cmd.RunInDirWithTimeout(opt.Timeout, repoPath)
+	_, err := cmd.RunInDirWithTimeout(opt.Timeout, r.path)
 	return err
-}
-
-// Deprecated: Use Checkout instead.
-func RepoCheckout(repoPath, branch string, opts ...CheckoutOptions) error {
-	return Checkout(repoPath, branch, opts...)
-}
-
-// Checkout checks out to given branch for the repository.
-func (r *Repository) Checkout(branch string, opts ...CheckoutOptions) error {
-	return Checkout(r.path, branch, opts...)
 }
 
 // ResetOptions contains optional arguments for resetting a branch.
@@ -336,8 +315,8 @@ type ResetOptions struct {
 	CommandOptions
 }
 
-// Reset resets working tree to given revision for the repository in given path.
-func Reset(repoPath, rev string, opts ...ResetOptions) error {
+// Reset resets working tree to given revision for the repository.
+func (r *Repository) Reset(rev string, opts ...ResetOptions) error {
 	var opt ResetOptions
 	if len(opts) > 0 {
 		opt = opts[0]
@@ -348,18 +327,8 @@ func Reset(repoPath, rev string, opts ...ResetOptions) error {
 		cmd.AddArgs("--hard")
 	}
 
-	_, err := cmd.AddOptions(opt.CommandOptions).AddArgs("--end-of-options", rev).RunInDir(repoPath)
+	_, err := cmd.AddOptions(opt.CommandOptions).AddArgs("--end-of-options", rev).RunInDir(r.path)
 	return err
-}
-
-// Deprecated: Use Reset instead.
-func RepoReset(repoPath, rev string, opts ...ResetOptions) error {
-	return Reset(repoPath, rev, opts...)
-}
-
-// Reset resets working tree to given revision for the repository.
-func (r *Repository) Reset(rev string, opts ...ResetOptions) error {
-	return Reset(r.path, rev, opts...)
 }
 
 // MoveOptions contains optional arguments for moving a file, a directory, or a
@@ -377,26 +346,15 @@ type MoveOptions struct {
 }
 
 // Move moves a file, a directory, or a symlink file or directory from source to
-// destination for the repository in given path.
-func Move(repoPath, src, dst string, opts ...MoveOptions) error {
+// destination for the repository.
+func (r *Repository) Move(src, dst string, opts ...MoveOptions) error {
 	var opt MoveOptions
 	if len(opts) > 0 {
 		opt = opts[0]
 	}
 
-	_, err := NewCommand("mv").AddOptions(opt.CommandOptions).AddArgs("--end-of-options", src, dst).RunInDirWithTimeout(opt.Timeout, repoPath)
+	_, err := NewCommand("mv").AddOptions(opt.CommandOptions).AddArgs("--end-of-options", src, dst).RunInDirWithTimeout(opt.Timeout, r.path)
 	return err
-}
-
-// Deprecated: Use Move instead.
-func RepoMove(repoPath, src, dst string, opts ...MoveOptions) error {
-	return Move(repoPath, src, dst, opts...)
-}
-
-// Move moves a file, a directory, or a symlink file or directory from source to
-// destination for the repository.
-func (r *Repository) Move(src, dst string, opts ...MoveOptions) error {
-	return Move(r.path, src, dst, opts...)
 }
 
 // AddOptions contains optional arguments for adding local changes.
@@ -416,8 +374,8 @@ type AddOptions struct {
 	CommandOptions
 }
 
-// Add adds local changes to index for the repository in given path.
-func Add(repoPath string, opts ...AddOptions) error {
+// Add adds local changes to index for the repository.
+func (r *Repository) Add(opts ...AddOptions) error {
 	var opt AddOptions
 	if len(opts) > 0 {
 		opt = opts[0]
@@ -431,18 +389,8 @@ func Add(repoPath string, opts ...AddOptions) error {
 		cmd.AddArgs("--")
 		cmd.AddArgs(opt.Pathspecs...)
 	}
-	_, err := cmd.RunInDirWithTimeout(opt.Timeout, repoPath)
+	_, err := cmd.RunInDirWithTimeout(opt.Timeout, r.path)
 	return err
-}
-
-// Deprecated: Use Add instead.
-func RepoAdd(repoPath string, opts ...AddOptions) error {
-	return Add(repoPath, opts...)
-}
-
-// Add adds local changes to index for the repository.
-func (r *Repository) Add(opts ...AddOptions) error {
-	return Add(r.path, opts...)
 }
 
 // CommitOptions contains optional arguments to commit changes.
@@ -460,9 +408,9 @@ type CommitOptions struct {
 	CommandOptions
 }
 
-// CreateCommit commits local changes with given author, committer and message
-// for the repository in given path.
-func CreateCommit(repoPath string, committer *Signature, message string, opts ...CommitOptions) error {
+// Commit commits local changes with given author, committer and message for the
+// repository.
+func (r *Repository) Commit(committer *Signature, message string, opts ...CommitOptions) error {
 	var opt CommitOptions
 	if len(opts) > 0 {
 		opt = opts[0]
@@ -478,23 +426,12 @@ func CreateCommit(repoPath string, committer *Signature, message string, opts ..
 		AddArgs("-m", message).
 		AddOptions(opt.CommandOptions)
 
-	_, err := cmd.RunInDirWithTimeout(opt.Timeout, repoPath)
+	_, err := cmd.RunInDirWithTimeout(opt.Timeout, r.path)
 	// No stderr but exit status 1 means nothing to commit.
 	if err != nil && err.Error() == "exit status 1" {
 		return nil
 	}
 	return err
-}
-
-// Deprecated: Use CreateCommit instead.
-func RepoCommit(repoPath string, committer *Signature, message string, opts ...CommitOptions) error {
-	return CreateCommit(repoPath, committer, message, opts...)
-}
-
-// Commit commits local changes with given author, committer and message for the
-// repository.
-func (r *Repository) Commit(committer *Signature, message string, opts ...CommitOptions) error {
-	return CreateCommit(r.path, committer, message, opts...)
 }
 
 // NameStatus contains name status of a commit.
@@ -517,9 +454,8 @@ type ShowNameStatusOptions struct {
 	CommandOptions
 }
 
-// ShowNameStatus returns name status of given revision of the repository in
-// given path.
-func ShowNameStatus(repoPath, rev string, opts ...ShowNameStatusOptions) (*NameStatus, error) {
+// ShowNameStatus returns name status of given revision of the repository.
+func (r *Repository) ShowNameStatus(rev string, opts ...ShowNameStatusOptions) (*NameStatus, error) {
 	var opt ShowNameStatusOptions
 	if len(opts) > 0 {
 		opt = opts[0]
@@ -552,7 +488,7 @@ func ShowNameStatus(repoPath, rev string, opts ...ShowNameStatusOptions) (*NameS
 	cmd := NewCommand("show", "--name-status", "--pretty=format:''").
 		AddOptions(opt.CommandOptions).
 		AddArgs("--end-of-options", rev)
-	err := cmd.RunInDirPipelineWithTimeout(opt.Timeout, w, stderr, repoPath)
+	err := cmd.RunInDirPipelineWithTimeout(opt.Timeout, w, stderr, r.path)
 	_ = w.Close() // Close writer to exit parsing goroutine
 	if err != nil {
 		return nil, concatenateError(err, stderr.String())
@@ -560,16 +496,6 @@ func ShowNameStatus(repoPath, rev string, opts ...ShowNameStatusOptions) (*NameS
 
 	<-done
 	return fileStatus, nil
-}
-
-// Deprecated: Use ShowNameStatus instead.
-func RepoShowNameStatus(repoPath, rev string, opts ...ShowNameStatusOptions) (*NameStatus, error) {
-	return ShowNameStatus(repoPath, rev, opts...)
-}
-
-// ShowNameStatus returns name status of given revision of the repository.
-func (r *Repository) ShowNameStatus(rev string, opts ...ShowNameStatusOptions) (*NameStatus, error) {
-	return ShowNameStatus(r.path, rev, opts...)
 }
 
 // RevParseOptions contains optional arguments for parsing revision.
@@ -631,8 +557,8 @@ type CountObjectsOptions struct {
 	CommandOptions
 }
 
-// CountObjects returns disk usage report of the repository in given path.
-func CountObjects(repoPath string, opts ...CountObjectsOptions) (*CountObject, error) {
+// CountObjects returns disk usage report of the repository.
+func (r *Repository) CountObjects(opts ...CountObjectsOptions) (*CountObject, error) {
 	var opt CountObjectsOptions
 	if len(opts) > 0 {
 		opt = opts[0]
@@ -640,7 +566,7 @@ func CountObjects(repoPath string, opts ...CountObjectsOptions) (*CountObject, e
 
 	stdout, err := NewCommand("count-objects", "-v").
 		AddOptions(opt.CommandOptions).
-		RunInDirWithTimeout(opt.Timeout, repoPath)
+		RunInDirWithTimeout(opt.Timeout, r.path)
 	if err != nil {
 		return nil, err
 	}
@@ -675,16 +601,6 @@ func CountObjects(repoPath string, opts ...CountObjectsOptions) (*CountObject, e
 	return countObject, nil
 }
 
-// Deprecated: Use CountObjects instead.
-func RepoCountObjects(repoPath string, opts ...CountObjectsOptions) (*CountObject, error) {
-	return CountObjects(repoPath, opts...)
-}
-
-// CountObjects returns disk usage report of the repository.
-func (r *Repository) CountObjects(opts ...CountObjectsOptions) (*CountObject, error) {
-	return CountObjects(r.path, opts...)
-}
-
 // FsckOptions contains optional arguments for verifying the objects.
 //
 // Docs: https://git-scm.com/docs/git-fsck
@@ -699,25 +615,14 @@ type FsckOptions struct {
 }
 
 // Fsck verifies the connectivity and validity of the objects in the database
-// for the repository in given path.
-func Fsck(repoPath string, opts ...FsckOptions) error {
+// for the repository.
+func (r *Repository) Fsck(opts ...FsckOptions) error {
 	var opt FsckOptions
 	if len(opts) > 0 {
 		opt = opts[0]
 	}
 
 	cmd := NewCommand("fsck").AddOptions(opt.CommandOptions)
-	_, err := cmd.RunInDirWithTimeout(opt.Timeout, repoPath)
+	_, err := cmd.RunInDirWithTimeout(opt.Timeout, r.path)
 	return err
-}
-
-// Deprecated: Use Fsck instead.
-func RepoFsck(repoPath string, opts ...FsckOptions) error {
-	return Fsck(repoPath, opts...)
-}
-
-// Fsck verifies the connectivity and validity of the objects in the database
-// for the repository.
-func (r *Repository) Fsck(opts ...FsckOptions) error {
-	return Fsck(r.path, opts...)
 }

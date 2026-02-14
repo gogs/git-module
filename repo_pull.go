@@ -23,8 +23,8 @@ type MergeBaseOptions struct {
 }
 
 // MergeBase returns merge base between base and head revisions of the
-// repository in given path.
-func MergeBase(repoPath, base, head string, opts ...MergeBaseOptions) (string, error) {
+// repository.
+func (r *Repository) MergeBase(base, head string, opts ...MergeBaseOptions) (string, error) {
 	var opt MergeBaseOptions
 	if len(opts) > 0 {
 		opt = opts[0]
@@ -36,7 +36,7 @@ func MergeBase(repoPath, base, head string, opts ...MergeBaseOptions) (string, e
 			"--end-of-options",
 			base,
 			head,
-		).RunInDirWithTimeout(opt.Timeout, repoPath)
+		).RunInDirWithTimeout(opt.Timeout, r.path)
 	if err != nil {
 		if strings.Contains(err.Error(), "exit status 1") {
 			return "", ErrNoMergeBase
@@ -44,15 +44,4 @@ func MergeBase(repoPath, base, head string, opts ...MergeBaseOptions) (string, e
 		return "", err
 	}
 	return strings.TrimSpace(string(stdout)), nil
-}
-
-// Deprecated: Use MergeBase instead.
-func RepoMergeBase(repoPath, base, head string, opts ...MergeBaseOptions) (string, error) {
-	return MergeBase(repoPath, base, head, opts...)
-}
-
-// MergeBase returns merge base between base and head revisions of the
-// repository.
-func (r *Repository) MergeBase(base, head string, opts ...MergeBaseOptions) (string, error) {
-	return MergeBase(r.path, base, head, opts...)
 }
