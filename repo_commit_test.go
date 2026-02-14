@@ -5,6 +5,7 @@
 package git
 
 import (
+	"context"
 	"errors"
 	"testing"
 	"time"
@@ -38,13 +39,15 @@ func Test_escapePath(t *testing.T) {
 }
 
 func TestRepository_CatFileCommit(t *testing.T) {
+	ctx := context.Background()
+
 	t.Run("invalid revision", func(t *testing.T) {
-		c, err := testrepo.CatFileCommit("bad_revision")
+		c, err := testrepo.CatFileCommit(ctx, "bad_revision")
 		assert.Equal(t, ErrRevisionNotExist, err)
 		assert.Nil(t, c)
 	})
 
-	c, err := testrepo.CatFileCommit("d58e3ef9f123eea6857161c79275ee22b228f659")
+	c, err := testrepo.CatFileCommit(ctx, "d58e3ef9f123eea6857161c79275ee22b228f659")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -54,13 +57,15 @@ func TestRepository_CatFileCommit(t *testing.T) {
 }
 
 func TestRepository_BranchCommit(t *testing.T) {
+	ctx := context.Background()
+
 	t.Run("invalid branch", func(t *testing.T) {
-		c, err := testrepo.BranchCommit("refs/heads/release-1.0")
+		c, err := testrepo.BranchCommit(ctx, "refs/heads/release-1.0")
 		assert.Equal(t, ErrRevisionNotExist, err)
 		assert.Nil(t, c)
 	})
 
-	c, err := testrepo.BranchCommit("release-1.0")
+	c, err := testrepo.BranchCommit(ctx, "release-1.0")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -70,13 +75,15 @@ func TestRepository_BranchCommit(t *testing.T) {
 }
 
 func TestRepository_TagCommit(t *testing.T) {
+	ctx := context.Background()
+
 	t.Run("invalid branch", func(t *testing.T) {
-		c, err := testrepo.BranchCommit("refs/tags/v1.0.0")
+		c, err := testrepo.BranchCommit(ctx, "refs/tags/v1.0.0")
 		assert.Equal(t, ErrRevisionNotExist, err)
 		assert.Nil(t, c)
 	})
 
-	c, err := testrepo.BranchCommit("release-1.0")
+	c, err := testrepo.BranchCommit(ctx, "release-1.0")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -86,6 +93,7 @@ func TestRepository_TagCommit(t *testing.T) {
 }
 
 func TestRepository_Log(t *testing.T) {
+	ctx := context.Background()
 	tests := []struct {
 		rev          string
 		opt          LogOptions
@@ -111,7 +119,7 @@ func TestRepository_Log(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run("", func(t *testing.T) {
-			commits, err := testrepo.Log(test.rev, test.opt)
+			commits, err := testrepo.Log(ctx, test.rev, test.opt)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -122,8 +130,10 @@ func TestRepository_Log(t *testing.T) {
 }
 
 func TestRepository_CommitByRevision(t *testing.T) {
+	ctx := context.Background()
+
 	t.Run("invalid revision", func(t *testing.T) {
-		c, err := testrepo.CommitByRevision("bad_revision")
+		c, err := testrepo.CommitByRevision(ctx, "bad_revision")
 		assert.Equal(t, ErrRevisionNotExist, err)
 		assert.Nil(t, c)
 	})
@@ -140,7 +150,7 @@ func TestRepository_CommitByRevision(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run("", func(t *testing.T) {
-			c, err := testrepo.CommitByRevision(test.rev, test.opt)
+			c, err := testrepo.CommitByRevision(ctx, test.rev, test.opt)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -151,6 +161,7 @@ func TestRepository_CommitByRevision(t *testing.T) {
 }
 
 func TestRepository_CommitsSince(t *testing.T) {
+	ctx := context.Background()
 	tests := []struct {
 		rev          string
 		since        time.Time
@@ -173,7 +184,7 @@ func TestRepository_CommitsSince(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run("", func(t *testing.T) {
-			commits, err := testrepo.CommitsSince(test.rev, test.since, test.opt)
+			commits, err := testrepo.CommitsSince(ctx, test.rev, test.since, test.opt)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -184,6 +195,7 @@ func TestRepository_CommitsSince(t *testing.T) {
 }
 
 func TestRepository_DiffNameOnly(t *testing.T) {
+	ctx := context.Background()
 	tests := []struct {
 		base     string
 		head     string
@@ -223,7 +235,7 @@ func TestRepository_DiffNameOnly(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run("", func(t *testing.T) {
-			files, err := testrepo.DiffNameOnly(test.base, test.head, test.opt)
+			files, err := testrepo.DiffNameOnly(ctx, test.base, test.head, test.opt)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -234,8 +246,10 @@ func TestRepository_DiffNameOnly(t *testing.T) {
 }
 
 func TestRepository_RevListCount(t *testing.T) {
+	ctx := context.Background()
+
 	t.Run("no refspecs", func(t *testing.T) {
-		count, err := testrepo.RevListCount([]string{})
+		count, err := testrepo.RevListCount(ctx, []string{})
 		assert.Equal(t, errors.New("must have at least one refspec"), err)
 		assert.Zero(t, count)
 	})
@@ -275,7 +289,7 @@ func TestRepository_RevListCount(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run("", func(t *testing.T) {
-			count, err := testrepo.RevListCount(test.refspecs, test.opt)
+			count, err := testrepo.RevListCount(ctx, test.refspecs, test.opt)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -286,8 +300,10 @@ func TestRepository_RevListCount(t *testing.T) {
 }
 
 func TestRepository_RevList(t *testing.T) {
+	ctx := context.Background()
+
 	t.Run("no refspecs", func(t *testing.T) {
-		commits, err := testrepo.RevList([]string{})
+		commits, err := testrepo.RevList(ctx, []string{})
 		assert.Equal(t, errors.New("must have at least one refspec"), err)
 		assert.Nil(t, commits)
 	})
@@ -317,7 +333,7 @@ func TestRepository_RevList(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run("", func(t *testing.T) {
-			commits, err := testrepo.RevList(test.refspecs, test.opt)
+			commits, err := testrepo.RevList(ctx, test.refspecs, test.opt)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -328,6 +344,7 @@ func TestRepository_RevList(t *testing.T) {
 }
 
 func TestRepository_LatestCommitTime(t *testing.T) {
+	ctx := context.Background()
 	tests := []struct {
 		opt     LatestCommitTimeOptions
 		expTime time.Time
@@ -341,7 +358,7 @@ func TestRepository_LatestCommitTime(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run("", func(t *testing.T) {
-			got, err := testrepo.LatestCommitTime(test.opt)
+			got, err := testrepo.LatestCommitTime(ctx, test.opt)
 			if err != nil {
 				t.Fatal(err)
 			}

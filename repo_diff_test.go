@@ -6,6 +6,7 @@ package git
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"strings"
 	"testing"
@@ -14,6 +15,7 @@ import (
 )
 
 func TestRepository_Diff(t *testing.T) {
+	ctx := context.Background()
 	tests := []struct {
 		rev          string
 		maxFiles     int
@@ -289,7 +291,7 @@ func TestRepository_Diff(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run("", func(t *testing.T) {
-			diff, err := testrepo.Diff(test.rev, test.maxFiles, test.maxFileLines, test.maxLineChars, test.opt)
+			diff, err := testrepo.Diff(ctx, test.rev, test.maxFiles, test.maxFileLines, test.maxLineChars, test.opt)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -300,13 +302,15 @@ func TestRepository_Diff(t *testing.T) {
 }
 
 func TestRepository_RawDiff(t *testing.T) {
+	ctx := context.Background()
+
 	t.Run("invalid revision", func(t *testing.T) {
-		err := testrepo.RawDiff("bad_revision", "bad_diff_type", nil)
+		err := testrepo.RawDiff(ctx, "bad_revision", "bad_diff_type", nil)
 		assert.Equal(t, ErrRevisionNotExist, err)
 	})
 
 	t.Run("invalid diffType", func(t *testing.T) {
-		err := testrepo.RawDiff("978fb7f6388b49b532fbef8b856681cfa6fcaa0a", "bad_diff_type", nil)
+		err := testrepo.RawDiff(ctx, "978fb7f6388b49b532fbef8b856681cfa6fcaa0a", "bad_diff_type", nil)
 		assert.Equal(t, errors.New("invalid diffType: bad_diff_type"), err)
 	})
 
@@ -461,7 +465,7 @@ index 0000000000000000000000000000000000000000..51680791956b43effdb2f16bccd2b475
 	for _, test := range tests {
 		t.Run("", func(t *testing.T) {
 			buf := new(bytes.Buffer)
-			err := testrepo.RawDiff(test.rev, test.diffType, buf, test.opt)
+			err := testrepo.RawDiff(ctx, test.rev, test.diffType, buf, test.opt)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -479,6 +483,7 @@ index 0000000000000000000000000000000000000000..51680791956b43effdb2f16bccd2b475
 }
 
 func TestRepository_DiffBinary(t *testing.T) {
+	ctx := context.Background()
 	tests := []struct {
 		base      string
 		head      string
@@ -509,7 +514,7 @@ index 0000000000000000000000000000000000000000..6b08f76a5313fa3d26859515b30aa17a
 	}
 	for _, test := range tests {
 		t.Run("", func(t *testing.T) {
-			p, err := testrepo.DiffBinary(test.base, test.head, test.opt)
+			p, err := testrepo.DiffBinary(ctx, test.base, test.head, test.opt)
 			if err != nil {
 				t.Fatal(err)
 			}

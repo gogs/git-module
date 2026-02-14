@@ -5,6 +5,7 @@
 package git
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -31,12 +32,13 @@ func TestTreeEntry(t *testing.T) {
 }
 
 func TestEntries_Sort(t *testing.T) {
-	tree, err := testrepo.LsTree("0eedd79eba4394bbef888c804e899731644367fe")
+	ctx := context.Background()
+	tree, err := testrepo.LsTree(ctx, "0eedd79eba4394bbef888c804e899731644367fe")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	es, err := tree.Entries()
+	es, err := tree.Entries(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -120,23 +122,24 @@ func TestEntries_Sort(t *testing.T) {
 }
 
 func TestEntries_CommitsInfo(t *testing.T) {
-	tree, err := testrepo.LsTree("cfc3b2993f74726356887a5ec093de50486dc617")
+	ctx := context.Background()
+	tree, err := testrepo.LsTree(ctx, "cfc3b2993f74726356887a5ec093de50486dc617")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	c, err := testrepo.CatFileCommit(tree.id.String())
+	c, err := testrepo.CatFileCommit(ctx, tree.id.String())
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	t.Run("general directory", func(t *testing.T) {
-		es, err := tree.Entries()
+		es, err := tree.Entries(ctx)
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		infos, err := es.CommitsInfo(c)
+		infos, err := es.CommitsInfo(ctx, c)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -249,17 +252,17 @@ func TestEntries_CommitsInfo(t *testing.T) {
 	})
 
 	t.Run("directory with submodule", func(t *testing.T) {
-		subtree, err := tree.Subtree("gogs")
+		subtree, err := tree.Subtree(ctx, "gogs")
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		es, err := subtree.Entries()
+		es, err := subtree.Entries(ctx)
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		infos, err := es.CommitsInfo(c, CommitsInfoOptions{
+		infos, err := es.CommitsInfo(ctx, c, CommitsInfoOptions{
 			Path: "gogs",
 		})
 		if err != nil {
@@ -283,17 +286,17 @@ func TestEntries_CommitsInfo(t *testing.T) {
 	})
 
 	t.Run("direcotry with files have same SHA", func(t *testing.T) {
-		subtree, err := tree.Subtree("sameSHAs")
+		subtree, err := tree.Subtree(ctx, "sameSHAs")
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		es, err := subtree.Entries()
+		es, err := subtree.Entries(ctx)
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		infos, err := es.CommitsInfo(c, CommitsInfoOptions{
+		infos, err := es.CommitsInfo(ctx, c, CommitsInfoOptions{
 			Path: "sameSHAs",
 		})
 		if err != nil {

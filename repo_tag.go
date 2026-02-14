@@ -6,9 +6,9 @@ package git
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"strings"
-	"time"
 )
 
 // parseTag parses tag information from the (uncompressed) raw data of the tag
@@ -52,7 +52,7 @@ l:
 }
 
 // getTag returns a tag by given SHA1 hash.
-func (r *Repository) getTag(timeout time.Duration, id *SHA1) (*Tag, error) {
+func (r *Repository) getTag(ctx context.Context, id *SHA1) (*Tag, error) {
 	t, ok := r.cachedTags.Get(id.String())
 	if ok {
 		log("Cached tag hit: %s", id)
@@ -60,7 +60,7 @@ func (r *Repository) getTag(timeout time.Duration, id *SHA1) (*Tag, error) {
 	}
 
 	// Check tag type
-	typ, err := r.CatFileType(id.String(), CatFileTypeOptions{Timeout: timeout})
+	typ, err := r.CatFileType(ctx, id.String())
 	if err != nil {
 		return nil, err
 	}
@@ -76,7 +76,7 @@ func (r *Repository) getTag(timeout time.Duration, id *SHA1) (*Tag, error) {
 		}
 
 	case ObjectTag: // Tag is an annotation
-		data, err := NewCommand("cat-file", "-p", id.String()).RunInDir(r.path)
+		data, err := NewCommand(ctx, "cat-file", "-p", id.String()).RunInDir(r.path)
 		if err != nil {
 			return nil, err
 		}
@@ -100,27 +100,21 @@ func (r *Repository) getTag(timeout time.Duration, id *SHA1) (*Tag, error) {
 //
 // Docs: https://git-scm.com/docs/git-cat-file
 type TagOptions struct {
-	// The timeout duration before giving up for each shell command execution. The
-	// default timeout duration will be used when not supplied.
-	//
-	// Deprecated: Use CommandOptions.Timeout instead.
-	Timeout time.Duration
 	// The additional options to be passed to the underlying git.
 	CommandOptions
 }
 
 // Tag returns a Git tag by given name, e.g. "v1.0.0".
-func (r *Repository) Tag(name string, opts ...TagOptions) (*Tag, error) {
+func (r *Repository) Tag(ctx context.Context, name string, opts ...TagOptions) (*Tag, error) {
 	var opt TagOptions
 	if len(opts) > 0 {
 		opt = opts[0]
 	}
 
 	refsepc := RefsTags + name
-	refs, err := r.ShowRef(ShowRefOptions{
+	refs, err := r.ShowRef(ctx, ShowRefOptions{
 		Tags:           true,
 		Patterns:       []string{refsepc},
-		Timeout:        opt.Timeout,
 		CommandOptions: opt.CommandOptions,
 	})
 	if err != nil {
@@ -134,7 +128,7 @@ func (r *Repository) Tag(name string, opts ...TagOptions) (*Tag, error) {
 		return nil, err
 	}
 
-	tag, err := r.getTag(opt.Timeout, id)
+	tag, err := r.getTag(ctx, id)
 	if err != nil {
 		return nil, err
 	}
@@ -150,23 +144,18 @@ type TagsOptions struct {
 	SortKey string
 	// Pattern filters tags matching the specified pattern.
 	Pattern string
-	// The timeout duration before giving up for each shell command execution. The
-	// default timeout duration will be used when not supplied.
-	//
-	// Deprecated: Use CommandOptions.Timeout instead.
-	Timeout time.Duration
 	// The additional options to be passed to the underlying git.
 	CommandOptions
 }
 
 // Tags returns a list of tags of the repository.
-func (r *Repository) Tags(opts ...TagsOptions) ([]string, error) {
+func (r *Repository) Tags(ctx context.Context, opts ...TagsOptions) ([]string, error) {
 	var opt TagsOptions
 	if len(opts) > 0 {
 		opt = opts[0]
 	}
 
-	cmd := NewCommand("tag", "--list").AddOptions(opt.CommandOptions)
+	cmd := NewCommand(ctx, "tag", "--list").AddOptions(opt.CommandOptions)
 
 	if opt.SortKey != "" {
 		cmd.AddArgs("--sort=" + opt.SortKey)
@@ -178,7 +167,7 @@ func (r *Repository) Tags(opts ...TagsOptions) ([]string, error) {
 		cmd.AddArgs(opt.Pattern)
 	}
 
-	stdout, err := cmd.RunInDirWithTimeout(opt.Timeout, r.path)
+	stdout, err := cmd.RunInDir(r.path)
 	if err != nil {
 		return nil, err
 	}
@@ -199,23 +188,18 @@ type CreateTagOptions struct {
 	Message string
 	// Author is the author of the tag. It is ignored when tag is not annotated.
 	Author *Signature
-	// The timeout duration before giving up for each shell command execution. The
-	// default timeout duration will be used when not supplied.
-	//
-	// Deprecated: Use CommandOptions.Timeout instead.
-	Timeout time.Duration
 	// The additional options to be passed to the underlying git.
 	CommandOptions
 }
 
 // CreateTag creates a new tag on given revision.
-func (r *Repository) CreateTag(name, rev string, opts ...CreateTagOptions) error {
+func (r *Repository) CreateTag(ctx context.Context, name, rev string, opts ...CreateTagOptions) error {
 	var opt CreateTagOptions
 	if len(opts) > 0 {
 		opt = opts[0]
 	}
 
-	cmd := NewCommand("tag").AddOptions(opt.CommandOptions)
+	cmd := NewCommand(ctx, "tag").AddOptions(opt.CommandOptions)
 	if opt.Annotated {
 		cmd.AddArgs("-a", name)
 		cmd.AddArgs("--message", opt.Message)
@@ -229,7 +213,7 @@ func (r *Repository) CreateTag(name, rev string, opts ...CreateTagOptions) error
 
 	cmd.AddArgs(rev)
 
-	_, err := cmd.RunInDirWithTimeout(opt.Timeout, r.path)
+	_, err := cmd.RunInDir(r.path)
 	return err
 }
 
@@ -237,24 +221,19 @@ func (r *Repository) CreateTag(name, rev string, opts ...CreateTagOptions) error
 //
 // Docs: https://git-scm.com/docs/git-tag#Documentation/git-tag.txt---delete
 type DeleteTagOptions struct {
-	// The timeout duration before giving up for each shell command execution.
-	// The default timeout duration will be used when not supplied.
-	//
-	// Deprecated: Use CommandOptions.Timeout instead.
-	Timeout time.Duration
 	// The additional options to be passed to the underlying git.
 	CommandOptions
 }
 
 // DeleteTag deletes a tag from the repository.
-func (r *Repository) DeleteTag(name string, opts ...DeleteTagOptions) error {
+func (r *Repository) DeleteTag(ctx context.Context, name string, opts ...DeleteTagOptions) error {
 	var opt DeleteTagOptions
 	if len(opts) > 0 {
 		opt = opts[0]
 	}
 
-	_, err := NewCommand("tag", "--delete", "--end-of-options", name).
+	_, err := NewCommand(ctx, "tag", "--delete", "--end-of-options", name).
 		AddOptions(opt.CommandOptions).
-		RunInDirWithTimeout(opt.Timeout, r.path)
+		RunInDir(r.path)
 	return err
 }

@@ -5,13 +5,15 @@
 package git
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
 func TestCommit(t *testing.T) {
-	c, err := testrepo.CatFileCommit("435ffceb7ba576c937e922766e37d4f7abdcc122")
+	ctx := context.Background()
+	c, err := testrepo.CatFileCommit(ctx, "435ffceb7ba576c937e922766e37d4f7abdcc122")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -25,7 +27,8 @@ func TestCommit(t *testing.T) {
 }
 
 func TestCommit_Parent(t *testing.T) {
-	c, err := testrepo.CatFileCommit("435ffceb7ba576c937e922766e37d4f7abdcc122")
+	ctx := context.Background()
+	c, err := testrepo.CatFileCommit(ctx, "435ffceb7ba576c937e922766e37d4f7abdcc122")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -36,7 +39,7 @@ func TestCommit_Parent(t *testing.T) {
 
 	t.Run("Parent", func(t *testing.T) {
 		t.Run("no such parent", func(t *testing.T) {
-			_, err := c.Parent(c.ParentsCount() + 1)
+			_, err := c.Parent(ctx, c.ParentsCount()+1)
 			assert.Equal(t, ErrParentNotExist, err)
 		})
 
@@ -55,7 +58,7 @@ func TestCommit_Parent(t *testing.T) {
 		}
 		for _, test := range tests {
 			t.Run("", func(t *testing.T) {
-				p, err := c.Parent(test.n)
+				p, err := c.Parent(ctx, test.n)
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -66,6 +69,7 @@ func TestCommit_Parent(t *testing.T) {
 }
 
 func TestCommit_CommitByPath(t *testing.T) {
+	ctx := context.Background()
 	tests := []struct {
 		id          string
 		opt         CommitByRevisionOptions
@@ -88,12 +92,12 @@ func TestCommit_CommitByPath(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run("", func(t *testing.T) {
-			c, err := testrepo.CatFileCommit(test.id)
+			c, err := testrepo.CatFileCommit(ctx, test.id)
 			if err != nil {
 				t.Fatal(err)
 			}
 
-			cc, err := c.CommitByPath(test.opt)
+			cc, err := c.CommitByPath(ctx, test.opt)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -113,8 +117,9 @@ func commitsToIDs(commits []*Commit) []string {
 }
 
 func TestCommit_CommitsByPage(t *testing.T) {
+	ctx := context.Background()
 	// There are at most 5 commits can be used for pagination before this commit.
-	c, err := testrepo.CatFileCommit("f5ed01959cffa4758ca0a49bf4c34b138d7eab0a")
+	c, err := testrepo.CatFileCommit(ctx, "f5ed01959cffa4758ca0a49bf4c34b138d7eab0a")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -175,7 +180,7 @@ func TestCommit_CommitsByPage(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run("", func(t *testing.T) {
-			commits, err := c.CommitsByPage(test.page, test.size, test.opt)
+			commits, err := c.CommitsByPage(ctx, test.page, test.size, test.opt)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -186,6 +191,7 @@ func TestCommit_CommitsByPage(t *testing.T) {
 }
 
 func TestCommit_SearchCommits(t *testing.T) {
+	ctx := context.Background()
 	tests := []struct {
 		id           string
 		pattern      string
@@ -271,12 +277,12 @@ func TestCommit_SearchCommits(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run("", func(t *testing.T) {
-			c, err := testrepo.CatFileCommit(test.id)
+			c, err := testrepo.CatFileCommit(ctx, test.id)
 			if err != nil {
 				t.Fatal(err)
 			}
 
-			commits, err := c.SearchCommits(test.pattern, test.opt)
+			commits, err := c.SearchCommits(ctx, test.pattern, test.opt)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -287,6 +293,7 @@ func TestCommit_SearchCommits(t *testing.T) {
 }
 
 func TestCommit_ShowNameStatus(t *testing.T) {
+	ctx := context.Background()
 	tests := []struct {
 		id        string
 		opt       ShowNameStatusOptions
@@ -332,12 +339,12 @@ func TestCommit_ShowNameStatus(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run("", func(t *testing.T) {
-			c, err := testrepo.CatFileCommit(test.id)
+			c, err := testrepo.CatFileCommit(ctx, test.id)
 			if err != nil {
 				t.Fatal(err)
 			}
 
-			status, err := c.ShowNameStatus(test.opt)
+			status, err := c.ShowNameStatus(ctx, test.opt)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -348,6 +355,7 @@ func TestCommit_ShowNameStatus(t *testing.T) {
 }
 
 func TestCommit_CommitsCount(t *testing.T) {
+	ctx := context.Background()
 	tests := []struct {
 		id       string
 		opt      RevListCountOptions
@@ -383,12 +391,12 @@ func TestCommit_CommitsCount(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run("", func(t *testing.T) {
-			c, err := testrepo.CatFileCommit(test.id)
+			c, err := testrepo.CatFileCommit(ctx, test.id)
 			if err != nil {
 				t.Fatal(err)
 			}
 
-			count, err := c.CommitsCount(test.opt)
+			count, err := c.CommitsCount(ctx, test.opt)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -399,6 +407,7 @@ func TestCommit_CommitsCount(t *testing.T) {
 }
 
 func TestCommit_FilesChangedAfter(t *testing.T) {
+	ctx := context.Background()
 	tests := []struct {
 		id       string
 		after    string
@@ -435,12 +444,12 @@ func TestCommit_FilesChangedAfter(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run("", func(t *testing.T) {
-			c, err := testrepo.CatFileCommit(test.id)
+			c, err := testrepo.CatFileCommit(ctx, test.id)
 			if err != nil {
 				t.Fatal(err)
 			}
 
-			files, err := c.FilesChangedAfter(test.after, test.opt)
+			files, err := c.FilesChangedAfter(ctx, test.after, test.opt)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -451,6 +460,7 @@ func TestCommit_FilesChangedAfter(t *testing.T) {
 }
 
 func TestCommit_CommitsAfter(t *testing.T) {
+	ctx := context.Background()
 	tests := []struct {
 		id           string
 		after        string
@@ -479,12 +489,12 @@ func TestCommit_CommitsAfter(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run("", func(t *testing.T) {
-			c, err := testrepo.CatFileCommit(test.id)
+			c, err := testrepo.CatFileCommit(ctx, test.id)
 			if err != nil {
 				t.Fatal(err)
 			}
 
-			commits, err := c.CommitsAfter(test.after, test.opt)
+			commits, err := c.CommitsAfter(ctx, test.after, test.opt)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -495,6 +505,7 @@ func TestCommit_CommitsAfter(t *testing.T) {
 }
 
 func TestCommit_Ancestors(t *testing.T) {
+	ctx := context.Background()
 	tests := []struct {
 		id           string
 		opt          LogOptions
@@ -518,12 +529,12 @@ func TestCommit_Ancestors(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run("", func(t *testing.T) {
-			c, err := testrepo.CatFileCommit(test.id)
+			c, err := testrepo.CatFileCommit(ctx, test.id)
 			if err != nil {
 				t.Fatal(err)
 			}
 
-			commits, err := c.Ancestors(test.opt)
+			commits, err := c.Ancestors(ctx, test.opt)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -534,13 +545,15 @@ func TestCommit_Ancestors(t *testing.T) {
 }
 
 func TestCommit_IsImageFile(t *testing.T) {
+	ctx := context.Background()
+
 	t.Run("not a blob", func(t *testing.T) {
-		c, err := testrepo.CatFileCommit("4e59b72440188e7c2578299fc28ea425fbe9aece")
+		c, err := testrepo.CatFileCommit(ctx, "4e59b72440188e7c2578299fc28ea425fbe9aece")
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		isImage, err := c.IsImageFile("gogs/docs-api")
+		isImage, err := c.IsImageFile(ctx, "gogs/docs-api")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -565,12 +578,12 @@ func TestCommit_IsImageFile(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run("", func(t *testing.T) {
-			c, err := testrepo.CatFileCommit(test.id)
+			c, err := testrepo.CatFileCommit(ctx, test.id)
 			if err != nil {
 				t.Fatal(err)
 			}
 
-			isImage, err := c.IsImageFile(test.name)
+			isImage, err := c.IsImageFile(ctx, test.name)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -581,13 +594,15 @@ func TestCommit_IsImageFile(t *testing.T) {
 }
 
 func TestCommit_IsImageFileByIndex(t *testing.T) {
+	ctx := context.Background()
+
 	t.Run("not a blob", func(t *testing.T) {
-		c, err := testrepo.CatFileCommit("4e59b72440188e7c2578299fc28ea425fbe9aece")
+		c, err := testrepo.CatFileCommit(ctx, "4e59b72440188e7c2578299fc28ea425fbe9aece")
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		isImage, err := c.IsImageFileByIndex("fcf7087e732bfe3c25328248a9bf8c3ccd85bed4") // "gogs"
+		isImage, err := c.IsImageFileByIndex(ctx, "fcf7087e732bfe3c25328248a9bf8c3ccd85bed4") // "gogs"
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -612,12 +627,12 @@ func TestCommit_IsImageFileByIndex(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run("", func(t *testing.T) {
-			c, err := testrepo.CatFileCommit(test.id)
+			c, err := testrepo.CatFileCommit(ctx, test.id)
 			if err != nil {
 				t.Fatal(err)
 			}
 
-			isImage, err := c.IsImageFileByIndex(test.index)
+			isImage, err := c.IsImageFileByIndex(ctx, test.index)
 			if err != nil {
 				t.Fatal(err)
 			}

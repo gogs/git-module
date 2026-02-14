@@ -5,6 +5,7 @@
 package git
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"strings"
@@ -47,10 +48,10 @@ var (
 )
 
 // BinVersion returns current Git binary version that is used by this module.
-func BinVersion() (string, error) {
+func BinVersion(ctx context.Context) (string, error) {
 	gitVersionOnce.Do(func() {
 		var stdout []byte
-		stdout, gitVersionErr = NewCommand("version").Run()
+		stdout, gitVersionErr = NewCommand(ctx, "version").Run()
 		if gitVersionErr != nil {
 			return
 		}

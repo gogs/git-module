@@ -6,12 +6,14 @@ package git
 
 import (
 	"bytes"
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
 func TestBlob(t *testing.T) {
+	ctx := context.Background()
 	expOutput := `This is a sample project students can use during Matthew's Git class.
 
 Here is an addition by me
@@ -41,14 +43,14 @@ This demo also includes an image with changes on a branch for examination of ima
 	}
 
 	t.Run("get data all at once", func(t *testing.T) {
-		p, err := blob.Bytes()
+		p, err := blob.Bytes(ctx)
 		assert.Nil(t, err)
 		assert.Equal(t, expOutput, string(p))
 	})
 
 	t.Run("get data with pipeline", func(t *testing.T) {
 		stdout := new(bytes.Buffer)
-		err := blob.Pipeline(stdout, nil)
+		err := blob.Pipeline(ctx, stdout, nil)
 		assert.Nil(t, err)
 		assert.Equal(t, expOutput, stdout.String())
 	})

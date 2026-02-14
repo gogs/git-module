@@ -6,6 +6,7 @@ package git
 
 import (
 	"bytes"
+	"context"
 	"io"
 	"net/http"
 	"strings"
@@ -53,56 +54,56 @@ func (c *Commit) ParentID(n int) (*SHA1, error) {
 
 // Parent returns the n-th parent commit (0-based) of this commit. It returns
 // ErrRevisionNotExist if no such parent exists.
-func (c *Commit) Parent(n int, opts ...CatFileCommitOptions) (*Commit, error) {
+func (c *Commit) Parent(ctx context.Context, n int, opts ...CatFileCommitOptions) (*Commit, error) {
 	id, err := c.ParentID(n)
 	if err != nil {
 		return nil, err
 	}
 
-	return c.repo.CatFileCommit(id.String(), opts...)
+	return c.repo.CatFileCommit(ctx, id.String(), opts...)
 }
 
 // CommitByPath returns the commit of the path in the state of this commit.
-func (c *Commit) CommitByPath(opts ...CommitByRevisionOptions) (*Commit, error) {
-	return c.repo.CommitByRevision(c.ID.String(), opts...)
+func (c *Commit) CommitByPath(ctx context.Context, opts ...CommitByRevisionOptions) (*Commit, error) {
+	return c.repo.CommitByRevision(ctx, c.ID.String(), opts...)
 }
 
 // CommitsByPage returns a paginated list of commits in the state of this
 // commit. The returned list is in reverse chronological order.
-func (c *Commit) CommitsByPage(page, size int, opts ...CommitsByPageOptions) ([]*Commit, error) {
-	return c.repo.CommitsByPage(c.ID.String(), page, size, opts...)
+func (c *Commit) CommitsByPage(ctx context.Context, page, size int, opts ...CommitsByPageOptions) ([]*Commit, error) {
+	return c.repo.CommitsByPage(ctx, c.ID.String(), page, size, opts...)
 }
 
 // SearchCommits searches commit message with given pattern. The returned list
 // is in reverse chronological order.
-func (c *Commit) SearchCommits(pattern string, opts ...SearchCommitsOptions) ([]*Commit, error) {
-	return c.repo.SearchCommits(c.ID.String(), pattern, opts...)
+func (c *Commit) SearchCommits(ctx context.Context, pattern string, opts ...SearchCommitsOptions) ([]*Commit, error) {
+	return c.repo.SearchCommits(ctx, c.ID.String(), pattern, opts...)
 }
 
 // ShowNameStatus returns name status of the commit.
-func (c *Commit) ShowNameStatus(opts ...ShowNameStatusOptions) (*NameStatus, error) {
-	return c.repo.ShowNameStatus(c.ID.String(), opts...)
+func (c *Commit) ShowNameStatus(ctx context.Context, opts ...ShowNameStatusOptions) (*NameStatus, error) {
+	return c.repo.ShowNameStatus(ctx, c.ID.String(), opts...)
 }
 
 // CommitsCount returns number of total commits up to this commit.
-func (c *Commit) CommitsCount(opts ...RevListCountOptions) (int64, error) {
-	return c.repo.RevListCount([]string{c.ID.String()}, opts...)
+func (c *Commit) CommitsCount(ctx context.Context, opts ...RevListCountOptions) (int64, error) {
+	return c.repo.RevListCount(ctx, []string{c.ID.String()}, opts...)
 }
 
 // FilesChangedAfter returns a list of files changed after given commit ID.
-func (c *Commit) FilesChangedAfter(after string, opts ...DiffNameOnlyOptions) ([]string, error) {
-	return c.repo.DiffNameOnly(after, c.ID.String(), opts...)
+func (c *Commit) FilesChangedAfter(ctx context.Context, after string, opts ...DiffNameOnlyOptions) ([]string, error) {
+	return c.repo.DiffNameOnly(ctx, after, c.ID.String(), opts...)
 }
 
 // CommitsAfter returns a list of commits after given commit ID up to this
 // commit. The returned list is in reverse chronological order.
-func (c *Commit) CommitsAfter(after string, opts ...RevListOptions) ([]*Commit, error) {
-	return c.repo.RevList([]string{after + "..." + c.ID.String()}, opts...)
+func (c *Commit) CommitsAfter(ctx context.Context, after string, opts ...RevListOptions) ([]*Commit, error) {
+	return c.repo.RevList(ctx, []string{after + "..." + c.ID.String()}, opts...)
 }
 
 // Ancestors returns a list of ancestors of this commit in reverse chronological
 // order.
-func (c *Commit) Ancestors(opts ...LogOptions) ([]*Commit, error) {
+func (c *Commit) Ancestors(ctx context.Context, opts ...LogOptions) ([]*Commit, error) {
 	if c.ParentsCount() == 0 {
 		return []*Commit{}, nil
 	}
@@ -114,7 +115,7 @@ func (c *Commit) Ancestors(opts ...LogOptions) ([]*Commit, error) {
 
 	opt.Skip++
 
-	return c.repo.Log(c.ID.String(), opt)
+	return c.repo.Log(ctx, c.ID.String(), opt)
 }
 
 type limitWriter struct {
@@ -138,7 +139,7 @@ func (w *limitWriter) Write(p []byte) (int, error) {
 	return len(p), err
 }
 
-func (c *Commit) isImageFile(blob *Blob, err error) (bool, error) {
+func (c *Commit) isImageFile(ctx context.Context, blob *Blob, err error) (bool, error) {
 	if err != nil {
 		if err == ErrNotBlob {
 			return false, nil
@@ -153,7 +154,7 @@ func (c *Commit) isImageFile(blob *Blob, err error) (bool, error) {
 		N: int64(buf.Cap()),
 	}
 
-	err = blob.Pipeline(stdout, io.Discard)
+	err = blob.Pipeline(ctx, stdout, io.Discard)
 	if err != nil {
 		return false, err
 	}
@@ -162,12 +163,14 @@ func (c *Commit) isImageFile(blob *Blob, err error) (bool, error) {
 }
 
 // IsImageFile returns true if the blob of the commit is an image by subpath.
-func (c *Commit) IsImageFile(subpath string) (bool, error) {
-	return c.isImageFile(c.Blob(subpath))
+func (c *Commit) IsImageFile(ctx context.Context, subpath string) (bool, error) {
+	blob, err := c.Blob(subpath)
+	return c.isImageFile(ctx, blob, err)
 }
 
 // IsImageFileByIndex returns true if the blob of the commit is an image by
 // index.
-func (c *Commit) IsImageFileByIndex(index string) (bool, error) {
-	return c.isImageFile(c.BlobByIndex(index))
+func (c *Commit) IsImageFileByIndex(ctx context.Context, index string) (bool, error) {
+	blob, err := c.BlobByIndex(index)
+	return c.isImageFile(ctx, blob, err)
 }

@@ -5,6 +5,7 @@
 package git
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -12,6 +13,7 @@ import (
 )
 
 func TestCommand_String(t *testing.T) {
+	ctx := context.Background()
 	tests := []struct {
 		name   string
 		args   []string
@@ -35,14 +37,15 @@ func TestCommand_String(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			cmd := NewCommand(test.args...)
+			cmd := NewCommand(ctx, test.args...)
 			assert.Equal(t, test.expStr, cmd.String())
 		})
 	}
 }
 
 func TestCommand_AddArgs(t *testing.T) {
-	cmd := NewCommand()
+	ctx := context.Background()
+	cmd := NewCommand(ctx)
 	assert.Equal(t, []string(nil), cmd.args)
 
 	cmd.AddArgs("push")
@@ -51,7 +54,8 @@ func TestCommand_AddArgs(t *testing.T) {
 }
 
 func TestCommand_AddEnvs(t *testing.T) {
-	cmd := NewCommand()
+	ctx := context.Background()
+	cmd := NewCommand(ctx)
 	assert.Equal(t, []string(nil), cmd.envs)
 
 	cmd.AddEnvs("GIT_DIR=/tmp")
@@ -60,6 +64,8 @@ func TestCommand_AddEnvs(t *testing.T) {
 }
 
 func TestCommand_RunWithTimeout(t *testing.T) {
-	_, err := NewCommand("version").WithTimeout(time.Nanosecond).Run()
+	ctx, cancel := context.WithTimeout(context.Background(), time.Nanosecond)
+	defer cancel()
+	_, err := NewCommand(ctx, "version").Run()
 	assert.Equal(t, ErrExecTimeout, err)
 }

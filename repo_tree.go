@@ -6,8 +6,8 @@ package git
 
 import (
 	"bytes"
+	"context"
 	"fmt"
-	"time"
 )
 
 // UnescapeChars reverses escaped characters in quoted output from Git.
@@ -104,17 +104,12 @@ type LsTreeOptions struct {
 	// Verbatim outputs filenames unquoted using the -z flag. This avoids issues
 	// with special characters in filenames that would otherwise be quoted by Git.
 	Verbatim bool
-	// The timeout duration before giving up for each shell command execution. The
-	// default timeout duration will be used when not supplied.
-	//
-	// Deprecated: Use CommandOptions.Timeout instead.
-	Timeout time.Duration
 	// The additional options to be passed to the underlying Git.
 	CommandOptions
 }
 
 // LsTree returns the tree object in the repository by given tree ID.
-func (r *Repository) LsTree(treeID string, opts ...LsTreeOptions) (*Tree, error) {
+func (r *Repository) LsTree(ctx context.Context, treeID string, opts ...LsTreeOptions) (*Tree, error) {
 	var opt LsTreeOptions
 	if len(opts) > 0 {
 		opt = opts[0]
@@ -127,7 +122,7 @@ func (r *Repository) LsTree(treeID string, opts ...LsTreeOptions) (*Tree, error)
 	}
 
 	var err error
-	treeID, err = r.RevParse(treeID, RevParseOptions{Timeout: opt.Timeout}) //nolint
+	treeID, err = r.RevParse(ctx, treeID) //nolint
 	if err != nil {
 		return nil, err
 	}
@@ -136,14 +131,14 @@ func (r *Repository) LsTree(treeID string, opts ...LsTreeOptions) (*Tree, error)
 		repo: r,
 	}
 
-	cmd := NewCommand("ls-tree")
+	cmd := NewCommand(ctx, "ls-tree")
 	if opt.Verbatim {
 		cmd.AddArgs("-z")
 	}
 	stdout, err := cmd.
 		AddOptions(opt.CommandOptions).
 		AddArgs(treeID).
-		RunInDirWithTimeout(opt.Timeout, r.path)
+		RunInDir(r.path)
 	if err != nil {
 		return nil, err
 	}

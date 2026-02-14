@@ -5,6 +5,7 @@
 package git
 
 import (
+	"context"
 	"runtime"
 	"testing"
 
@@ -12,6 +13,7 @@ import (
 )
 
 func TestRepository_Grep_Simple(t *testing.T) {
+	ctx := context.Background()
 	want := []*GrepResult{
 		{
 			Tree:   "HEAD",
@@ -51,11 +53,12 @@ func TestRepository_Grep_Simple(t *testing.T) {
 			Text:   `println "${programmingPoints} plus 3 bonus points is ${sum(programmingPoints, 3)}"`,
 		},
 	}
-	got := testrepo.Grep("programmingPoints")
+	got := testrepo.Grep(ctx, "programmingPoints")
 	assert.Equal(t, want, got)
 }
 
 func TestRepository_Grep_IgnoreCase(t *testing.T) {
+	ctx := context.Background()
 	want := []*GrepResult{
 		{
 			Tree:   "HEAD",
@@ -107,11 +110,12 @@ func TestRepository_Grep_IgnoreCase(t *testing.T) {
 			Text:   `        System.out.println( "Hello World!" );`,
 		},
 	}
-	got := testrepo.Grep("Hello", GrepOptions{IgnoreCase: true})
+	got := testrepo.Grep(ctx, "Hello", GrepOptions{IgnoreCase: true})
 	assert.Equal(t, want, got)
 }
 
 func TestRepository_Grep_ExtendedRegexp(t *testing.T) {
+	ctx := context.Background()
 	if runtime.GOOS == "darwin" {
 		t.Skip("Skipping testing on macOS")
 		return
@@ -125,11 +129,12 @@ func TestRepository_Grep_ExtendedRegexp(t *testing.T) {
 			Text:   `        System.out.println( "Hello World!" );`,
 		},
 	}
-	got := testrepo.Grep(`Hello\sW\w+`, GrepOptions{ExtendedRegexp: true})
+	got := testrepo.Grep(ctx, `Hello\sW\w+`, GrepOptions{ExtendedRegexp: true})
 	assert.Equal(t, want, got)
 }
 
 func TestRepository_Grep_WordRegexp(t *testing.T) {
+	ctx := context.Background()
 	want := []*GrepResult{
 		{
 			Tree:   "HEAD",
@@ -139,6 +144,6 @@ func TestRepository_Grep_WordRegexp(t *testing.T) {
 			Text:   ` * Hello world!`,
 		},
 	}
-	got := testrepo.Grep("world", GrepOptions{WordRegexp: true})
+	got := testrepo.Grep(ctx, "world", GrepOptions{WordRegexp: true})
 	assert.Equal(t, want, got)
 }

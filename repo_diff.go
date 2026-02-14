@@ -6,9 +6,9 @@ package git
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
-	"time"
 )
 
 // DiffOptions contains optional arguments for parsing diff.
@@ -18,28 +18,23 @@ type DiffOptions struct {
 	// The commit ID to used for computing diff between a range of commits (base,
 	// revision]. When not set, only computes diff for a single commit at revision.
 	Base string
-	// The timeout duration before giving up for each shell command execution. The
-	// default timeout duration will be used when not supplied.
-	//
-	// Deprecated: Use CommandOptions.Timeout instead.
-	Timeout time.Duration
 	// The additional options to be passed to the underlying git.
 	CommandOptions
 }
 
 // Diff returns a parsed diff object between given commits of the repository.
-func (r *Repository) Diff(rev string, maxFiles, maxFileLines, maxLineChars int, opts ...DiffOptions) (*Diff, error) {
+func (r *Repository) Diff(ctx context.Context, rev string, maxFiles, maxFileLines, maxLineChars int, opts ...DiffOptions) (*Diff, error) {
 	var opt DiffOptions
 	if len(opts) > 0 {
 		opt = opts[0]
 	}
 
-	commit, err := r.CatFileCommit(rev, CatFileCommitOptions{Timeout: opt.Timeout})
+	commit, err := r.CatFileCommit(ctx, rev)
 	if err != nil {
 		return nil, err
 	}
 
-	cmd := NewCommand()
+	cmd := NewCommand(ctx)
 	if opt.Base == "" {
 		// First commit of repository
 		if commit.ParentsCount() == 0 {
@@ -47,7 +42,7 @@ func (r *Repository) Diff(rev string, maxFiles, maxFileLines, maxLineChars int, 
 				AddOptions(opt.CommandOptions).
 				AddArgs("--full-index", "--end-of-options", rev)
 		} else {
-			c, err := commit.Parent(0)
+			c, err := commit.Parent(ctx, 0)
 			if err != nil {
 				return nil, err
 			}
@@ -66,7 +61,7 @@ func (r *Repository) Diff(rev string, maxFiles, maxFileLines, maxLineChars int, 
 	go StreamParseDiff(stdout, done, maxFiles, maxFileLines, maxLineChars)
 
 	stderr := new(bytes.Buffer)
-	err = cmd.RunInDirPipelineWithTimeout(opt.Timeout, w, stderr, r.path)
+	err = cmd.RunInDirPipeline(w, stderr, r.path)
 	_ = w.Close() // Close writer to exit parsing goroutine
 	if err != nil {
 		return nil, concatenateError(err, stderr.String())
@@ -88,27 +83,24 @@ const (
 //
 // Docs: https://git-scm.com/docs/git-format-patch
 type RawDiffOptions struct {
-	// The timeout duration before giving up for each shell command execution. The
-	// default timeout duration will be used when not supplied.
-	Timeout time.Duration
 	// The additional options to be passed to the underlying git.
 	CommandOptions
 }
 
 // RawDiff dumps diff of repository in given revision directly to given
 // io.Writer.
-func (r *Repository) RawDiff(rev string, diffType RawDiffFormat, w io.Writer, opts ...RawDiffOptions) error {
+func (r *Repository) RawDiff(ctx context.Context, rev string, diffType RawDiffFormat, w io.Writer, opts ...RawDiffOptions) error {
 	var opt RawDiffOptions
 	if len(opts) > 0 {
 		opt = opts[0]
 	}
 
-	commit, err := r.CatFileCommit(rev, CatFileCommitOptions{Timeout: opt.Timeout}) //nolint
+	commit, err := r.CatFileCommit(ctx, rev) //nolint
 	if err != nil {
 		return err
 	}
 
-	cmd := NewCommand()
+	cmd := NewCommand(ctx)
 	switch diffType {
 	case RawDiffNormal:
 		if commit.ParentsCount() == 0 {
@@ -116,7 +108,7 @@ func (r *Repository) RawDiff(rev string, diffType RawDiffFormat, w io.Writer, op
 				AddOptions(opt.CommandOptions).
 				AddArgs("--full-index", "--end-of-options", rev)
 		} else {
-			c, err := commit.Parent(0)
+			c, err := commit.Parent(ctx, 0)
 			if err != nil {
 				return err
 			}
@@ -130,7 +122,7 @@ func (r *Repository) RawDiff(rev string, diffType RawDiffFormat, w io.Writer, op
 				AddOptions(opt.CommandOptions).
 				AddArgs("--full-index", "--no-signoff", "--no-signature", "--stdout", "--root", "--end-of-options", rev)
 		} else {
-			c, err := commit.Parent(0)
+			c, err := commit.Parent(ctx, 0)
 			if err != nil {
 				return err
 			}
@@ -143,7 +135,7 @@ func (r *Repository) RawDiff(rev string, diffType RawDiffFormat, w io.Writer, op
 	}
 
 	stderr := new(bytes.Buffer)
-	if err = cmd.RunInDirPipelineWithTimeout(opt.Timeout, w, stderr, r.path); err != nil {
+	if err = cmd.RunInDirPipeline(w, stderr, r.path); err != nil {
 		return concatenateError(err, stderr.String())
 	}
 	return nil
@@ -151,23 +143,20 @@ func (r *Repository) RawDiff(rev string, diffType RawDiffFormat, w io.Writer, op
 
 // DiffBinaryOptions contains optional arguments for producing binary patch.
 type DiffBinaryOptions struct {
-	// The timeout duration before giving up for each shell command execution. The
-	// default timeout duration will be used when not supplied.
-	Timeout time.Duration
 	// The additional options to be passed to the underlying git.
 	CommandOptions
 }
 
 // DiffBinary returns binary patch between base and head revisions that could be
 // used for git-apply.
-func (r *Repository) DiffBinary(base, head string, opts ...DiffBinaryOptions) ([]byte, error) {
+func (r *Repository) DiffBinary(ctx context.Context, base, head string, opts ...DiffBinaryOptions) ([]byte, error) {
 	var opt DiffBinaryOptions
 	if len(opts) > 0 {
 		opt = opts[0]
 	}
 
-	return NewCommand("diff").
+	return NewCommand(ctx, "diff").
 		AddOptions(opt.CommandOptions).
 		AddArgs("--full-index", "--binary", base, head).
-		RunInDirWithTimeout(opt.Timeout, r.path)
+		RunInDir(r.path)
 }

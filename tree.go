@@ -5,6 +5,7 @@
 package git
 
 import (
+	"context"
 	"strings"
 	"sync"
 )
@@ -22,7 +23,7 @@ type Tree struct {
 }
 
 // Subtree returns a subtree by given subpath of the tree.
-func (t *Tree) Subtree(subpath string, opts ...LsTreeOptions) (*Tree, error) {
+func (t *Tree) Subtree(ctx context.Context, subpath string, opts ...LsTreeOptions) (*Tree, error) {
 	if len(subpath) == 0 {
 		return t, nil
 	}
@@ -35,7 +36,7 @@ func (t *Tree) Subtree(subpath string, opts ...LsTreeOptions) (*Tree, error) {
 		e   *TreeEntry
 	)
 	for _, name := range paths {
-		e, err = p.TreeEntry(name, opts...)
+		e, err = p.TreeEntry(ctx, name, opts...)
 		if err != nil {
 			return nil, err
 		}
@@ -51,14 +52,14 @@ func (t *Tree) Subtree(subpath string, opts ...LsTreeOptions) (*Tree, error) {
 }
 
 // Entries returns all entries of the tree.
-func (t *Tree) Entries(opts ...LsTreeOptions) (Entries, error) {
+func (t *Tree) Entries(ctx context.Context, opts ...LsTreeOptions) (Entries, error) {
 	t.entriesOnce.Do(func() {
 		if t.entries != nil {
 			return
 		}
 
 		var tt *Tree
-		tt, t.entriesErr = t.repo.LsTree(t.id.String(), opts...)
+		tt, t.entriesErr = t.repo.LsTree(ctx, t.id.String(), opts...)
 		if t.entriesErr != nil {
 			return
 		}

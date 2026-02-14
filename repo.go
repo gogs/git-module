@@ -7,6 +7,7 @@ package git
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"os"
@@ -14,7 +15,6 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
-	"time"
 )
 
 // Repository contains information of a Git repository.
@@ -35,7 +35,7 @@ const LogFormatHashOnly = `format:%H`
 
 // parsePrettyFormatLogToList returns a list of commits parsed from given logs
 // that are formatted in LogFormatHashOnly.
-func (r *Repository) parsePrettyFormatLogToList(timeout time.Duration, logs []byte) ([]*Commit, error) {
+func (r *Repository) parsePrettyFormatLogToList(ctx context.Context, logs []byte) ([]*Commit, error) {
 	if len(logs) == 0 {
 		return []*Commit{}, nil
 	}
@@ -44,7 +44,7 @@ func (r *Repository) parsePrettyFormatLogToList(timeout time.Duration, logs []by
 	ids := bytes.Split(logs, []byte{'\n'})
 	commits := make([]*Commit, len(ids))
 	for i, id := range ids {
-		commits[i], err = r.CatFileCommit(string(id), CatFileCommitOptions{Timeout: timeout})
+		commits[i], err = r.CatFileCommit(ctx, string(id))
 		if err != nil {
 			return nil, err
 		}
@@ -58,17 +58,12 @@ func (r *Repository) parsePrettyFormatLogToList(timeout time.Duration, logs []by
 type InitOptions struct {
 	// Indicates whether the repository should be initialized in bare format.
 	Bare bool
-	// The timeout duration before giving up for each shell command execution. The
-	// default timeout duration will be used when not supplied.
-	//
-	// Deprecated: Use CommandOptions.Timeout instead.
-	Timeout time.Duration
 	// The additional options to be passed to the underlying git.
 	CommandOptions
 }
 
 // Init initializes a new Git repository.
-func Init(path string, opts ...InitOptions) error {
+func Init(ctx context.Context, path string, opts ...InitOptions) error {
 	var opt InitOptions
 	if len(opts) > 0 {
 		opt = opts[0]
@@ -79,12 +74,12 @@ func Init(path string, opts ...InitOptions) error {
 		return err
 	}
 
-	cmd := NewCommand("init").AddOptions(opt.CommandOptions)
+	cmd := NewCommand(ctx, "init").AddOptions(opt.CommandOptions)
 	if opt.Bare {
 		cmd.AddArgs("--bare")
 	}
 	cmd.AddArgs("--end-of-options")
-	_, err = cmd.RunInDirWithTimeout(opt.Timeout, path)
+	_, err = cmd.RunInDir(path)
 	return err
 }
 
@@ -120,17 +115,12 @@ type CloneOptions struct {
 	Branch string
 	// The number of revisions to clone.
 	Depth uint64
-	// The timeout duration before giving up for each shell command execution. The
-	// default timeout duration will be used when not supplied.
-	//
-	// Deprecated: Use CommandOptions.Timeout instead.
-	Timeout time.Duration
 	// The additional options to be passed to the underlying git.
 	CommandOptions
 }
 
 // Clone clones the repository from remote URL to the destination.
-func Clone(url, dst string, opts ...CloneOptions) error {
+func Clone(ctx context.Context, url, dst string, opts ...CloneOptions) error {
 	var opt CloneOptions
 	if len(opts) > 0 {
 		opt = opts[0]
@@ -141,7 +131,7 @@ func Clone(url, dst string, opts ...CloneOptions) error {
 		return err
 	}
 
-	cmd := NewCommand("clone").AddOptions(opt.CommandOptions)
+	cmd := NewCommand(ctx, "clone").AddOptions(opt.CommandOptions)
 	if opt.Mirror {
 		cmd.AddArgs("--mirror")
 	}
@@ -159,7 +149,7 @@ func Clone(url, dst string, opts ...CloneOptions) error {
 	}
 
 	cmd.AddArgs("--end-of-options")
-	_, err = cmd.AddArgs(url, dst).RunWithTimeout(opt.Timeout)
+	_, err = cmd.AddArgs(url, dst).Run()
 	return err
 }
 
@@ -169,28 +159,23 @@ func Clone(url, dst string, opts ...CloneOptions) error {
 type FetchOptions struct {
 	// Indicates whether to prune during fetching.
 	Prune bool
-	// The timeout duration before giving up for each shell command execution. The
-	// default timeout duration will be used when not supplied.
-	//
-	// Deprecated: Use CommandOptions.Timeout instead.
-	Timeout time.Duration
 	// The additional options to be passed to the underlying git.
 	CommandOptions
 }
 
 // Fetch fetches updates for the repository.
-func (r *Repository) Fetch(opts ...FetchOptions) error {
+func (r *Repository) Fetch(ctx context.Context, opts ...FetchOptions) error {
 	var opt FetchOptions
 	if len(opts) > 0 {
 		opt = opts[0]
 	}
 
-	cmd := NewCommand("fetch").AddOptions(opt.CommandOptions)
+	cmd := NewCommand(ctx, "fetch").AddOptions(opt.CommandOptions)
 	if opt.Prune {
 		cmd.AddArgs("--prune")
 	}
 
-	_, err := cmd.RunInDirWithTimeout(opt.Timeout, r.path)
+	_, err := cmd.RunInDir(r.path)
 	return err
 }
 
@@ -206,23 +191,18 @@ type PullOptions struct {
 	Remote string
 	// The branch to pull updates from when All=false and Remote is supplied.
 	Branch string
-	// The timeout duration before giving up for each shell command execution. The
-	// default timeout duration will be used when not supplied.
-	//
-	// Deprecated: Use CommandOptions.Timeout instead.
-	Timeout time.Duration
 	// The additional options to be passed to the underlying git.
 	CommandOptions
 }
 
 // Pull pulls updates for the repository.
-func (r *Repository) Pull(opts ...PullOptions) error {
+func (r *Repository) Pull(ctx context.Context, opts ...PullOptions) error {
 	var opt PullOptions
 	if len(opts) > 0 {
 		opt = opts[0]
 	}
 
-	cmd := NewCommand("pull").AddOptions(opt.CommandOptions)
+	cmd := NewCommand(ctx, "pull").AddOptions(opt.CommandOptions)
 	if opt.Rebase {
 		cmd.AddArgs("--rebase")
 	}
@@ -236,7 +216,7 @@ func (r *Repository) Pull(opts ...PullOptions) error {
 		}
 	}
 
-	_, err := cmd.RunInDirWithTimeout(opt.Timeout, r.path)
+	_, err := cmd.RunInDir(r.path)
 	return err
 }
 
@@ -244,24 +224,19 @@ func (r *Repository) Pull(opts ...PullOptions) error {
 //
 // Docs: https://git-scm.com/docs/git-push
 type PushOptions struct {
-	// The timeout duration before giving up for each shell command execution. The
-	// default timeout duration will be used when not supplied.
-	//
-	// Deprecated: Use CommandOptions.Timeout instead.
-	Timeout time.Duration
 	// The additional options to be passed to the underlying git.
 	CommandOptions
 }
 
 // Push pushes local changes to given remote and branch for the repository.
-func (r *Repository) Push(remote, branch string, opts ...PushOptions) error {
+func (r *Repository) Push(ctx context.Context, remote, branch string, opts ...PushOptions) error {
 	var opt PushOptions
 	if len(opts) > 0 {
 		opt = opts[0]
 	}
 
-	cmd := NewCommand("push").AddOptions(opt.CommandOptions).AddArgs("--end-of-options", remote, branch)
-	_, err := cmd.RunInDirWithTimeout(opt.Timeout, r.path)
+	cmd := NewCommand(ctx, "push").AddOptions(opt.CommandOptions).AddArgs("--end-of-options", remote, branch)
+	_, err := cmd.RunInDir(r.path)
 	return err
 }
 
@@ -271,23 +246,18 @@ func (r *Repository) Push(remote, branch string, opts ...PushOptions) error {
 type CheckoutOptions struct {
 	// The base branch if checks out to a new branch.
 	BaseBranch string
-	// The timeout duration before giving up for each shell command execution. The
-	// default timeout duration will be used when not supplied.
-	//
-	// Deprecated: Use CommandOptions.Timeout instead.
-	Timeout time.Duration
 	// The additional options to be passed to the underlying git.
 	CommandOptions
 }
 
 // Checkout checks out to given branch for the repository.
-func (r *Repository) Checkout(branch string, opts ...CheckoutOptions) error {
+func (r *Repository) Checkout(ctx context.Context, branch string, opts ...CheckoutOptions) error {
 	var opt CheckoutOptions
 	if len(opts) > 0 {
 		opt = opts[0]
 	}
 
-	cmd := NewCommand("checkout").AddOptions(opt.CommandOptions)
+	cmd := NewCommand(ctx, "checkout").AddOptions(opt.CommandOptions)
 	if opt.BaseBranch != "" {
 		cmd.AddArgs("-b")
 	}
@@ -296,7 +266,7 @@ func (r *Repository) Checkout(branch string, opts ...CheckoutOptions) error {
 		cmd.AddArgs(opt.BaseBranch)
 	}
 
-	_, err := cmd.RunInDirWithTimeout(opt.Timeout, r.path)
+	_, err := cmd.RunInDir(r.path)
 	return err
 }
 
@@ -306,23 +276,18 @@ func (r *Repository) Checkout(branch string, opts ...CheckoutOptions) error {
 type ResetOptions struct {
 	// Indicates whether to perform a hard reset.
 	Hard bool
-	// The timeout duration before giving up for each shell command execution. The
-	// default timeout duration will be used when not supplied.
-	//
-	// Deprecated: Use CommandOptions.Timeout instead.
-	Timeout time.Duration
 	// The additional options to be passed to the underlying git.
 	CommandOptions
 }
 
 // Reset resets working tree to given revision for the repository.
-func (r *Repository) Reset(rev string, opts ...ResetOptions) error {
+func (r *Repository) Reset(ctx context.Context, rev string, opts ...ResetOptions) error {
 	var opt ResetOptions
 	if len(opts) > 0 {
 		opt = opts[0]
 	}
 
-	cmd := NewCommand("reset")
+	cmd := NewCommand(ctx, "reset")
 	if opt.Hard {
 		cmd.AddArgs("--hard")
 	}
@@ -336,24 +301,19 @@ func (r *Repository) Reset(rev string, opts ...ResetOptions) error {
 //
 // Docs: https://git-scm.com/docs/git-mv
 type MoveOptions struct {
-	// The timeout duration before giving up for each shell command execution. The
-	// default timeout duration will be used when not supplied.
-	//
-	// Deprecated: Use CommandOptions.Timeout instead.
-	Timeout time.Duration
 	// The additional options to be passed to the underlying git.
 	CommandOptions
 }
 
 // Move moves a file, a directory, or a symlink file or directory from source to
 // destination for the repository.
-func (r *Repository) Move(src, dst string, opts ...MoveOptions) error {
+func (r *Repository) Move(ctx context.Context, src, dst string, opts ...MoveOptions) error {
 	var opt MoveOptions
 	if len(opts) > 0 {
 		opt = opts[0]
 	}
 
-	_, err := NewCommand("mv").AddOptions(opt.CommandOptions).AddArgs("--end-of-options", src, dst).RunInDirWithTimeout(opt.Timeout, r.path)
+	_, err := NewCommand(ctx, "mv").AddOptions(opt.CommandOptions).AddArgs("--end-of-options", src, dst).RunInDir(r.path)
 	return err
 }
 
@@ -365,23 +325,18 @@ type AddOptions struct {
 	All bool
 	// The specific pathspecs to be added to index.
 	Pathspecs []string
-	// The timeout duration before giving up for each shell command execution. The
-	// default timeout duration will be used when not supplied.
-	//
-	// Deprecated: Use CommandOptions.Timeout instead.
-	Timeout time.Duration
 	// The additional options to be passed to the underlying git.
 	CommandOptions
 }
 
 // Add adds local changes to index for the repository.
-func (r *Repository) Add(opts ...AddOptions) error {
+func (r *Repository) Add(ctx context.Context, opts ...AddOptions) error {
 	var opt AddOptions
 	if len(opts) > 0 {
 		opt = opts[0]
 	}
 
-	cmd := NewCommand("add").AddOptions(opt.CommandOptions)
+	cmd := NewCommand(ctx, "add").AddOptions(opt.CommandOptions)
 	if opt.All {
 		cmd.AddArgs("--all")
 	}
@@ -389,7 +344,7 @@ func (r *Repository) Add(opts ...AddOptions) error {
 		cmd.AddArgs("--")
 		cmd.AddArgs(opt.Pathspecs...)
 	}
-	_, err := cmd.RunInDirWithTimeout(opt.Timeout, r.path)
+	_, err := cmd.RunInDir(r.path)
 	return err
 }
 
@@ -399,24 +354,19 @@ func (r *Repository) Add(opts ...AddOptions) error {
 type CommitOptions struct {
 	// Author is the author of the changes if that's not the same as committer.
 	Author *Signature
-	// The timeout duration before giving up for each shell command execution. The
-	// default timeout duration will be used when not supplied.
-	//
-	// Deprecated: Use CommandOptions.Timeout instead.
-	Timeout time.Duration
 	// The additional options to be passed to the underlying git.
 	CommandOptions
 }
 
 // Commit commits local changes with given author, committer and message for the
 // repository.
-func (r *Repository) Commit(committer *Signature, message string, opts ...CommitOptions) error {
+func (r *Repository) Commit(ctx context.Context, committer *Signature, message string, opts ...CommitOptions) error {
 	var opt CommitOptions
 	if len(opts) > 0 {
 		opt = opts[0]
 	}
 
-	cmd := NewCommand("commit")
+	cmd := NewCommand(ctx, "commit")
 	cmd.AddCommitter(committer)
 
 	if opt.Author == nil {
@@ -426,7 +376,7 @@ func (r *Repository) Commit(committer *Signature, message string, opts ...Commit
 		AddArgs("-m", message).
 		AddOptions(opt.CommandOptions)
 
-	_, err := cmd.RunInDirWithTimeout(opt.Timeout, r.path)
+	_, err := cmd.RunInDir(r.path)
 	// No stderr but exit status 1 means nothing to commit.
 	if err != nil && err.Error() == "exit status 1" {
 		return nil
@@ -445,17 +395,12 @@ type NameStatus struct {
 //
 // Docs: https://git-scm.com/docs/git-show#Documentation/git-show.txt---name-status
 type ShowNameStatusOptions struct {
-	// The timeout duration before giving up for each shell command execution. The
-	// default timeout duration will be used when not supplied.
-	//
-	// Deprecated: Use CommandOptions.Timeout instead.
-	Timeout time.Duration
 	// The additional options to be passed to the underlying git.
 	CommandOptions
 }
 
 // ShowNameStatus returns name status of given revision of the repository.
-func (r *Repository) ShowNameStatus(rev string, opts ...ShowNameStatusOptions) (*NameStatus, error) {
+func (r *Repository) ShowNameStatus(ctx context.Context, rev string, opts ...ShowNameStatusOptions) (*NameStatus, error) {
 	var opt ShowNameStatusOptions
 	if len(opts) > 0 {
 		opt = opts[0]
@@ -485,10 +430,10 @@ func (r *Repository) ShowNameStatus(rev string, opts ...ShowNameStatusOptions) (
 	}()
 
 	stderr := new(bytes.Buffer)
-	cmd := NewCommand("show", "--name-status", "--pretty=format:''").
+	cmd := NewCommand(ctx, "show", "--name-status", "--pretty=format:''").
 		AddOptions(opt.CommandOptions).
 		AddArgs("--end-of-options", rev)
-	err := cmd.RunInDirPipelineWithTimeout(opt.Timeout, w, stderr, r.path)
+	err := cmd.RunInDirPipeline(w, stderr, r.path)
 	_ = w.Close() // Close writer to exit parsing goroutine
 	if err != nil {
 		return nil, concatenateError(err, stderr.String())
@@ -502,27 +447,22 @@ func (r *Repository) ShowNameStatus(rev string, opts ...ShowNameStatusOptions) (
 //
 // Docs: https://git-scm.com/docs/git-rev-parse
 type RevParseOptions struct {
-	// The timeout duration before giving up for each shell command execution. The
-	// default timeout duration will be used when not supplied.
-	//
-	// Deprecated: Use CommandOptions.Timeout instead.
-	Timeout time.Duration
 	// The additional options to be passed to the underlying git.
 	CommandOptions
 }
 
 // RevParse returns full length (40) commit ID by given revision in the
 // repository.
-func (r *Repository) RevParse(rev string, opts ...RevParseOptions) (string, error) {
+func (r *Repository) RevParse(ctx context.Context, rev string, opts ...RevParseOptions) (string, error) {
 	var opt RevParseOptions
 	if len(opts) > 0 {
 		opt = opts[0]
 	}
 
-	commitID, err := NewCommand("rev-parse").
+	commitID, err := NewCommand(ctx, "rev-parse").
 		AddOptions(opt.CommandOptions).
 		AddArgs(rev).
-		RunInDirWithTimeout(opt.Timeout, r.path)
+		RunInDir(r.path)
 	if err != nil {
 		if strings.Contains(err.Error(), "exit status 128") {
 			return "", ErrRevisionNotExist
@@ -548,25 +488,20 @@ type CountObject struct {
 //
 // Docs: https://git-scm.com/docs/git-count-objects
 type CountObjectsOptions struct {
-	// The timeout duration before giving up for each shell command execution. The
-	// default timeout duration will be used when not supplied.
-	//
-	// Deprecated: Use CommandOptions.Timeout instead.
-	Timeout time.Duration
 	// The additional options to be passed to the underlying git.
 	CommandOptions
 }
 
 // CountObjects returns disk usage report of the repository.
-func (r *Repository) CountObjects(opts ...CountObjectsOptions) (*CountObject, error) {
+func (r *Repository) CountObjects(ctx context.Context, opts ...CountObjectsOptions) (*CountObject, error) {
 	var opt CountObjectsOptions
 	if len(opts) > 0 {
 		opt = opts[0]
 	}
 
-	stdout, err := NewCommand("count-objects", "-v").
+	stdout, err := NewCommand(ctx, "count-objects", "-v").
 		AddOptions(opt.CommandOptions).
-		RunInDirWithTimeout(opt.Timeout, r.path)
+		RunInDir(r.path)
 	if err != nil {
 		return nil, err
 	}
@@ -605,24 +540,19 @@ func (r *Repository) CountObjects(opts ...CountObjectsOptions) (*CountObject, er
 //
 // Docs: https://git-scm.com/docs/git-fsck
 type FsckOptions struct {
-	// The timeout duration before giving up for each shell command execution. The
-	// default timeout duration will be used when not supplied.
-	//
-	// Deprecated: Use CommandOptions.Timeout instead.
-	Timeout time.Duration
 	// The additional options to be passed to the underlying git.
 	CommandOptions
 }
 
 // Fsck verifies the connectivity and validity of the objects in the database
 // for the repository.
-func (r *Repository) Fsck(opts ...FsckOptions) error {
+func (r *Repository) Fsck(ctx context.Context, opts ...FsckOptions) error {
 	var opt FsckOptions
 	if len(opts) > 0 {
 		opt = opts[0]
 	}
 
-	cmd := NewCommand("fsck").AddOptions(opt.CommandOptions)
-	_, err := cmd.RunInDirWithTimeout(opt.Timeout, r.path)
+	cmd := NewCommand(ctx, "fsck").AddOptions(opt.CommandOptions)
+	_, err := cmd.RunInDir(r.path)
 	return err
 }

@@ -6,6 +6,7 @@ package git
 
 import (
 	"bytes"
+	"context"
 	"flag"
 	stdlog "log"
 	"os"
@@ -25,9 +26,11 @@ func TestMain(m *testing.M) {
 		SetOutput(os.Stdout)
 	}
 
+	ctx := context.Background()
+
 	// Set up the test repository
 	if !isExist(repoPath) {
-		if err := Clone("https://github.com/gogs/git-module-testrepo.git", repoPath, CloneOptions{
+		if err := Clone(ctx, "https://github.com/gogs/git-module-testrepo.git", repoPath, CloneOptions{
 			Bare: true,
 		}); err != nil {
 			stdlog.Fatal(err)

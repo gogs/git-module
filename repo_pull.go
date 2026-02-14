@@ -5,38 +5,33 @@
 package git
 
 import (
+	"context"
 	"strings"
-	"time"
 )
 
 // MergeBaseOptions contains optional arguments for getting merge base.
 //
 // Docs: https://git-scm.com/docs/git-merge-base
 type MergeBaseOptions struct {
-	// The timeout duration before giving up for each shell command execution. The
-	// default timeout duration will be used when not supplied.
-	//
-	// Deprecated: Use CommandOptions.Timeout instead.
-	Timeout time.Duration
 	// The additional options to be passed to the underlying git.
 	CommandOptions
 }
 
 // MergeBase returns merge base between base and head revisions of the
 // repository.
-func (r *Repository) MergeBase(base, head string, opts ...MergeBaseOptions) (string, error) {
+func (r *Repository) MergeBase(ctx context.Context, base, head string, opts ...MergeBaseOptions) (string, error) {
 	var opt MergeBaseOptions
 	if len(opts) > 0 {
 		opt = opts[0]
 	}
 
-	stdout, err := NewCommand("merge-base").
+	stdout, err := NewCommand(ctx, "merge-base").
 		AddOptions(opt.CommandOptions).
 		AddArgs(
 			"--end-of-options",
 			base,
 			head,
-		).RunInDirWithTimeout(opt.Timeout, r.path)
+		).RunInDir(r.path)
 	if err != nil {
 		if strings.Contains(err.Error(), "exit status 1") {
 			return "", ErrNoMergeBase

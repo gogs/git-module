@@ -5,6 +5,7 @@
 package git
 
 import (
+	"context"
 	"fmt"
 	"testing"
 
@@ -12,12 +13,14 @@ import (
 )
 
 func TestRepository_Blame(t *testing.T) {
+	ctx := context.Background()
+
 	t.Run("bad file", func(t *testing.T) {
-		_, err := testrepo.Blame("", "404.txt")
+		_, err := testrepo.Blame(ctx, "", "404.txt")
 		assert.Error(t, err)
 	})
 
-	blame, err := testrepo.Blame("cfc3b2993f74726356887a5ec093de50486dc617", "README.txt")
+	blame, err := testrepo.Blame(ctx, "cfc3b2993f74726356887a5ec093de50486dc617", "README.txt")
 	assert.Nil(t, err)
 
 	// Assert representative commits

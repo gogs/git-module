@@ -6,33 +6,28 @@ package git
 
 import (
 	"bytes"
-	"time"
+	"context"
 )
 
 // BlameOptions contains optional arguments for blaming a file.
 // Docs: https://git-scm.com/docs/git-blame
 type BlameOptions struct {
-	// The timeout duration before giving up for each shell command execution. The
-	// default timeout duration will be used when not supplied.
-	//
-	// Deprecated: Use CommandOptions.Timeout instead.
-	Timeout time.Duration
 	// The additional options to be passed to the underlying git.
 	CommandOptions
 }
 
 // Blame returns blame results of the file with the given revision of the
 // repository.
-func (r *Repository) Blame(rev, file string, opts ...BlameOptions) (*Blame, error) {
+func (r *Repository) Blame(ctx context.Context, rev, file string, opts ...BlameOptions) (*Blame, error) {
 	var opt BlameOptions
 	if len(opts) > 0 {
 		opt = opts[0]
 	}
 
-	stdout, err := NewCommand("blame").
+	stdout, err := NewCommand(ctx, "blame").
 		AddOptions(opt.CommandOptions).
 		AddArgs("-l", "-s", rev, "--", file).
-		RunInDirWithTimeout(opt.Timeout, r.path)
+		RunInDir(r.path)
 	if err != nil {
 		return nil, err
 	}
@@ -51,7 +46,7 @@ func (r *Repository) Blame(rev, file string, opts ...BlameOptions) (*Blame, erro
 		if id[0] == '^' {
 			id = id[1:]
 		}
-		commit, err := r.CatFileCommit(string(id), CatFileCommitOptions{Timeout: opt.Timeout}) //nolint
+		commit, err := r.CatFileCommit(ctx, string(id)) //nolint
 		if err != nil {
 			return nil, err
 		}

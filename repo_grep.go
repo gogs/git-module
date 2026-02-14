@@ -5,10 +5,10 @@
 package git
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 	"strings"
-	"time"
 )
 
 // GrepOptions contains optional arguments for grep search over repository files.
@@ -25,11 +25,6 @@ type GrepOptions struct {
 	WordRegexp bool
 	// Whether use extended regular expressions.
 	ExtendedRegexp bool
-	// The timeout duration before giving up for each shell command execution. The
-	// default timeout duration will be used when not supplied.
-	//
-	// Deprecated: Use CommandOptions.Timeout instead.
-	Timeout time.Duration
 	// The additional options to be passed to the underlying git.
 	CommandOptions
 }
@@ -74,7 +69,7 @@ func parseGrepLine(line string) (*GrepResult, error) {
 }
 
 // Grep returns the results of a grep search in the repository.
-func (r *Repository) Grep(pattern string, opts ...GrepOptions) []*GrepResult {
+func (r *Repository) Grep(ctx context.Context, pattern string, opts ...GrepOptions) []*GrepResult {
 	var opt GrepOptions
 	if len(opts) > 0 {
 		opt = opts[0]
@@ -83,7 +78,7 @@ func (r *Repository) Grep(pattern string, opts ...GrepOptions) []*GrepResult {
 		opt.Tree = "HEAD"
 	}
 
-	cmd := NewCommand("grep").
+	cmd := NewCommand(ctx, "grep").
 		AddOptions(opt.CommandOptions).
 		// Display full-name, line number and column number
 		AddArgs("--full-name", "--line-number", "--column")
@@ -105,7 +100,7 @@ func (r *Repository) Grep(pattern string, opts ...GrepOptions) []*GrepResult {
 		cmd.AddArgs("--", opt.Pathspec)
 	}
 
-	stdout, err := cmd.RunInDirWithTimeout(opt.Timeout, r.path)
+	stdout, err := cmd.RunInDir(r.path)
 	if err != nil {
 		return nil
 	}

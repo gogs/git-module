@@ -6,6 +6,7 @@ package git
 
 import (
 	"bytes"
+	"context"
 	"io"
 )
 
@@ -16,14 +17,14 @@ type Blob struct {
 
 // Bytes reads and returns the content of the blob all at once in bytes. This
 // can be very slow and memory consuming for huge content.
-func (b *Blob) Bytes() ([]byte, error) {
+func (b *Blob) Bytes(ctx context.Context) ([]byte, error) {
 	stdout := new(bytes.Buffer)
 	stderr := new(bytes.Buffer)
 
 	// Preallocate memory to save ~50% memory usage on big files.
 	stdout.Grow(int(b.Size()))
 
-	if err := b.Pipeline(stdout, stderr); err != nil {
+	if err := b.Pipeline(ctx, stdout, stderr); err != nil {
 		return nil, concatenateError(err, stderr.String())
 	}
 	return stdout.Bytes(), nil
@@ -31,6 +32,6 @@ func (b *Blob) Bytes() ([]byte, error) {
 
 // Pipeline reads the content of the blob and pipes stdout and stderr to
 // supplied io.Writer.
-func (b *Blob) Pipeline(stdout, stderr io.Writer) error {
-	return NewCommand("show", b.id.String()).RunInDirPipeline(stdout, stderr, b.parent.repo.path)
+func (b *Blob) Pipeline(ctx context.Context, stdout, stderr io.Writer) error {
+	return NewCommand(ctx, "show", b.id.String()).RunInDirPipeline(stdout, stderr, b.parent.repo.path)
 }

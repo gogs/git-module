@@ -5,6 +5,7 @@
 package git
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -19,12 +20,13 @@ func tempPath() string {
 }
 
 func TestCommit_CreateArchive(t *testing.T) {
+	ctx := context.Background()
 	for _, format := range []ArchiveFormat{
 		ArchiveZip,
 		ArchiveTarGz,
 	} {
 		t.Run(string(format), func(t *testing.T) {
-			c, err := testrepo.CatFileCommit("755fd577edcfd9209d0ac072eed3b022cbe4d39b")
+			c, err := testrepo.CatFileCommit(ctx, "755fd577edcfd9209d0ac072eed3b022cbe4d39b")
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -34,7 +36,7 @@ func TestCommit_CreateArchive(t *testing.T) {
 				_ = os.Remove(dst)
 			}()
 
-			assert.Nil(t, c.CreateArchive(format, dst))
+			assert.Nil(t, c.CreateArchive(ctx, format, dst))
 		})
 	}
 }

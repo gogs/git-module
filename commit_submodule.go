@@ -7,6 +7,7 @@ package git
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"strings"
 )
 
@@ -24,16 +25,16 @@ type Submodule struct {
 type Submodules = *objectCache
 
 // Submodules returns submodules found in this commit.
-func (c *Commit) Submodules() (Submodules, error) {
+func (c *Commit) Submodules(ctx context.Context) (Submodules, error) {
 	c.submodulesOnce.Do(func() {
 		var e *TreeEntry
-		e, c.submodulesErr = c.TreeEntry(".gitmodules")
+		e, c.submodulesErr = c.TreeEntry(ctx, ".gitmodules")
 		if c.submodulesErr != nil {
 			return
 		}
 
 		var p []byte
-		p, c.submodulesErr = e.Blob().Bytes()
+		p, c.submodulesErr = e.Blob().Bytes(ctx)
 		if c.submodulesErr != nil {
 			return
 		}
@@ -67,7 +68,7 @@ func (c *Commit) Submodules() (Submodules, error) {
 					URL:  url,
 				}
 
-				mod.Commit, c.submodulesErr = c.repo.RevParse(c.id.String() + ":" + mod.Name)
+				mod.Commit, c.submodulesErr = c.repo.RevParse(ctx, c.id.String()+":"+mod.Name)
 				if c.submodulesErr != nil {
 					return
 				}
@@ -83,8 +84,8 @@ func (c *Commit) Submodules() (Submodules, error) {
 
 // Submodule returns submodule by given name. It returns an ErrSubmoduleNotExist
 // if the path does not exist as a submodule.
-func (c *Commit) Submodule(path string) (*Submodule, error) {
-	mods, err := c.Submodules()
+func (c *Commit) Submodule(ctx context.Context, path string) (*Submodule, error) {
+	mods, err := c.Submodules(ctx)
 	if err != nil {
 		return nil, err
 	}
