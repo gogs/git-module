@@ -387,13 +387,13 @@ func (r *Repository) Commit(ctx context.Context, committer *Signature, message s
 	}
 
 	args := []string{"commit"}
-	args = append(args, fmt.Sprintf("--author='%s <%s>'", opt.Author.Name, opt.Author.Email))
+	args = append(args, fmt.Sprintf("--author=%s <%s>", opt.Author.Name, opt.Author.Email))
 	args = append(args, "-m", message)
 	args = append(args, opt.Args...)
 
 	_, err := gitRun(ctx, r.path, args, envs)
 	// No stderr but exit status 1 means nothing to commit.
-	if err != nil && err.Error() == "exit status 1" {
+	if err != nil && strings.HasPrefix(err.Error(), "exit status 1") {
 		return nil
 	}
 	return err
@@ -448,11 +448,10 @@ func (r *Repository) ShowNameStatus(ctx context.Context, rev string, opts ...Sho
 	args = append(args, opt.Args...)
 	args = append(args, "--end-of-options", rev)
 
-	stderr := new(bytes.Buffer)
-	err := gitPipeline(ctx, r.path, args, opt.Envs, w, stderr, nil)
+	err := gitPipeline(ctx, r.path, args, opt.Envs, w, nil, nil)
 	_ = w.Close() // Close writer to exit parsing goroutine
 	if err != nil {
-		return nil, concatenateError(err, stderr.String())
+		return nil, err
 	}
 
 	<-done
@@ -481,7 +480,7 @@ func (r *Repository) RevParse(ctx context.Context, rev string, opts ...RevParseO
 
 	commitID, err := gitRun(ctx, r.path, args, opt.Envs)
 	if err != nil {
-		if strings.Contains(err.Error(), "exit status 128") {
+		if strings.HasPrefix(err.Error(), "exit status 128") {
 			return "", ErrRevisionNotExist
 		}
 		return "", err

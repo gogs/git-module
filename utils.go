@@ -5,7 +5,6 @@
 package git
 
 import (
-	"fmt"
 	"os"
 	"strings"
 	"sync"
@@ -64,13 +63,6 @@ func isFile(filePath string) bool {
 func isExist(path string) bool {
 	_, err := os.Stat(path)
 	return err == nil || os.IsExist(err)
-}
-
-func concatenateError(err error, stderr string) error {
-	if len(stderr) == 0 {
-		return err
-	}
-	return fmt.Errorf("%v - %s", err, stderr)
 }
 
 // bytesToStrings splits given bytes into strings by line separator ("\n"). It

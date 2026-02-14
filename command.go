@@ -7,9 +7,11 @@ package git
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"strings"
 	"time"
 
@@ -29,16 +31,17 @@ const DefaultTimeout = time.Minute
 // gitCmd builds a *run.Command for "git" with the given arguments, environment
 // variables and working directory. If the context does not already have a
 // deadline, DefaultTimeout will be applied automatically.
-func gitCmd(ctx context.Context, dir string, args []string, envs []string) *run.Command {
+func gitCmd(ctx context.Context, dir string, args []string, envs []string) (*run.Command, context.CancelFunc) {
 	if ctx == nil {
 		ctx = context.Background()
 	}
+	cancel := func() {}
 
 	// Apply default timeout if the context doesn't already have a deadline.
 	if _, ok := ctx.Deadline(); !ok {
-		var cancel context.CancelFunc
-		ctx, cancel = context.WithTimeout(ctx, DefaultTimeout)
-		_ = cancel
+		var timeoutCancel context.CancelFunc
+		ctx, timeoutCancel = context.WithTimeout(ctx, DefaultTimeout)
+		cancel = timeoutCancel
 	}
 
 	// run.Cmd joins all parts into a single string and then shell-parses it.
@@ -57,7 +60,7 @@ func gitCmd(ctx context.Context, dir string, args []string, envs []string) *run.
 	if len(envs) > 0 {
 		cmd = cmd.Environ(append(os.Environ(), envs...))
 	}
-	return cmd
+	return cmd, cancel
 }
 
 // gitRun executes a git command in the given directory and returns stdout as
@@ -65,16 +68,17 @@ func gitCmd(ctx context.Context, dir string, args []string, envs []string) *run.
 // context does not have a deadline, DefaultTimeout will be applied
 // automatically. It returns an ErrExecTimeout if the execution was timed out.
 func gitRun(ctx context.Context, dir string, args []string, envs []string) ([]byte, error) {
-	cmd := gitCmd(ctx, dir, args, envs)
+	cmd, cancel := gitCmd(ctx, dir, args, envs)
+	defer cancel()
 
-	logBuf := new(bytes.Buffer)
+	var logBuf *bytes.Buffer
 	if logOutput != nil {
+		logBuf = new(bytes.Buffer)
 		logBuf.Grow(512)
+		defer func() {
+			logf(dir, args, logBuf.Bytes())
+		}()
 	}
-
-	defer func() {
-		logf(dir, args, logBuf.Bytes())
-	}()
 
 	// Use Stream to a buffer to preserve raw bytes (including NUL bytes from
 	// commands like "ls-tree -z"). The String/Lines methods process output
@@ -104,25 +108,27 @@ func gitRun(ctx context.Context, dir string, args []string, envs []string) ([]by
 // to the given writer. If stderr writer is provided and the command fails,
 // stderr content extracted from the error is written to it. stdin is optional.
 func gitPipeline(ctx context.Context, dir string, args []string, envs []string, stdout, stderr io.Writer, stdin io.Reader) error {
-	cmd := gitCmd(ctx, dir, args, envs)
+	cmd, cancel := gitCmd(ctx, dir, args, envs)
+	defer cancel()
 	if stdin != nil {
 		cmd = cmd.Input(stdin)
 	}
 
-	buf := new(bytes.Buffer)
+	var buf *bytes.Buffer
 	w := stdout
 	if logOutput != nil {
+		buf = new(bytes.Buffer)
 		buf.Grow(512)
 		w = &limitDualWriter{
 			W: buf,
 			N: int64(buf.Cap()),
 			w: stdout,
 		}
-	}
 
-	defer func() {
-		logf(dir, args, buf.Bytes())
-	}()
+		defer func() {
+			logf(dir, args, buf.Bytes())
+		}()
+	}
 
 	streamErr := cmd.StdOut().Run().Stream(w)
 	if streamErr != nil {
@@ -195,12 +201,6 @@ func mapContextError(err error, ctx context.Context) error {
 		}
 		return ctxErr
 	}
-	// Also check if the error itself wraps a context error.
-	if strings.Contains(err.Error(), "signal: killed") || strings.Contains(err.Error(), context.DeadlineExceeded.Error()) {
-		if ctx.Err() == context.DeadlineExceeded {
-			return ErrExecTimeout
-		}
-	}
 	return err
 }
 
@@ -209,6 +209,10 @@ func mapContextError(err error, ctx context.Context) error {
 func extractStderr(err error) string {
 	if err == nil {
 		return ""
+	}
+	var exitErr *exec.ExitError
+	if errors.As(err, &exitErr) && len(exitErr.Stderr) > 0 {
+		return string(exitErr.Stderr)
 	}
 	msg := err.Error()
 	// sourcegraph/run error format: "exit status N: <stderr>"

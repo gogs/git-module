@@ -19,15 +19,14 @@ type Blob struct {
 // can be very slow and memory consuming for huge content.
 func (b *Blob) Bytes(ctx context.Context) ([]byte, error) {
 	stdout := new(bytes.Buffer)
-	stderr := new(bytes.Buffer)
 
 	// Preallocate memory to save ~50% memory usage on big files.
 	if size := b.Size(ctx); size > 0 && size < int64(^uint(0)>>1) {
 		stdout.Grow(int(size))
 	}
 
-	if err := b.Pipeline(ctx, stdout, stderr); err != nil {
-		return nil, concatenateError(err, stderr.String())
+	if err := b.Pipeline(ctx, stdout, nil); err != nil {
+		return nil, err
 	}
 	return stdout.Bytes(), nil
 }
