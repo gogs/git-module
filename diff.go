@@ -10,7 +10,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"strconv"
 	"strings"
 )
@@ -482,7 +481,7 @@ func (p *diffParser) parse() (*Diff, error) {
 			// Check if reached maximum number of files
 			if p.maxFiles > 0 && len(diff.Files) >= p.maxFiles {
 				diff.isIncomplete = true
-				_, _ = io.Copy(ioutil.Discard, p)
+				_, _ = io.Copy(io.Discard, p)
 				break
 			}
 

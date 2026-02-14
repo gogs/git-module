@@ -5,7 +5,6 @@
 package git
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 )
@@ -32,7 +31,7 @@ func (r *Repository) Hook(dir string, name HookName) (*Hook, error) {
 	// 1. Check if there is an active hook.
 	fpath := filepath.Join(r.path, dir, string(name))
 	if isFile(fpath) {
-		p, err := ioutil.ReadFile(fpath)
+		p, err := os.ReadFile(fpath)
 		if err != nil {
 			return nil, err
 		}
