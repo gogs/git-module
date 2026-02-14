@@ -21,9 +21,9 @@ type BlameOptions struct {
 	CommandOptions
 }
 
-// BlameFile returns blame results of the file with the given revision of the
+// Blame returns blame results of the file with the given revision of the
 // repository.
-func (r *Repository) BlameFile(rev, file string, opts ...BlameOptions) (*Blame, error) {
+func (r *Repository) Blame(rev, file string, opts ...BlameOptions) (*Blame, error) {
 	var opt BlameOptions
 	if len(opts) > 0 {
 		opt = opts[0]
