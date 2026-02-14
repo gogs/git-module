@@ -7,14 +7,11 @@ package git
 import (
 	"bytes"
 	"flag"
-	"fmt"
 	stdlog "log"
 	"os"
 	"testing"
 
-	goversion "github.com/mcuadros/go-version"
 	"github.com/stretchr/testify/assert"
-	"golang.org/x/sync/errgroup"
 )
 
 const repoPath = "testdata/testrepo.git"
@@ -86,23 +83,5 @@ func Test_log(t *testing.T) {
 			log(test.format, test.args...)
 			assert.Equal(t, test.expOutput, buf.String())
 		})
-	}
-}
-
-func TestBinVersion(t *testing.T) {
-	g := errgroup.Group{}
-	for i := 0; i < 30; i++ {
-		g.Go(func() error {
-			version, err := BinVersion()
-			assert.Nil(t, err)
-
-			if !goversion.Compare(version, "1.8.3", ">=") {
-				return fmt.Errorf("version: expected >= 1.8.3 but got %q", version)
-			}
-			return nil
-		})
-	}
-	if err := g.Wait(); err != nil {
-		t.Fatal(err)
 	}
 }

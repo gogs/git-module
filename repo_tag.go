@@ -9,8 +9,6 @@ import (
 	"fmt"
 	"strings"
 	"time"
-
-	goversion "github.com/mcuadros/go-version"
 )
 
 // parseTag parses tag information from the (uncompressed) raw data of the tag
@@ -168,20 +166,12 @@ func RepoTags(repoPath string, opts ...TagsOptions) ([]string, error) {
 		opt = opts[0]
 	}
 
-	version, err := BinVersion()
-	if err != nil {
-		return nil, err
-	}
-
 	cmd := NewCommand("tag", "--list").AddOptions(opt.CommandOptions)
 
-	var sorted bool
 	if opt.SortKey != "" {
 		cmd.AddArgs("--sort=" + opt.SortKey)
-		sorted = true
-	} else if goversion.Compare(version, "2.4.9", ">=") {
+	} else {
 		cmd.AddArgs("--sort=-creatordate")
-		sorted = true
 	}
 
 	if opt.Pattern != "" {
@@ -195,16 +185,6 @@ func RepoTags(repoPath string, opts ...TagsOptions) ([]string, error) {
 
 	tags := strings.Split(string(stdout), "\n")
 	tags = tags[:len(tags)-1]
-
-	if !sorted {
-		goversion.Sort(tags)
-
-		// Reverse order
-		for i := 0; i < len(tags)/2; i++ {
-			j := len(tags) - i - 1
-			tags[i], tags[j] = tags[j], tags[i]
-		}
-	}
 
 	return tags, nil
 }
