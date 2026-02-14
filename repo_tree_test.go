@@ -77,7 +77,6 @@ func TestRepository_LsTree(t *testing.T) {
 
 	err = repo.Commit(&Signature{Name: "test", Email: "test@test.com"}, "initial commit")
 	require.NoError(t, err)
-	require.NoError(t, err)
 
 	commit, err := repo.CatFileCommit("HEAD")
 	require.NoError(t, err)
