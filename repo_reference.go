@@ -51,8 +51,10 @@ func (r *Repository) ShowRefVerify(ctx context.Context, ref string, opts ...Show
 		opt = opts[0]
 	}
 
-	cmd := NewCommand(ctx, "show-ref", "--verify", "--end-of-options", ref).AddOptions(opt.CommandOptions)
-	stdout, err := cmd.RunInDir(r.path)
+	args := []string{"show-ref", "--verify", "--end-of-options", ref}
+	args = append(args, opt.CommandOptions.Args...)
+
+	stdout, err := gitRun(ctx, r.path, args, opt.CommandOptions.Envs)
 	if err != nil {
 		if strings.Contains(err.Error(), "not a valid ref") {
 			return "", ErrReferenceNotExist
@@ -113,16 +115,17 @@ func (r *Repository) SymbolicRef(ctx context.Context, opts ...SymbolicRefOptions
 		opt = opts[0]
 	}
 
-	cmd := NewCommand(ctx, "symbolic-ref").AddOptions(opt.CommandOptions)
+	args := []string{"symbolic-ref"}
+	args = append(args, opt.CommandOptions.Args...)
 	if opt.Name == "" {
 		opt.Name = "HEAD"
 	}
-	cmd.AddArgs("--end-of-options", opt.Name)
+	args = append(args, "--end-of-options", opt.Name)
 	if opt.Ref != "" {
-		cmd.AddArgs(opt.Ref)
+		args = append(args, opt.Ref)
 	}
 
-	stdout, err := cmd.RunInDir(r.path)
+	stdout, err := gitRun(ctx, r.path, args, opt.CommandOptions.Envs)
 	if err != nil {
 		return "", err
 	}
@@ -150,19 +153,20 @@ func (r *Repository) ShowRef(ctx context.Context, opts ...ShowRefOptions) ([]*Re
 		opt = opts[0]
 	}
 
-	cmd := NewCommand(ctx, "show-ref").AddOptions(opt.CommandOptions)
+	args := []string{"show-ref"}
+	args = append(args, opt.CommandOptions.Args...)
 	if opt.Heads {
-		cmd.AddArgs("--heads")
+		args = append(args, "--heads")
 	}
 	if opt.Tags {
-		cmd.AddArgs("--tags")
+		args = append(args, "--tags")
 	}
-	cmd.AddArgs("--")
+	args = append(args, "--")
 	if len(opt.Patterns) > 0 {
-		cmd.AddArgs(opt.Patterns...)
+		args = append(args, opt.Patterns...)
 	}
 
-	stdout, err := cmd.RunInDir(r.path)
+	stdout, err := gitRun(ctx, r.path, args, opt.CommandOptions.Envs)
 	if err != nil {
 		return nil, err
 	}
@@ -213,12 +217,15 @@ func (r *Repository) DeleteBranch(ctx context.Context, name string, opts ...Dele
 		opt = opts[0]
 	}
 
-	cmd := NewCommand(ctx, "branch").AddOptions(opt.CommandOptions)
+	args := []string{"branch"}
+	args = append(args, opt.CommandOptions.Args...)
 	if opt.Force {
-		cmd.AddArgs("-D")
+		args = append(args, "-D")
 	} else {
-		cmd.AddArgs("-d")
+		args = append(args, "-d")
 	}
-	_, err := cmd.AddArgs("--end-of-options", name).RunInDir(r.path)
+	args = append(args, "--end-of-options", name)
+
+	_, err := gitRun(ctx, r.path, args, opt.CommandOptions.Envs)
 	return err
 }

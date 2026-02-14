@@ -24,10 +24,11 @@ func (r *Repository) Blame(ctx context.Context, rev, file string, opts ...BlameO
 		opt = opts[0]
 	}
 
-	stdout, err := NewCommand(ctx, "blame").
-		AddOptions(opt.CommandOptions).
-		AddArgs("-l", "-s", rev, "--", file).
-		RunInDir(r.path)
+	args := []string{"blame"}
+	args = append(args, opt.CommandOptions.Args...)
+	args = append(args, "-l", "-s", rev, "--", file)
+
+	stdout, err := gitRun(ctx, r.path, args, opt.CommandOptions.Envs)
 	if err != nil {
 		return nil, err
 	}

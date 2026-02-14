@@ -35,5 +35,5 @@ func (b *Blob) Bytes(ctx context.Context) ([]byte, error) {
 // Pipeline reads the content of the blob and pipes stdout and stderr to
 // supplied io.Writer.
 func (b *Blob) Pipeline(ctx context.Context, stdout, stderr io.Writer) error {
-	return NewCommand(ctx, "show", b.id.String()).RunInDirPipeline(stdout, stderr, b.parent.repo.path)
+	return gitPipeline(ctx, b.parent.repo.path, []string{"show", b.id.String()}, nil, stdout, stderr, nil)
 }

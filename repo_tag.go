@@ -76,7 +76,7 @@ func (r *Repository) getTag(ctx context.Context, id *SHA1) (*Tag, error) {
 		}
 
 	case ObjectTag: // Tag is an annotation
-		data, err := NewCommand(ctx, "cat-file", "-p", id.String()).RunInDir(r.path)
+		data, err := gitRun(ctx, r.path, []string{"cat-file", "-p", id.String()}, nil)
 		if err != nil {
 			return nil, err
 		}
@@ -155,19 +155,18 @@ func (r *Repository) Tags(ctx context.Context, opts ...TagsOptions) ([]string, e
 		opt = opts[0]
 	}
 
-	cmd := NewCommand(ctx, "tag", "--list").AddOptions(opt.CommandOptions)
-
+	args := []string{"tag", "--list"}
+	args = append(args, opt.CommandOptions.Args...)
 	if opt.SortKey != "" {
-		cmd.AddArgs("--sort=" + opt.SortKey)
+		args = append(args, "--sort="+opt.SortKey)
 	} else {
-		cmd.AddArgs("--sort=-creatordate")
+		args = append(args, "--sort=-creatordate")
 	}
-
 	if opt.Pattern != "" {
-		cmd.AddArgs(opt.Pattern)
+		args = append(args, opt.Pattern)
 	}
 
-	stdout, err := cmd.RunInDir(r.path)
+	stdout, err := gitRun(ctx, r.path, args, opt.CommandOptions.Envs)
 	if err != nil {
 		return nil, err
 	}
@@ -199,21 +198,24 @@ func (r *Repository) CreateTag(ctx context.Context, name, rev string, opts ...Cr
 		opt = opts[0]
 	}
 
-	cmd := NewCommand(ctx, "tag").AddOptions(opt.CommandOptions)
+	args := []string{"tag"}
+	args = append(args, opt.CommandOptions.Args...)
+
+	var envs []string
 	if opt.Annotated {
-		cmd.AddArgs("-a", name)
-		cmd.AddArgs("--message", opt.Message)
+		args = append(args, "-a", name)
+		args = append(args, "--message", opt.Message)
 		if opt.Author != nil {
-			cmd.AddCommitter(opt.Author)
+			envs = committerEnvs(opt.Author)
 		}
-		cmd.AddArgs("--end-of-options")
+		args = append(args, "--end-of-options")
 	} else {
-		cmd.AddArgs("--end-of-options", name)
+		args = append(args, "--end-of-options", name)
 	}
+	args = append(args, rev)
 
-	cmd.AddArgs(rev)
-
-	_, err := cmd.RunInDir(r.path)
+	envs = append(envs, opt.CommandOptions.Envs...)
+	_, err := gitRun(ctx, r.path, args, envs)
 	return err
 }
 
@@ -232,8 +234,9 @@ func (r *Repository) DeleteTag(ctx context.Context, name string, opts ...DeleteT
 		opt = opts[0]
 	}
 
-	_, err := NewCommand(ctx, "tag", "--delete", "--end-of-options", name).
-		AddOptions(opt.CommandOptions).
-		RunInDir(r.path)
+	args := []string{"tag", "--delete", "--end-of-options", name}
+	args = append(args, opt.CommandOptions.Args...)
+
+	_, err := gitRun(ctx, r.path, args, opt.CommandOptions.Envs)
 	return err
 }

@@ -13,63 +13,12 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestCommand_String(t *testing.T) {
-	ctx := context.Background()
-	tests := []struct {
-		name   string
-		args   []string
-		expStr string
-	}{
-		{
-			name:   "no args",
-			args:   nil,
-			expStr: "git",
-		},
-		{
-			name:   "has one arg",
-			args:   []string{"version"},
-			expStr: "git version",
-		},
-		{
-			name:   "has more args",
-			args:   []string{"config", "--global", "http.proxy", "http://localhost:8080"},
-			expStr: "git config --global http.proxy http://localhost:8080",
-		},
-	}
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			cmd := NewCommand(ctx, test.args...)
-			assert.Equal(t, test.expStr, cmd.String())
-		})
-	}
-}
-
-func TestCommand_AddArgs(t *testing.T) {
-	ctx := context.Background()
-	cmd := NewCommand(ctx)
-	assert.Equal(t, []string(nil), cmd.args)
-
-	cmd.AddArgs("push")
-	cmd.AddArgs("origin", "master")
-	assert.Equal(t, []string{"push", "origin", "master"}, cmd.args)
-}
-
-func TestCommand_AddEnvs(t *testing.T) {
-	ctx := context.Background()
-	cmd := NewCommand(ctx)
-	assert.Equal(t, []string(nil), cmd.envs)
-
-	cmd.AddEnvs("GIT_DIR=/tmp")
-	cmd.AddEnvs("HOME=/Users/unknwon", "GIT_EDITOR=code")
-	assert.Equal(t, []string{"GIT_DIR=/tmp", "HOME=/Users/unknwon", "GIT_EDITOR=code"}, cmd.envs)
-}
-
-func TestCommand_RunWithContextTimeout(t *testing.T) {
+func TestGitRun_ContextTimeout(t *testing.T) {
 	t.Run("context already expired before start", func(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), time.Nanosecond)
 		defer cancel()
 		time.Sleep(time.Millisecond) // ensure deadline has passed
-		_, err := NewCommand(ctx, "version").Run()
+		_, err := gitRun(ctx, "", []string{"version"}, nil)
 		assert.Equal(t, ErrExecTimeout, err)
 	})
 
@@ -79,11 +28,7 @@ func TestCommand_RunWithContextTimeout(t *testing.T) {
 
 		// Use a blocking reader so the command starts successfully and blocks
 		// reading stdin until the context deadline fires.
-		err := NewCommand(ctx, "hash-object", "--stdin").RunInDirWithOptions("", RunInDirOptions{
-			Stdin:  blockingReader{cancel: ctx.Done()},
-			Stdout: io.Discard,
-			Stderr: io.Discard,
-		})
+		err := gitPipeline(ctx, "", []string{"hash-object", "--stdin"}, nil, io.Discard, io.Discard, blockingReader{cancel: ctx.Done()})
 		assert.Equal(t, ErrExecTimeout, err)
 	})
 }
@@ -101,7 +46,7 @@ func (r blockingReader) Read(p []byte) (int, error) {
 	return 0, io.EOF
 }
 
-func TestCommand_RunWithContextCancellation(t *testing.T) {
+func TestGitPipeline_ContextCancellation(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	// Cancel in the background after a short delay so the command is already
@@ -113,22 +58,54 @@ func TestCommand_RunWithContextCancellation(t *testing.T) {
 		close(done)
 	}()
 
-	err := NewCommand(ctx, "hash-object", "--stdin").RunInDirWithOptions("", RunInDirOptions{
-		Stdin:  blockingReader{cancel: done},
-		Stdout: io.Discard,
-		Stderr: io.Discard,
-	})
+	err := gitPipeline(ctx, "", []string{"hash-object", "--stdin"}, nil, io.Discard, io.Discard, blockingReader{cancel: done})
 	assert.ErrorIs(t, err, context.Canceled)
 	// Must NOT be ErrExecTimeout — cancellation is distinct from deadline.
 	assert.NotEqual(t, ErrExecTimeout, err)
 }
 
-func TestCommand_DefaultTimeoutApplied(t *testing.T) {
+func TestGitRun_DefaultTimeoutApplied(t *testing.T) {
 	// A plain context.Background() has no deadline. The command should still
 	// succeed because DefaultTimeout (1 min) is applied automatically and
 	// "git version" completes well within that.
 	ctx := context.Background()
-	stdout, err := NewCommand(ctx, "version").Run()
+	stdout, err := gitRun(ctx, "", []string{"version"}, nil)
 	assert.NoError(t, err)
 	assert.Contains(t, string(stdout), "git version")
 }
+
+func TestExtractStderr(t *testing.T) {
+	tests := []struct {
+		name string
+		err  error
+		want string
+	}{
+		{
+			name: "nil error",
+			err:  nil,
+			want: "",
+		},
+		{
+			name: "exit status with stderr",
+			err:  &exitStatusError{msg: "exit status 1: fatal: not a git repository"},
+			want: "fatal: not a git repository",
+		},
+		{
+			name: "other error",
+			err:  io.EOF,
+			want: "EOF",
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			assert.Equal(t, test.want, extractStderr(test.err))
+		})
+	}
+}
+
+// exitStatusError is a simple error type for testing extractStderr.
+type exitStatusError struct {
+	msg string
+}
+
+func (e *exitStatusError) Error() string { return e.msg }

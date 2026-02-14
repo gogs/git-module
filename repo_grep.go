@@ -78,29 +78,25 @@ func (r *Repository) Grep(ctx context.Context, pattern string, opts ...GrepOptio
 		opt.Tree = "HEAD"
 	}
 
-	cmd := NewCommand(ctx, "grep").
-		AddOptions(opt.CommandOptions).
-		// Display full-name, line number and column number
-		AddArgs("--full-name", "--line-number", "--column")
+	args := []string{"grep"}
+	args = append(args, opt.CommandOptions.Args...)
+	// Display full-name, line number and column number
+	args = append(args, "--full-name", "--line-number", "--column")
 	if opt.IgnoreCase {
-		cmd.AddArgs("--ignore-case")
+		args = append(args, "--ignore-case")
 	}
 	if opt.WordRegexp {
-		cmd.AddArgs("--word-regexp")
+		args = append(args, "--word-regexp")
 	}
 	if opt.ExtendedRegexp {
-		cmd.AddArgs("--extended-regexp")
+		args = append(args, "--extended-regexp")
 	}
-	cmd.AddArgs(
-		"--end-of-options",
-		pattern,
-		opt.Tree,
-	)
+	args = append(args, "--end-of-options", pattern, opt.Tree)
 	if opt.Pathspec != "" {
-		cmd.AddArgs("--", opt.Pathspec)
+		args = append(args, "--", opt.Pathspec)
 	}
 
-	stdout, err := cmd.RunInDir(r.path)
+	stdout, err := gitRun(ctx, r.path, args, opt.CommandOptions.Envs)
 	if err != nil {
 		return nil
 	}

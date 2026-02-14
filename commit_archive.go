@@ -22,11 +22,12 @@ const (
 // CreateArchive creates given format of archive to the destination.
 func (c *Commit) CreateArchive(ctx context.Context, format ArchiveFormat, dst string) error {
 	prefix := filepath.Base(strings.TrimSuffix(c.repo.path, ".git")) + "/"
-	_, err := NewCommand(ctx, "archive",
-		"--prefix="+prefix,
-		"--format="+string(format),
+	_, err := gitRun(ctx, c.repo.path, []string{
+		"archive",
+		"--prefix=" + prefix,
+		"--format=" + string(format),
 		"-o", dst,
 		c.ID.String(),
-	).RunInDir(c.repo.path)
+	}, nil)
 	return err
 }

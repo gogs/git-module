@@ -131,14 +131,14 @@ func (r *Repository) LsTree(ctx context.Context, treeID string, opts ...LsTreeOp
 		repo: r,
 	}
 
-	cmd := NewCommand(ctx, "ls-tree")
+	args := []string{"ls-tree"}
+	args = append(args, opt.CommandOptions.Args...)
 	if opt.Verbatim {
-		cmd.AddArgs("-z")
+		args = append(args, "-z")
 	}
-	stdout, err := cmd.
-		AddOptions(opt.CommandOptions).
-		AddArgs(treeID).
-		RunInDir(r.path)
+	args = append(args, treeID)
+
+	stdout, err := gitRun(ctx, r.path, args, opt.CommandOptions.Envs)
 	if err != nil {
 		return nil, err
 	}
