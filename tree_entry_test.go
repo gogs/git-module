@@ -285,7 +285,7 @@ func TestEntries_CommitsInfo(t *testing.T) {
 		}
 	})
 
-	t.Run("directory with files have same SHA", func(t *testing.T) {
+	t.Run("directory with files that have the same SHA", func(t *testing.T) {
 		subtree, err := tree.Subtree(ctx, "sameSHAs")
 		if err != nil {
 			t.Fatal(err)

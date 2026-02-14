@@ -4,9 +4,7 @@
 
 package git
 
-import (
-	"context"
-)
+import "context"
 
 // CatFileBlobOptions contains optional arguments for verifying the objects.
 //

@@ -187,12 +187,11 @@ func (c *Command) RunInDirWithOptions(dir string, opts ...RunInDirOptions) (err 
 
 	select {
 	case <-ctx.Done():
-		<-result
-		if cmd.Process != nil && cmd.ProcessState != nil && !cmd.ProcessState.Exited() {
-			if err := cmd.Process.Kill(); err != nil {
-				return fmt.Errorf("kill process: %v", err)
-			}
+		// Kill the process before waiting so cancellation is enforced promptly.
+		if cmd.Process != nil {
+			_ = cmd.Process.Kill()
 		}
+		<-result
 
 		if ctx.Err() == context.DeadlineExceeded {
 			return ErrExecTimeout
