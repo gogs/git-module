@@ -1,4 +1,4 @@
-module github.com/gogs/git-module
+module github.com/gogs/git-module/v2
 
 go 1.24.0
 
