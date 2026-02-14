@@ -52,9 +52,9 @@ func (r *Repository) ShowRefVerify(ctx context.Context, ref string, opts ...Show
 	}
 
 	args := []string{"show-ref", "--verify", "--end-of-options", ref}
-	args = append(args, opt.CommandOptions.Args...)
+	args = append(args, opt.Args...)
 
-	stdout, err := gitRun(ctx, r.path, args, opt.CommandOptions.Envs)
+	stdout, err := gitRun(ctx, r.path, args, opt.Envs)
 	if err != nil {
 		if strings.Contains(err.Error(), "not a valid ref") {
 			return "", ErrReferenceNotExist
@@ -116,7 +116,7 @@ func (r *Repository) SymbolicRef(ctx context.Context, opts ...SymbolicRefOptions
 	}
 
 	args := []string{"symbolic-ref"}
-	args = append(args, opt.CommandOptions.Args...)
+	args = append(args, opt.Args...)
 	if opt.Name == "" {
 		opt.Name = "HEAD"
 	}
@@ -125,7 +125,7 @@ func (r *Repository) SymbolicRef(ctx context.Context, opts ...SymbolicRefOptions
 		args = append(args, opt.Ref)
 	}
 
-	stdout, err := gitRun(ctx, r.path, args, opt.CommandOptions.Envs)
+	stdout, err := gitRun(ctx, r.path, args, opt.Envs)
 	if err != nil {
 		return "", err
 	}
@@ -154,7 +154,7 @@ func (r *Repository) ShowRef(ctx context.Context, opts ...ShowRefOptions) ([]*Re
 	}
 
 	args := []string{"show-ref"}
-	args = append(args, opt.CommandOptions.Args...)
+	args = append(args, opt.Args...)
 	if opt.Heads {
 		args = append(args, "--heads")
 	}
@@ -166,7 +166,7 @@ func (r *Repository) ShowRef(ctx context.Context, opts ...ShowRefOptions) ([]*Re
 		args = append(args, opt.Patterns...)
 	}
 
-	stdout, err := gitRun(ctx, r.path, args, opt.CommandOptions.Envs)
+	stdout, err := gitRun(ctx, r.path, args, opt.Envs)
 	if err != nil {
 		return nil, err
 	}
@@ -218,7 +218,7 @@ func (r *Repository) DeleteBranch(ctx context.Context, name string, opts ...Dele
 	}
 
 	args := []string{"branch"}
-	args = append(args, opt.CommandOptions.Args...)
+	args = append(args, opt.Args...)
 	if opt.Force {
 		args = append(args, "-D")
 	} else {
@@ -226,6 +226,6 @@ func (r *Repository) DeleteBranch(ctx context.Context, name string, opts ...Dele
 	}
 	args = append(args, "--end-of-options", name)
 
-	_, err := gitRun(ctx, r.path, args, opt.CommandOptions.Envs)
+	_, err := gitRun(ctx, r.path, args, opt.Envs)
 	return err
 }

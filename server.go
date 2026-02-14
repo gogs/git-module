@@ -29,11 +29,11 @@ func UpdateServerInfo(ctx context.Context, path string, opts ...UpdateServerInfo
 	}
 
 	args := []string{"update-server-info"}
-	args = append(args, opt.CommandOptions.Args...)
+	args = append(args, opt.Args...)
 	if opt.Force {
 		args = append(args, "--force")
 	}
-	_, err := gitRun(ctx, path, args, opt.CommandOptions.Envs)
+	_, err := gitRun(ctx, path, args, opt.Envs)
 	return err
 }
 
@@ -58,7 +58,7 @@ func ReceivePack(ctx context.Context, path string, opts ...ReceivePackOptions) (
 	}
 
 	args := []string{"receive-pack"}
-	args = append(args, opt.CommandOptions.Args...)
+	args = append(args, opt.Args...)
 	if opt.Quiet {
 		args = append(args, "--quiet")
 	}
@@ -66,7 +66,7 @@ func ReceivePack(ctx context.Context, path string, opts ...ReceivePackOptions) (
 		args = append(args, "--http-backend-info-refs")
 	}
 	args = append(args, ".")
-	return gitRun(ctx, path, args, opt.CommandOptions.Envs)
+	return gitRun(ctx, path, args, opt.Envs)
 }
 
 // UploadPackOptions contains optional arguments for sending the packfile to the
@@ -97,7 +97,7 @@ func UploadPack(ctx context.Context, path string, opts ...UploadPackOptions) ([]
 	}
 
 	args := []string{"upload-pack"}
-	args = append(args, opt.CommandOptions.Args...)
+	args = append(args, opt.Args...)
 	if opt.StatelessRPC {
 		args = append(args, "--stateless-rpc")
 	}
@@ -111,5 +111,5 @@ func UploadPack(ctx context.Context, path string, opts ...UploadPackOptions) ([]
 		args = append(args, "--http-backend-info-refs")
 	}
 	args = append(args, ".")
-	return gitRun(ctx, path, args, opt.CommandOptions.Envs)
+	return gitRun(ctx, path, args, opt.Envs)
 }

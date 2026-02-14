@@ -79,7 +79,7 @@ func (r *Repository) Grep(ctx context.Context, pattern string, opts ...GrepOptio
 	}
 
 	args := []string{"grep"}
-	args = append(args, opt.CommandOptions.Args...)
+	args = append(args, opt.Args...)
 	// Display full-name, line number and column number
 	args = append(args, "--full-name", "--line-number", "--column")
 	if opt.IgnoreCase {
@@ -96,7 +96,7 @@ func (r *Repository) Grep(ctx context.Context, pattern string, opts ...GrepOptio
 		args = append(args, "--", opt.Pathspec)
 	}
 
-	stdout, err := gitRun(ctx, r.path, args, opt.CommandOptions.Envs)
+	stdout, err := gitRun(ctx, r.path, args, opt.Envs)
 	if err != nil {
 		return nil
 	}

@@ -39,7 +39,7 @@ func (r *Repository) Diff(ctx context.Context, rev string, maxFiles, maxFileLine
 		// First commit of repository
 		if commit.ParentsCount() == 0 {
 			args = []string{"show"}
-			args = append(args, opt.CommandOptions.Args...)
+			args = append(args, opt.Args...)
 			args = append(args, "--full-index", "--end-of-options", rev)
 		} else {
 			c, err := commit.Parent(ctx, 0)
@@ -47,12 +47,12 @@ func (r *Repository) Diff(ctx context.Context, rev string, maxFiles, maxFileLine
 				return nil, err
 			}
 			args = []string{"diff"}
-			args = append(args, opt.CommandOptions.Args...)
+			args = append(args, opt.Args...)
 			args = append(args, "--full-index", "-M", c.ID.String(), "--end-of-options", rev)
 		}
 	} else {
 		args = []string{"diff"}
-		args = append(args, opt.CommandOptions.Args...)
+		args = append(args, opt.Args...)
 		args = append(args, "--full-index", "-M", opt.Base, "--end-of-options", rev)
 	}
 
@@ -61,7 +61,7 @@ func (r *Repository) Diff(ctx context.Context, rev string, maxFiles, maxFileLine
 	go StreamParseDiff(stdout, done, maxFiles, maxFileLines, maxLineChars)
 
 	stderr := new(bytes.Buffer)
-	err = gitPipeline(ctx, r.path, args, opt.CommandOptions.Envs, w, stderr, nil)
+	err = gitPipeline(ctx, r.path, args, opt.Envs, w, stderr, nil)
 	_ = w.Close() // Close writer to exit parsing goroutine
 	if err != nil {
 		return nil, concatenateError(err, stderr.String())
@@ -105,7 +105,7 @@ func (r *Repository) RawDiff(ctx context.Context, rev string, diffType RawDiffFo
 	case RawDiffNormal:
 		if commit.ParentsCount() == 0 {
 			args = []string{"show"}
-			args = append(args, opt.CommandOptions.Args...)
+			args = append(args, opt.Args...)
 			args = append(args, "--full-index", "--end-of-options", rev)
 		} else {
 			c, err := commit.Parent(ctx, 0)
@@ -113,13 +113,13 @@ func (r *Repository) RawDiff(ctx context.Context, rev string, diffType RawDiffFo
 				return err
 			}
 			args = []string{"diff"}
-			args = append(args, opt.CommandOptions.Args...)
+			args = append(args, opt.Args...)
 			args = append(args, "--full-index", "-M", c.ID.String(), "--end-of-options", rev)
 		}
 	case RawDiffPatch:
 		if commit.ParentsCount() == 0 {
 			args = []string{"format-patch"}
-			args = append(args, opt.CommandOptions.Args...)
+			args = append(args, opt.Args...)
 			args = append(args, "--full-index", "--no-signoff", "--no-signature", "--stdout", "--root", "--end-of-options", rev)
 		} else {
 			c, err := commit.Parent(ctx, 0)
@@ -127,7 +127,7 @@ func (r *Repository) RawDiff(ctx context.Context, rev string, diffType RawDiffFo
 				return err
 			}
 			args = []string{"format-patch"}
-			args = append(args, opt.CommandOptions.Args...)
+			args = append(args, opt.Args...)
 			args = append(args, "--full-index", "--no-signoff", "--no-signature", "--stdout", "--end-of-options", rev+"..."+c.ID.String())
 		}
 	default:
@@ -135,7 +135,7 @@ func (r *Repository) RawDiff(ctx context.Context, rev string, diffType RawDiffFo
 	}
 
 	stderr := new(bytes.Buffer)
-	if err = gitPipeline(ctx, r.path, args, opt.CommandOptions.Envs, w, stderr, nil); err != nil {
+	if err = gitPipeline(ctx, r.path, args, opt.Envs, w, stderr, nil); err != nil {
 		return concatenateError(err, stderr.String())
 	}
 	return nil
@@ -156,8 +156,8 @@ func (r *Repository) DiffBinary(ctx context.Context, base, head string, opts ...
 	}
 
 	args := []string{"diff"}
-	args = append(args, opt.CommandOptions.Args...)
+	args = append(args, opt.Args...)
 	args = append(args, "--full-index", "--binary", base, head)
 
-	return gitRun(ctx, r.path, args, opt.CommandOptions.Envs)
+	return gitRun(ctx, r.path, args, opt.Envs)
 }

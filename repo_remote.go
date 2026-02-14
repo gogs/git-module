@@ -35,7 +35,7 @@ func LsRemote(ctx context.Context, url string, opts ...LsRemoteOptions) ([]*Refe
 	}
 
 	args := []string{"ls-remote", "--quiet"}
-	args = append(args, opt.CommandOptions.Args...)
+	args = append(args, opt.Args...)
 	if opt.Heads {
 		args = append(args, "--heads")
 	}
@@ -50,7 +50,7 @@ func LsRemote(ctx context.Context, url string, opts ...LsRemoteOptions) ([]*Refe
 		args = append(args, opt.Patterns...)
 	}
 
-	stdout, err := gitRun(ctx, "", args, opt.CommandOptions.Envs)
+	stdout, err := gitRun(ctx, "", args, opt.Envs)
 	if err != nil {
 		return nil, err
 	}
@@ -101,7 +101,7 @@ func (r *Repository) RemoteAdd(ctx context.Context, name, url string, opts ...Re
 	}
 
 	args := []string{"remote", "add"}
-	args = append(args, opt.CommandOptions.Args...)
+	args = append(args, opt.Args...)
 	if opt.Fetch {
 		args = append(args, "-f")
 	}
@@ -110,7 +110,7 @@ func (r *Repository) RemoteAdd(ctx context.Context, name, url string, opts ...Re
 	}
 	args = append(args, "--end-of-options", name, url)
 
-	_, err := gitRun(ctx, r.path, args, opt.CommandOptions.Envs)
+	_, err := gitRun(ctx, r.path, args, opt.Envs)
 	return err
 }
 
@@ -131,10 +131,10 @@ func (r *Repository) RemoteRemove(ctx context.Context, name string, opts ...Remo
 	}
 
 	args := []string{"remote", "remove"}
-	args = append(args, opt.CommandOptions.Args...)
+	args = append(args, opt.Args...)
 	args = append(args, "--end-of-options", name)
 
-	_, err := gitRun(ctx, r.path, args, opt.CommandOptions.Envs)
+	_, err := gitRun(ctx, r.path, args, opt.Envs)
 	if err != nil {
 		// the error status may differ from git clients
 		if strings.Contains(err.Error(), "error: No such remote") ||
@@ -162,9 +162,9 @@ func (r *Repository) Remotes(ctx context.Context, opts ...RemotesOptions) ([]str
 	}
 
 	args := []string{"remote"}
-	args = append(args, opt.CommandOptions.Args...)
+	args = append(args, opt.Args...)
 
-	stdout, err := gitRun(ctx, r.path, args, opt.CommandOptions.Envs)
+	stdout, err := gitRun(ctx, r.path, args, opt.Envs)
 	if err != nil {
 		return nil, err
 	}
@@ -194,7 +194,7 @@ func (r *Repository) RemoteGetURL(ctx context.Context, name string, opts ...Remo
 	}
 
 	args := []string{"remote", "get-url"}
-	args = append(args, opt.CommandOptions.Args...)
+	args = append(args, opt.Args...)
 	if opt.Push {
 		args = append(args, "--push")
 	}
@@ -203,7 +203,7 @@ func (r *Repository) RemoteGetURL(ctx context.Context, name string, opts ...Remo
 	}
 	args = append(args, "--end-of-options", name)
 
-	stdout, err := gitRun(ctx, r.path, args, opt.CommandOptions.Envs)
+	stdout, err := gitRun(ctx, r.path, args, opt.Envs)
 	if err != nil {
 		return nil, err
 	}
@@ -232,7 +232,7 @@ func (r *Repository) RemoteSetURL(ctx context.Context, name, newurl string, opts
 	}
 
 	args := []string{"remote", "set-url"}
-	args = append(args, opt.CommandOptions.Args...)
+	args = append(args, opt.Args...)
 	if opt.Push {
 		args = append(args, "--push")
 	}
@@ -241,7 +241,7 @@ func (r *Repository) RemoteSetURL(ctx context.Context, name, newurl string, opts
 		args = append(args, opt.Regex)
 	}
 
-	_, err := gitRun(ctx, r.path, args, opt.CommandOptions.Envs)
+	_, err := gitRun(ctx, r.path, args, opt.Envs)
 	if err != nil {
 		if strings.Contains(err.Error(), "No such URL found") {
 			return ErrURLNotExist
@@ -273,14 +273,14 @@ func (r *Repository) RemoteSetURLAdd(ctx context.Context, name, newurl string, o
 	}
 
 	args := []string{"remote", "set-url"}
-	args = append(args, opt.CommandOptions.Args...)
+	args = append(args, opt.Args...)
 	args = append(args, "--add")
 	if opt.Push {
 		args = append(args, "--push")
 	}
 	args = append(args, "--end-of-options", name, newurl)
 
-	_, err := gitRun(ctx, r.path, args, opt.CommandOptions.Envs)
+	_, err := gitRun(ctx, r.path, args, opt.Envs)
 	if err != nil && strings.Contains(err.Error(), "Will not delete all non-push URLs") {
 		return ErrNotDeleteNonPushURLs
 	}
@@ -307,14 +307,14 @@ func (r *Repository) RemoteSetURLDelete(ctx context.Context, name, regex string,
 	}
 
 	args := []string{"remote", "set-url"}
-	args = append(args, opt.CommandOptions.Args...)
+	args = append(args, opt.Args...)
 	args = append(args, "--delete")
 	if opt.Push {
 		args = append(args, "--push")
 	}
 	args = append(args, "--end-of-options", name, regex)
 
-	_, err := gitRun(ctx, r.path, args, opt.CommandOptions.Envs)
+	_, err := gitRun(ctx, r.path, args, opt.Envs)
 	if err != nil && strings.Contains(err.Error(), "Will not delete all non-push URLs") {
 		return ErrNotDeleteNonPushURLs
 	}

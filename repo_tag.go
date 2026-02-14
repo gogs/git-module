@@ -156,7 +156,7 @@ func (r *Repository) Tags(ctx context.Context, opts ...TagsOptions) ([]string, e
 	}
 
 	args := []string{"tag", "--list"}
-	args = append(args, opt.CommandOptions.Args...)
+	args = append(args, opt.Args...)
 	if opt.SortKey != "" {
 		args = append(args, "--sort="+opt.SortKey)
 	} else {
@@ -166,7 +166,7 @@ func (r *Repository) Tags(ctx context.Context, opts ...TagsOptions) ([]string, e
 		args = append(args, opt.Pattern)
 	}
 
-	stdout, err := gitRun(ctx, r.path, args, opt.CommandOptions.Envs)
+	stdout, err := gitRun(ctx, r.path, args, opt.Envs)
 	if err != nil {
 		return nil, err
 	}
@@ -199,7 +199,7 @@ func (r *Repository) CreateTag(ctx context.Context, name, rev string, opts ...Cr
 	}
 
 	args := []string{"tag"}
-	args = append(args, opt.CommandOptions.Args...)
+	args = append(args, opt.Args...)
 
 	var envs []string
 	if opt.Annotated {
@@ -214,7 +214,7 @@ func (r *Repository) CreateTag(ctx context.Context, name, rev string, opts ...Cr
 	}
 	args = append(args, rev)
 
-	envs = append(envs, opt.CommandOptions.Envs...)
+	envs = append(envs, opt.Envs...)
 	_, err := gitRun(ctx, r.path, args, envs)
 	return err
 }
@@ -235,8 +235,8 @@ func (r *Repository) DeleteTag(ctx context.Context, name string, opts ...DeleteT
 	}
 
 	args := []string{"tag", "--delete", "--end-of-options", name}
-	args = append(args, opt.CommandOptions.Args...)
+	args = append(args, opt.Args...)
 
-	_, err := gitRun(ctx, r.path, args, opt.CommandOptions.Envs)
+	_, err := gitRun(ctx, r.path, args, opt.Envs)
 	return err
 }

@@ -95,10 +95,10 @@ func (r *Repository) CatFileCommit(ctx context.Context, rev string, opts ...CatF
 	}
 
 	args := []string{"cat-file"}
-	args = append(args, opt.CommandOptions.Args...)
+	args = append(args, opt.Args...)
 	args = append(args, "commit", commitID)
 
-	stdout, err := gitRun(ctx, r.path, args, opt.CommandOptions.Envs)
+	stdout, err := gitRun(ctx, r.path, args, opt.Envs)
 	if err != nil {
 		return nil, err
 	}
@@ -130,10 +130,10 @@ func (r *Repository) CatFileType(ctx context.Context, rev string, opts ...CatFil
 	}
 
 	args := []string{"cat-file"}
-	args = append(args, opt.CommandOptions.Args...)
+	args = append(args, opt.Args...)
 	args = append(args, "-t", rev)
 
-	typ, err := gitRun(ctx, r.path, args, opt.CommandOptions.Envs)
+	typ, err := gitRun(ctx, r.path, args, opt.Envs)
 	if err != nil {
 		return "", err
 	}
@@ -194,7 +194,7 @@ func (r *Repository) Log(ctx context.Context, rev string, opts ...LogOptions) ([
 	}
 
 	args := []string{"log"}
-	args = append(args, opt.CommandOptions.Args...)
+	args = append(args, opt.Args...)
 	args = append(args, "--pretty="+LogFormatHashOnly)
 	if opt.MaxCount > 0 {
 		args = append(args, "--max-count="+strconv.Itoa(opt.MaxCount))
@@ -216,7 +216,7 @@ func (r *Repository) Log(ctx context.Context, rev string, opts ...LogOptions) ([
 		args = append(args, escapePath(opt.Path))
 	}
 
-	stdout, err := gitRun(ctx, r.path, args, opt.CommandOptions.Envs)
+	stdout, err := gitRun(ctx, r.path, args, opt.Envs)
 	if err != nil {
 		return nil, err
 	}
@@ -359,7 +359,7 @@ func (r *Repository) DiffNameOnly(ctx context.Context, base, head string, opts .
 	}
 
 	args := []string{"diff"}
-	args = append(args, opt.CommandOptions.Args...)
+	args = append(args, opt.Args...)
 	args = append(args, "--name-only", "--end-of-options")
 	if opt.NeedsMergeBase {
 		args = append(args, base+"..."+head)
@@ -371,7 +371,7 @@ func (r *Repository) DiffNameOnly(ctx context.Context, base, head string, opts .
 		args = append(args, escapePath(opt.Path))
 	}
 
-	stdout, err := gitRun(ctx, r.path, args, opt.CommandOptions.Envs)
+	stdout, err := gitRun(ctx, r.path, args, opt.Envs)
 	if err != nil {
 		return nil, err
 	}
@@ -411,7 +411,7 @@ func (r *Repository) RevListCount(ctx context.Context, refspecs []string, opts .
 	}
 
 	args := []string{"rev-list"}
-	args = append(args, opt.CommandOptions.Args...)
+	args = append(args, opt.Args...)
 	args = append(args, "--count", "--end-of-options")
 	args = append(args, refspecs...)
 	args = append(args, "--")
@@ -419,7 +419,7 @@ func (r *Repository) RevListCount(ctx context.Context, refspecs []string, opts .
 		args = append(args, escapePath(opt.Path))
 	}
 
-	stdout, err := gitRun(ctx, r.path, args, opt.CommandOptions.Envs)
+	stdout, err := gitRun(ctx, r.path, args, opt.Envs)
 	if err != nil {
 		return 0, err
 	}
@@ -450,7 +450,7 @@ func (r *Repository) RevList(ctx context.Context, refspecs []string, opts ...Rev
 	}
 
 	args := []string{"rev-list"}
-	args = append(args, opt.CommandOptions.Args...)
+	args = append(args, opt.Args...)
 	args = append(args, "--end-of-options")
 	args = append(args, refspecs...)
 	args = append(args, "--")
@@ -458,7 +458,7 @@ func (r *Repository) RevList(ctx context.Context, refspecs []string, opts ...Rev
 		args = append(args, escapePath(opt.Path))
 	}
 
-	stdout, err := gitRun(ctx, r.path, args, opt.CommandOptions.Envs)
+	stdout, err := gitRun(ctx, r.path, args, opt.Envs)
 	if err != nil {
 		return nil, err
 	}
@@ -482,13 +482,13 @@ func (r *Repository) LatestCommitTime(ctx context.Context, opts ...LatestCommitT
 	}
 
 	args := []string{"for-each-ref"}
-	args = append(args, opt.CommandOptions.Args...)
+	args = append(args, opt.Args...)
 	args = append(args, "--count=1", "--sort=-committerdate", "--format=%(committerdate:iso8601)")
 	if opt.Branch != "" {
 		args = append(args, RefsHeads+opt.Branch)
 	}
 
-	stdout, err := gitRun(ctx, r.path, args, opt.CommandOptions.Envs)
+	stdout, err := gitRun(ctx, r.path, args, opt.Envs)
 	if err != nil {
 		return time.Time{}, err
 	}
