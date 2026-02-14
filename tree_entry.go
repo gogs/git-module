@@ -5,6 +5,7 @@
 package git
 
 import (
+	"context"
 	"fmt"
 	"path"
 	"runtime"
@@ -13,7 +14,6 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
-	"time"
 )
 
 // EntryMode is the unix file mode of a tree entry.
@@ -37,8 +37,9 @@ type TreeEntry struct {
 
 	parent *Tree
 
-	size     int64
-	sizeOnce sync.Once
+	size    int64
+	sizeMu  sync.Mutex
+	sizeSet bool
 }
 
 // Mode returns the entry mode if the tree entry.
@@ -86,20 +87,23 @@ func (e *TreeEntry) Name() string {
 	return e.name
 }
 
-// Size returns the size of thr entry.
-func (e *TreeEntry) Size() int64 {
-	e.sizeOnce.Do(func() {
-		if e.IsTree() {
-			return
-		}
+// Size returns the size of the entry. It runs a git command to determine the
+// size on first call. Successful results are cached; failed attempts are not
+// cached, allowing retries with a fresh context.
+func (e *TreeEntry) Size(ctx context.Context) int64 {
+	e.sizeMu.Lock()
+	defer e.sizeMu.Unlock()
 
-		stdout, err := NewCommand("cat-file", "-s", e.id.String()).RunInDir(e.parent.repo.path)
-		if err != nil {
-			return
-		}
-		e.size, _ = strconv.ParseInt(strings.TrimSpace(string(stdout)), 10, 64)
-	})
+	if e.sizeSet || e.IsTree() {
+		return e.size
+	}
 
+	stdout, err := NewCommand(ctx, "cat-file", "-s", e.id.String()).RunInDir(e.parent.repo.path)
+	if err != nil {
+		return 0
+	}
+	e.size, _ = strconv.ParseInt(strings.TrimSpace(string(stdout)), 10, 64)
+	e.sizeSet = true
 	return e.size
 }
 
@@ -159,9 +163,6 @@ type CommitsInfoOptions struct {
 	// The maximum number of goroutines to be used for getting commits information.
 	// When not set (i.e. <=0), runtime.GOMAXPROCS is used to determine the value.
 	MaxConcurrency int
-	// The timeout duration before giving up for each shell command execution.
-	// The default timeout duration will be used when not supplied.
-	Timeout time.Duration
 }
 
 var defaultConcurrency = runtime.GOMAXPROCS(0)
@@ -170,7 +171,7 @@ var defaultConcurrency = runtime.GOMAXPROCS(0)
 // the state of given commit and subpath. It takes advantages of concurrency to
 // speed up the process. The returned list has the same number of items as tree
 // entries, so the caller can access them via slice indices.
-func (es Entries) CommitsInfo(commit *Commit, opts ...CommitsInfoOptions) ([]*EntryCommitInfo, error) {
+func (es Entries) CommitsInfo(ctx context.Context, commit *Commit, opts ...CommitsInfoOptions) ([]*EntryCommitInfo, error) {
 	if len(es) == 0 {
 		return []*EntryCommitInfo{}, nil
 	}
@@ -232,9 +233,8 @@ func (es Entries) CommitsInfo(commit *Commit, opts ...CommitsInfoOptions) ([]*En
 				epath := path.Join(opt.Path, e.Name())
 
 				var err error
-				info.Commit, err = commit.CommitByPath(CommitByRevisionOptions{
-					Path:    epath,
-					Timeout: opt.Timeout,
+				info.Commit, err = commit.CommitByPath(ctx, CommitByRevisionOptions{
+					Path: epath,
 				})
 				if err != nil {
 					setError(fmt.Errorf("get commit by path %q: %v", epath, err))
@@ -244,7 +244,7 @@ func (es Entries) CommitsInfo(commit *Commit, opts ...CommitsInfoOptions) ([]*En
 				// Get extra information for submodules
 				if e.IsCommit() {
 					// Be tolerant to implicit submodules
-					info.Submodule, err = commit.Submodule(epath)
+					info.Submodule, err = commit.Submodule(ctx, epath)
 					if err != nil {
 						info.Submodule = &Submodule{Name: epath}
 					}

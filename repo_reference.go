@@ -5,9 +5,9 @@
 package git
 
 import (
+	"context"
 	"errors"
 	"strings"
-	"time"
 )
 
 const (
@@ -37,11 +37,6 @@ type Reference struct {
 //
 // Docs: https://git-scm.com/docs/git-show-ref#Documentation/git-show-ref.txt---verify
 type ShowRefVerifyOptions struct {
-	// The timeout duration before giving up for each shell command execution. The
-	// default timeout duration will be used when not supplied.
-	//
-	// Deprecated: Use CommandOptions.Timeout instead.
-	Timeout time.Duration
 	// The additional options to be passed to the underlying git.
 	CommandOptions
 }
@@ -50,14 +45,14 @@ var ErrReferenceNotExist = errors.New("reference does not exist")
 
 // ShowRefVerify returns the commit ID of given reference (e.g.
 // "refs/heads/master") if it exists in the repository.
-func (r *Repository) ShowRefVerify(ref string, opts ...ShowRefVerifyOptions) (string, error) {
+func (r *Repository) ShowRefVerify(ctx context.Context, ref string, opts ...ShowRefVerifyOptions) (string, error) {
 	var opt ShowRefVerifyOptions
 	if len(opts) > 0 {
 		opt = opts[0]
 	}
 
-	cmd := NewCommand("show-ref", "--verify", "--end-of-options", ref).AddOptions(opt.CommandOptions)
-	stdout, err := cmd.RunInDirWithTimeout(opt.Timeout, r.path)
+	cmd := NewCommand(ctx, "show-ref", "--verify", "--end-of-options", ref).AddOptions(opt.CommandOptions)
+	stdout, err := cmd.RunInDir(r.path)
 	if err != nil {
 		if strings.Contains(err.Error(), "not a valid ref") {
 			return "", ErrReferenceNotExist
@@ -69,33 +64,33 @@ func (r *Repository) ShowRefVerify(ref string, opts ...ShowRefVerifyOptions) (st
 
 // BranchCommitID returns the commit ID of given branch if it exists in the
 // repository. The branch must be given in short name e.g. "master".
-func (r *Repository) BranchCommitID(branch string, opts ...ShowRefVerifyOptions) (string, error) {
-	return r.ShowRefVerify(RefsHeads+branch, opts...)
+func (r *Repository) BranchCommitID(ctx context.Context, branch string, opts ...ShowRefVerifyOptions) (string, error) {
+	return r.ShowRefVerify(ctx, RefsHeads+branch, opts...)
 }
 
 // TagCommitID returns the commit ID of given tag if it exists in the
 // repository. The tag must be given in short name e.g. "v1.0.0".
-func (r *Repository) TagCommitID(tag string, opts ...ShowRefVerifyOptions) (string, error) {
-	return r.ShowRefVerify(RefsTags+tag, opts...)
+func (r *Repository) TagCommitID(ctx context.Context, tag string, opts ...ShowRefVerifyOptions) (string, error) {
+	return r.ShowRefVerify(ctx, RefsTags+tag, opts...)
 }
 
 // HasReference returns true if given reference exists in the repository. The
 // reference must be given in full refspec, e.g. "refs/heads/master".
-func (r *Repository) HasReference(ref string, opts ...ShowRefVerifyOptions) bool {
-	_, err := r.ShowRefVerify(ref, opts...)
+func (r *Repository) HasReference(ctx context.Context, ref string, opts ...ShowRefVerifyOptions) bool {
+	_, err := r.ShowRefVerify(ctx, ref, opts...)
 	return err == nil
 }
 
 // HasBranch returns true if given branch exists in the repository. The branch
 // must be given in short name e.g. "master".
-func (r *Repository) HasBranch(branch string, opts ...ShowRefVerifyOptions) bool {
-	return r.HasReference(RefsHeads+branch, opts...)
+func (r *Repository) HasBranch(ctx context.Context, branch string, opts ...ShowRefVerifyOptions) bool {
+	return r.HasReference(ctx, RefsHeads+branch, opts...)
 }
 
 // HasTag returns true if given tag exists in the repository. The tag must be
 // given in short name e.g. "v1.0.0".
-func (r *Repository) HasTag(tag string, opts ...ShowRefVerifyOptions) bool {
-	return r.HasReference(RefsTags+tag, opts...)
+func (r *Repository) HasTag(ctx context.Context, tag string, opts ...ShowRefVerifyOptions) bool {
+	return r.HasReference(ctx, RefsTags+tag, opts...)
 }
 
 // SymbolicRefOptions contains optional arguments for get and set symbolic ref.
@@ -105,11 +100,6 @@ type SymbolicRefOptions struct {
 	// The name of the reference, e.g. "refs/heads/master". When set, it will be
 	// used to update the symbolic ref.
 	Ref string
-	// The timeout duration before giving up for each shell command execution. The
-	// default timeout duration will be used when not supplied.
-	//
-	// Deprecated: Use CommandOptions.Timeout instead.
-	Timeout time.Duration
 	// The additional options to be passed to the underlying git.
 	CommandOptions
 }
@@ -117,13 +107,13 @@ type SymbolicRefOptions struct {
 // SymbolicRef returns the reference name (e.g. "refs/heads/master") pointed by
 // the symbolic ref. It returns an empty string and nil error when doing set
 // operation.
-func (r *Repository) SymbolicRef(opts ...SymbolicRefOptions) (string, error) {
+func (r *Repository) SymbolicRef(ctx context.Context, opts ...SymbolicRefOptions) (string, error) {
 	var opt SymbolicRefOptions
 	if len(opts) > 0 {
 		opt = opts[0]
 	}
 
-	cmd := NewCommand("symbolic-ref").AddOptions(opt.CommandOptions)
+	cmd := NewCommand(ctx, "symbolic-ref").AddOptions(opt.CommandOptions)
 	if opt.Name == "" {
 		opt.Name = "HEAD"
 	}
@@ -132,7 +122,7 @@ func (r *Repository) SymbolicRef(opts ...SymbolicRefOptions) (string, error) {
 		cmd.AddArgs(opt.Ref)
 	}
 
-	stdout, err := cmd.RunInDirWithTimeout(opt.Timeout, r.path)
+	stdout, err := cmd.RunInDir(r.path)
 	if err != nil {
 		return "", err
 	}
@@ -149,23 +139,18 @@ type ShowRefOptions struct {
 	Tags bool
 	// The list of patterns to filter results.
 	Patterns []string
-	// The timeout duration before giving up for each shell command execution. The
-	// default timeout duration will be used when not supplied.
-	//
-	// Deprecated: Use CommandOptions.Timeout instead.
-	Timeout time.Duration
 	// The additional options to be passed to the underlying git.
 	CommandOptions
 }
 
 // ShowRef returns a list of references in the repository.
-func (r *Repository) ShowRef(opts ...ShowRefOptions) ([]*Reference, error) {
+func (r *Repository) ShowRef(ctx context.Context, opts ...ShowRefOptions) ([]*Reference, error) {
 	var opt ShowRefOptions
 	if len(opts) > 0 {
 		opt = opts[0]
 	}
 
-	cmd := NewCommand("show-ref").AddOptions(opt.CommandOptions)
+	cmd := NewCommand(ctx, "show-ref").AddOptions(opt.CommandOptions)
 	if opt.Heads {
 		cmd.AddArgs("--heads")
 	}
@@ -177,7 +162,7 @@ func (r *Repository) ShowRef(opts ...ShowRefOptions) ([]*Reference, error) {
 		cmd.AddArgs(opt.Patterns...)
 	}
 
-	stdout, err := cmd.RunInDirWithTimeout(opt.Timeout, r.path)
+	stdout, err := cmd.RunInDir(r.path)
 	if err != nil {
 		return nil, err
 	}
@@ -198,8 +183,8 @@ func (r *Repository) ShowRef(opts ...ShowRefOptions) ([]*Reference, error) {
 }
 
 // Branches returns a list of all branches in the repository.
-func (r *Repository) Branches() ([]string, error) {
-	heads, err := r.ShowRef(ShowRefOptions{Heads: true})
+func (r *Repository) Branches(ctx context.Context) ([]string, error) {
+	heads, err := r.ShowRef(ctx, ShowRefOptions{Heads: true})
 	if err != nil {
 		return nil, err
 	}
@@ -217,28 +202,23 @@ func (r *Repository) Branches() ([]string, error) {
 type DeleteBranchOptions struct {
 	// Indicates whether to force delete the branch.
 	Force bool
-	// The timeout duration before giving up for each shell command execution. The
-	// default timeout duration will be used when not supplied.
-	//
-	// Deprecated: Use CommandOptions.Timeout instead.
-	Timeout time.Duration
 	// The additional options to be passed to the underlying git.
 	CommandOptions
 }
 
 // DeleteBranch deletes the branch from the repository.
-func (r *Repository) DeleteBranch(name string, opts ...DeleteBranchOptions) error {
+func (r *Repository) DeleteBranch(ctx context.Context, name string, opts ...DeleteBranchOptions) error {
 	var opt DeleteBranchOptions
 	if len(opts) > 0 {
 		opt = opts[0]
 	}
 
-	cmd := NewCommand("branch").AddOptions(opt.CommandOptions)
+	cmd := NewCommand(ctx, "branch").AddOptions(opt.CommandOptions)
 	if opt.Force {
 		cmd.AddArgs("-D")
 	} else {
 		cmd.AddArgs("-d")
 	}
-	_, err := cmd.AddArgs("--end-of-options", name).RunInDirWithTimeout(opt.Timeout, r.path)
+	_, err := cmd.AddArgs("--end-of-options", name).RunInDir(r.path)
 	return err
 }

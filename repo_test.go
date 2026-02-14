@@ -5,6 +5,7 @@
 package git
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"testing"
@@ -22,6 +23,7 @@ func TestRepository(t *testing.T) {
 }
 
 func TestInit(t *testing.T) {
+	ctx := context.Background()
 	tests := []struct {
 		opt InitOptions
 	}{
@@ -42,7 +44,7 @@ func TestInit(t *testing.T) {
 				_ = os.RemoveAll(path)
 			}()
 
-			if err := Init(path, test.opt); err != nil {
+			if err := Init(ctx, path, test.opt); err != nil {
 				t.Fatal(err)
 			}
 		})
@@ -58,6 +60,7 @@ func TestOpen(t *testing.T) {
 }
 
 func TestClone(t *testing.T) {
+	ctx := context.Background()
 	tests := []struct {
 		opt CloneOptions
 	}{
@@ -96,7 +99,7 @@ func TestClone(t *testing.T) {
 				_ = os.RemoveAll(path)
 			}()
 
-			if err := Clone(testrepo.Path(), path, test.opt); err != nil {
+			if err := Clone(ctx, testrepo.Path(), path, test.opt); err != nil {
 				t.Fatal(err)
 			}
 		})
@@ -104,6 +107,7 @@ func TestClone(t *testing.T) {
 }
 
 func setupTempRepo() (_ *Repository, cleanup func(), err error) {
+	ctx := context.Background()
 	path := tempPath()
 	cleanup = func() {
 		_ = os.RemoveAll(path)
@@ -114,7 +118,7 @@ func setupTempRepo() (_ *Repository, cleanup func(), err error) {
 		}
 	}()
 
-	if err = Clone(testrepo.Path(), path); err != nil {
+	if err = Clone(ctx, testrepo.Path(), path); err != nil {
 		return nil, cleanup, err
 	}
 
@@ -126,6 +130,7 @@ func setupTempRepo() (_ *Repository, cleanup func(), err error) {
 }
 
 func TestRepository_Fetch(t *testing.T) {
+	ctx := context.Background()
 	r, cleanup, err := setupTempRepo()
 	if err != nil {
 		t.Fatal(err)
@@ -147,7 +152,7 @@ func TestRepository_Fetch(t *testing.T) {
 	for _, test := range tests {
 		t.Run("", func(t *testing.T) {
 			// Make sure it does not blow up
-			if err := r.Fetch(test.opt); err != nil {
+			if err := r.Fetch(ctx, test.opt); err != nil {
 				t.Fatal(err)
 			}
 		})
@@ -155,6 +160,7 @@ func TestRepository_Fetch(t *testing.T) {
 }
 
 func TestRepository_Pull(t *testing.T) {
+	ctx := context.Background()
 	r, cleanup, err := setupTempRepo()
 	if err != nil {
 		t.Fatal(err)
@@ -187,7 +193,7 @@ func TestRepository_Pull(t *testing.T) {
 	for _, test := range tests {
 		t.Run("", func(t *testing.T) {
 			// Make sure it does not blow up
-			if err := r.Pull(test.opt); err != nil {
+			if err := r.Pull(ctx, test.opt); err != nil {
 				t.Fatal(err)
 			}
 		})
@@ -195,6 +201,7 @@ func TestRepository_Pull(t *testing.T) {
 }
 
 func TestRepository_Push(t *testing.T) {
+	ctx := context.Background()
 	r, cleanup, err := setupTempRepo()
 	if err != nil {
 		t.Fatal(err)
@@ -215,7 +222,7 @@ func TestRepository_Push(t *testing.T) {
 	for _, test := range tests {
 		t.Run("", func(t *testing.T) {
 			// Make sure it does not blow up
-			if err := r.Push(test.remote, test.branch, test.opt); err != nil {
+			if err := r.Push(ctx, test.remote, test.branch, test.opt); err != nil {
 				t.Fatal(err)
 			}
 		})
@@ -223,6 +230,7 @@ func TestRepository_Push(t *testing.T) {
 }
 
 func TestRepository_Checkout(t *testing.T) {
+	ctx := context.Background()
 	r, cleanup, err := setupTempRepo()
 	if err != nil {
 		t.Fatal(err)
@@ -247,7 +255,7 @@ func TestRepository_Checkout(t *testing.T) {
 	for _, test := range tests {
 		t.Run("", func(t *testing.T) {
 			// Make sure it does not blow up
-			if err := r.Checkout(test.branch, test.opt); err != nil {
+			if err := r.Checkout(ctx, test.branch, test.opt); err != nil {
 				t.Fatal(err)
 			}
 		})
@@ -255,6 +263,7 @@ func TestRepository_Checkout(t *testing.T) {
 }
 
 func TestRepository_Reset(t *testing.T) {
+	ctx := context.Background()
 	r, cleanup, err := setupTempRepo()
 	if err != nil {
 		t.Fatal(err)
@@ -275,7 +284,7 @@ func TestRepository_Reset(t *testing.T) {
 	for _, test := range tests {
 		t.Run("", func(t *testing.T) {
 			// Make sure it does not blow up
-			if err := r.Reset(test.rev, test.opt); err != nil {
+			if err := r.Reset(ctx, test.rev, test.opt); err != nil {
 				t.Fatal(err)
 			}
 		})
@@ -283,6 +292,7 @@ func TestRepository_Reset(t *testing.T) {
 }
 
 func TestRepository_Move(t *testing.T) {
+	ctx := context.Background()
 	r, cleanup, err := setupTempRepo()
 	if err != nil {
 		t.Fatal(err)
@@ -303,7 +313,7 @@ func TestRepository_Move(t *testing.T) {
 	for _, test := range tests {
 		t.Run("", func(t *testing.T) {
 			// Make sure it does not blow up
-			if err := r.Move(test.src, test.dst, test.opt); err != nil {
+			if err := r.Move(ctx, test.src, test.dst, test.opt); err != nil {
 				t.Fatal(err)
 			}
 		})
@@ -311,6 +321,7 @@ func TestRepository_Move(t *testing.T) {
 }
 
 func TestRepository_Add(t *testing.T) {
+	ctx := context.Background()
 	r, cleanup, err := setupTempRepo()
 	if err != nil {
 		t.Fatal(err)
@@ -325,7 +336,7 @@ func TestRepository_Add(t *testing.T) {
 	}
 
 	// Make sure it does not blow up
-	if err := r.Add(AddOptions{
+	if err := r.Add(ctx, AddOptions{
 		All:       true,
 		Pathspecs: []string{"TESTFILE"},
 	}); err != nil {
@@ -334,6 +345,7 @@ func TestRepository_Add(t *testing.T) {
 }
 
 func TestRepository_Commit(t *testing.T) {
+	ctx := context.Background()
 	r, cleanup, err := setupTempRepo()
 	if err != nil {
 		t.Fatal(err)
@@ -351,7 +363,7 @@ func TestRepository_Commit(t *testing.T) {
 	message := "Add a file"
 
 	t.Run("nothing to commit", func(t *testing.T) {
-		if err = r.Commit(committer, message, CommitOptions{
+		if err = r.Commit(ctx, committer, message, CommitOptions{
 			Author: author,
 		}); err != nil {
 			t.Fatal(err)
@@ -366,19 +378,19 @@ func TestRepository_Commit(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if err := r.Add(AddOptions{
+		if err := r.Add(ctx, AddOptions{
 			All: true,
 		}); err != nil {
 			t.Fatal(err)
 		}
 
 		// Make sure it does not blow up
-		if err = r.Commit(committer, message); err != nil {
+		if err = r.Commit(ctx, committer, message); err != nil {
 			t.Fatal(err)
 		}
 
 		// Verify the result
-		c, err := r.CatFileCommit("master")
+		c, err := r.CatFileCommit(ctx, "master")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -398,19 +410,19 @@ func TestRepository_Commit(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if err := r.Add(AddOptions{
+		if err := r.Add(ctx, AddOptions{
 			All: true,
 		}); err != nil {
 			t.Fatal(err)
 		}
 
 		// Make sure it does not blow up
-		if err = r.Commit(committer, message, CommitOptions{Author: author}); err != nil {
+		if err = r.Commit(ctx, committer, message, CommitOptions{Author: author}); err != nil {
 			t.Fatal(err)
 		}
 
 		// Verify the result
-		c, err := r.CatFileCommit("master")
+		c, err := r.CatFileCommit(ctx, "master")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -424,6 +436,7 @@ func TestRepository_Commit(t *testing.T) {
 }
 
 func TestRepository_RevParse(t *testing.T) {
+	ctx := context.Background()
 	tests := []struct {
 		rev    string
 		expID  string
@@ -463,7 +476,7 @@ func TestRepository_RevParse(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run("", func(t *testing.T) {
-			id, err := testrepo.RevParse(test.rev)
+			id, err := testrepo.RevParse(ctx, test.rev)
 			assert.Equal(t, test.expErr, err)
 			assert.Equal(t, test.expID, id)
 		})
@@ -471,16 +484,18 @@ func TestRepository_RevParse(t *testing.T) {
 }
 
 func TestRepository_CountObjects(t *testing.T) {
+	ctx := context.Background()
 	// Make sure it does not blow up
-	_, err := testrepo.CountObjects(CountObjectsOptions{})
+	_, err := testrepo.CountObjects(ctx, CountObjectsOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
 }
 
 func TestRepository_Fsck(t *testing.T) {
+	ctx := context.Background()
 	// Make sure it does not blow up
-	err := testrepo.Fsck(FsckOptions{})
+	err := testrepo.Fsck(ctx, FsckOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}

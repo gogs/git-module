@@ -5,6 +5,7 @@
 package git
 
 import (
+	"context"
 	"path/filepath"
 	"strings"
 )
@@ -19,9 +20,9 @@ const (
 )
 
 // CreateArchive creates given format of archive to the destination.
-func (c *Commit) CreateArchive(format ArchiveFormat, dst string) error {
+func (c *Commit) CreateArchive(ctx context.Context, format ArchiveFormat, dst string) error {
 	prefix := filepath.Base(strings.TrimSuffix(c.repo.path, ".git")) + "/"
-	_, err := NewCommand("archive",
+	_, err := NewCommand(ctx, "archive",
 		"--prefix="+prefix,
 		"--format="+string(format),
 		"-o", dst,

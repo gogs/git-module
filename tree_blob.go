@@ -5,12 +5,13 @@
 package git
 
 import (
+	"context"
 	"path"
 	"strings"
 )
 
 // TreeEntry returns the TreeEntry by given subpath of the tree.
-func (t *Tree) TreeEntry(subpath string, opts ...LsTreeOptions) (*TreeEntry, error) {
+func (t *Tree) TreeEntry(ctx context.Context, subpath string, opts ...LsTreeOptions) (*TreeEntry, error) {
 	if len(subpath) == 0 {
 		return &TreeEntry{
 			id:   t.id,
@@ -26,7 +27,7 @@ func (t *Tree) TreeEntry(subpath string, opts ...LsTreeOptions) (*TreeEntry, err
 	for i, name := range paths {
 		// Reached end of the loop
 		if i == len(paths)-1 {
-			entries, err := tree.Entries(opts...)
+			entries, err := tree.Entries(ctx, opts...)
 			if err != nil {
 				return nil, err
 			}
@@ -37,7 +38,7 @@ func (t *Tree) TreeEntry(subpath string, opts ...LsTreeOptions) (*TreeEntry, err
 				}
 			}
 		} else {
-			tree, err = tree.Subtree(name, opts...)
+			tree, err = tree.Subtree(ctx, name, opts...)
 			if err != nil {
 				return nil, err
 			}
@@ -47,8 +48,8 @@ func (t *Tree) TreeEntry(subpath string, opts ...LsTreeOptions) (*TreeEntry, err
 }
 
 // Blob returns the blob object by given subpath of the tree.
-func (t *Tree) Blob(subpath string, opts ...LsTreeOptions) (*Blob, error) {
-	e, err := t.TreeEntry(subpath, opts...)
+func (t *Tree) Blob(ctx context.Context, subpath string, opts ...LsTreeOptions) (*Blob, error) {
+	e, err := t.TreeEntry(ctx, subpath, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -61,8 +62,8 @@ func (t *Tree) Blob(subpath string, opts ...LsTreeOptions) (*Blob, error) {
 }
 
 // BlobByIndex returns blob object by given index.
-func (t *Tree) BlobByIndex(index string) (*Blob, error) {
-	typ, err := t.repo.CatFileType(index)
+func (t *Tree) BlobByIndex(ctx context.Context, index string) (*Blob, error) {
+	typ, err := t.repo.CatFileType(ctx, index)
 	if err != nil {
 		return nil, err
 	}
@@ -71,7 +72,7 @@ func (t *Tree) BlobByIndex(index string) (*Blob, error) {
 		return nil, ErrNotBlob
 	}
 
-	id, err := t.repo.RevParse(index)
+	id, err := t.repo.RevParse(ctx, index)
 	if err != nil {
 		return nil, err
 	}

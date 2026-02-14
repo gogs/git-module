@@ -6,6 +6,7 @@ package git
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"strconv"
 	"strings"
@@ -69,11 +70,6 @@ loop:
 //
 // Docs: https://git-scm.com/docs/git-cat-file#Documentation/git-cat-file.txt-lttypegt
 type CatFileCommitOptions struct {
-	// The timeout duration before giving up for each shell command execution.
-	// The default timeout duration will be used when not supplied.
-	//
-	// Deprecated: Use CommandOptions.Timeout instead.
-	Timeout time.Duration
 	// The additional options to be passed to the underlying git.
 	CommandOptions
 }
@@ -81,7 +77,7 @@ type CatFileCommitOptions struct {
 // CatFileCommit returns the commit corresponding to the given revision of the
 // repository. The revision could be a commit ID or full refspec (e.g.
 // "refs/heads/master").
-func (r *Repository) CatFileCommit(rev string, opts ...CatFileCommitOptions) (*Commit, error) {
+func (r *Repository) CatFileCommit(ctx context.Context, rev string, opts ...CatFileCommitOptions) (*Commit, error) {
 	var opt CatFileCommitOptions
 	if len(opts) > 0 {
 		opt = opts[0]
@@ -93,15 +89,15 @@ func (r *Repository) CatFileCommit(rev string, opts ...CatFileCommitOptions) (*C
 		return cache.(*Commit), nil
 	}
 
-	commitID, err := r.RevParse(rev, RevParseOptions{Timeout: opt.Timeout}) //nolint
+	commitID, err := r.RevParse(ctx, rev) //nolint
 	if err != nil {
 		return nil, err
 	}
 
-	stdout, err := NewCommand("cat-file").
+	stdout, err := NewCommand(ctx, "cat-file").
 		AddOptions(opt.CommandOptions).
 		AddArgs("commit", commitID).
-		RunInDirWithTimeout(opt.Timeout, r.path)
+		RunInDir(r.path)
 	if err != nil {
 		return nil, err
 	}
@@ -121,24 +117,21 @@ func (r *Repository) CatFileCommit(rev string, opts ...CatFileCommitOptions) (*C
 //
 // Docs: https://git-scm.com/docs/git-cat-file#Documentation/git-cat-file.txt--t
 type CatFileTypeOptions struct {
-	// The timeout duration before giving up for each shell command execution. The
-	// default timeout duration will be used when not supplied.
-	Timeout time.Duration
 	// The additional options to be passed to the underlying git.
 	CommandOptions
 }
 
 // CatFileType returns the object type of given revision of the repository.
-func (r *Repository) CatFileType(rev string, opts ...CatFileTypeOptions) (ObjectType, error) {
+func (r *Repository) CatFileType(ctx context.Context, rev string, opts ...CatFileTypeOptions) (ObjectType, error) {
 	var opt CatFileTypeOptions
 	if len(opts) > 0 {
 		opt = opts[0]
 	}
 
-	typ, err := NewCommand("cat-file").
+	typ, err := NewCommand(ctx, "cat-file").
 		AddOptions(opt.CommandOptions).
 		AddArgs("-t", rev).
-		RunInDirWithTimeout(opt.Timeout, r.path)
+		RunInDir(r.path)
 	if err != nil {
 		return "", err
 	}
@@ -148,14 +141,14 @@ func (r *Repository) CatFileType(rev string, opts ...CatFileTypeOptions) (Object
 
 // BranchCommit returns the latest commit of given branch of the repository. The
 // branch must be given in short name e.g. "master".
-func (r *Repository) BranchCommit(branch string, opts ...CatFileCommitOptions) (*Commit, error) {
-	return r.CatFileCommit(RefsHeads+branch, opts...)
+func (r *Repository) BranchCommit(ctx context.Context, branch string, opts ...CatFileCommitOptions) (*Commit, error) {
+	return r.CatFileCommit(ctx, RefsHeads+branch, opts...)
 }
 
 // TagCommit returns the latest commit of given tag of the repository. The tag
 // must be given in short name e.g. "v1.0.0".
-func (r *Repository) TagCommit(tag string, opts ...CatFileCommitOptions) (*Commit, error) {
-	return r.CatFileCommit(RefsTags+tag, opts...)
+func (r *Repository) TagCommit(ctx context.Context, tag string, opts ...CatFileCommitOptions) (*Commit, error) {
+	return r.CatFileCommit(ctx, RefsTags+tag, opts...)
 }
 
 // LogOptions contains optional arguments for listing commits.
@@ -174,9 +167,6 @@ type LogOptions struct {
 	RegexpIgnoreCase bool
 	// The relative path of the repository.
 	Path string
-	// The timeout duration before giving up for each shell command execution. The
-	// default timeout duration will be used when not supplied.
-	Timeout time.Duration
 	// The additional options to be passed to the underlying git.
 	CommandOptions
 }
@@ -195,13 +185,13 @@ func escapePath(path string) string {
 
 // Log returns a list of commits in the state of given revision of the repository.
 // The returned list is in reverse chronological order.
-func (r *Repository) Log(rev string, opts ...LogOptions) ([]*Commit, error) {
+func (r *Repository) Log(ctx context.Context, rev string, opts ...LogOptions) ([]*Commit, error) {
 	var opt LogOptions
 	if len(opts) > 0 {
 		opt = opts[0]
 	}
 
-	cmd := NewCommand("log").
+	cmd := NewCommand(ctx, "log").
 		AddOptions(opt.CommandOptions).
 		AddArgs("--pretty=" + LogFormatHashOnly)
 	if opt.MaxCount > 0 {
@@ -224,11 +214,11 @@ func (r *Repository) Log(rev string, opts ...LogOptions) ([]*Commit, error) {
 		cmd.AddArgs(escapePath(opt.Path))
 	}
 
-	stdout, err := cmd.RunInDirWithTimeout(opt.Timeout, r.path)
+	stdout, err := cmd.RunInDir(r.path)
 	if err != nil {
 		return nil, err
 	}
-	return r.parsePrettyFormatLogToList(opt.Timeout, stdout)
+	return r.parsePrettyFormatLogToList(ctx, stdout)
 }
 
 // CommitByRevisionOptions contains optional arguments for getting a commit.
@@ -237,24 +227,20 @@ func (r *Repository) Log(rev string, opts ...LogOptions) ([]*Commit, error) {
 type CommitByRevisionOptions struct {
 	// The relative path of the repository.
 	Path string
-	// The timeout duration before giving up for each shell command execution. The
-	// default timeout duration will be used when not supplied.
-	Timeout time.Duration
 	// The additional options to be passed to the underlying git.
 	CommandOptions
 }
 
 // CommitByRevision returns a commit by given revision.
-func (r *Repository) CommitByRevision(rev string, opts ...CommitByRevisionOptions) (*Commit, error) {
+func (r *Repository) CommitByRevision(ctx context.Context, rev string, opts ...CommitByRevisionOptions) (*Commit, error) {
 	var opt CommitByRevisionOptions
 	if len(opts) > 0 {
 		opt = opts[0]
 	}
 
-	commits, err := r.Log(rev, LogOptions{
+	commits, err := r.Log(ctx, rev, LogOptions{
 		MaxCount:       1,
 		Path:           opt.Path,
-		Timeout:        opt.Timeout,
 		CommandOptions: opt.CommandOptions,
 	})
 	if err != nil {
@@ -275,26 +261,22 @@ func (r *Repository) CommitByRevision(rev string, opts ...CommitByRevisionOption
 type CommitsByPageOptions struct {
 	// The relative path of the repository.
 	Path string
-	// The timeout duration before giving up for each shell command execution. The
-	// default timeout duration will be used when not supplied.
-	Timeout time.Duration
 	// The additional options to be passed to the underlying git.
 	CommandOptions
 }
 
 // CommitsByPage returns a paginated list of commits in the state of given
 // revision. The pagination starts from the newest to the oldest commit.
-func (r *Repository) CommitsByPage(rev string, page, size int, opts ...CommitsByPageOptions) ([]*Commit, error) {
+func (r *Repository) CommitsByPage(ctx context.Context, rev string, page, size int, opts ...CommitsByPageOptions) ([]*Commit, error) {
 	var opt CommitsByPageOptions
 	if len(opts) > 0 {
 		opt = opts[0]
 	}
 
-	return r.Log(rev, LogOptions{
+	return r.Log(ctx, rev, LogOptions{
 		MaxCount:       size,
 		Skip:           (page - 1) * size,
 		Path:           opt.Path,
-		Timeout:        opt.Timeout,
 		CommandOptions: opt.CommandOptions,
 	})
 }
@@ -307,27 +289,23 @@ type SearchCommitsOptions struct {
 	MaxCount int
 	// The relative path of the repository.
 	Path string
-	// The timeout duration before giving up for each shell command execution. The
-	// default timeout duration will be used when not supplied.
-	Timeout time.Duration
 	// The additional options to be passed to the underlying git.
 	CommandOptions
 }
 
 // SearchCommits searches commit message with given pattern in the state of
 // given revision. The returned list is in reverse chronological order.
-func (r *Repository) SearchCommits(rev, pattern string, opts ...SearchCommitsOptions) ([]*Commit, error) {
+func (r *Repository) SearchCommits(ctx context.Context, rev, pattern string, opts ...SearchCommitsOptions) ([]*Commit, error) {
 	var opt SearchCommitsOptions
 	if len(opts) > 0 {
 		opt = opts[0]
 	}
 
-	return r.Log(rev, LogOptions{
+	return r.Log(ctx, rev, LogOptions{
 		MaxCount:         opt.MaxCount,
 		GrepPattern:      pattern,
 		RegexpIgnoreCase: true,
 		Path:             opt.Path,
-		Timeout:          opt.Timeout,
 		CommandOptions:   opt.CommandOptions,
 	})
 }
@@ -339,25 +317,21 @@ func (r *Repository) SearchCommits(rev, pattern string, opts ...SearchCommitsOpt
 type CommitsSinceOptions struct {
 	// The relative path of the repository.
 	Path string
-	// The timeout duration before giving up for each shell command execution. The
-	// default timeout duration will be used when not supplied.
-	Timeout time.Duration
 	// The additional options to be passed to the underlying git.
 	CommandOptions
 }
 
 // CommitsSince returns a list of commits since given time. The returned list is
 // in reverse chronological order.
-func (r *Repository) CommitsSince(rev string, since time.Time, opts ...CommitsSinceOptions) ([]*Commit, error) {
+func (r *Repository) CommitsSince(ctx context.Context, rev string, since time.Time, opts ...CommitsSinceOptions) ([]*Commit, error) {
 	var opt CommitsSinceOptions
 	if len(opts) > 0 {
 		opt = opts[0]
 	}
 
-	return r.Log(rev, LogOptions{
+	return r.Log(ctx, rev, LogOptions{
 		Since:          since,
 		Path:           opt.Path,
-		Timeout:        opt.Timeout,
 		CommandOptions: opt.CommandOptions,
 	})
 }
@@ -370,22 +344,19 @@ type DiffNameOnlyOptions struct {
 	NeedsMergeBase bool
 	// The relative path of the repository.
 	Path string
-	// The timeout duration before giving up for each shell command execution. The
-	// default timeout duration will be used when not supplied.
-	Timeout time.Duration
 	// The additional options to be passed to the underlying git.
 	CommandOptions
 }
 
 // DiffNameOnly returns a list of changed files between base and head revisions of the
 // repository.
-func (r *Repository) DiffNameOnly(base, head string, opts ...DiffNameOnlyOptions) ([]string, error) {
+func (r *Repository) DiffNameOnly(ctx context.Context, base, head string, opts ...DiffNameOnlyOptions) ([]string, error) {
 	var opt DiffNameOnlyOptions
 	if len(opts) > 0 {
 		opt = opts[0]
 	}
 
-	cmd := NewCommand("diff").
+	cmd := NewCommand(ctx, "diff").
 		AddOptions(opt.CommandOptions).
 		AddArgs("--name-only")
 	cmd.AddArgs("--end-of-options")
@@ -399,7 +370,7 @@ func (r *Repository) DiffNameOnly(base, head string, opts ...DiffNameOnlyOptions
 		cmd.AddArgs(escapePath(opt.Path))
 	}
 
-	stdout, err := cmd.RunInDirWithTimeout(opt.Timeout, r.path)
+	stdout, err := cmd.RunInDir(r.path)
 	if err != nil {
 		return nil, err
 	}
@@ -422,16 +393,13 @@ func (r *Repository) DiffNameOnly(base, head string, opts ...DiffNameOnlyOptions
 type RevListCountOptions struct {
 	// The relative path of the repository.
 	Path string
-	// The timeout duration before giving up for each shell command execution. The
-	// default timeout duration will be used when not supplied.
-	Timeout time.Duration
 	// The additional options to be passed to the underlying git.
 	CommandOptions
 }
 
 // RevListCount returns number of total commits up to given refspec of the
 // repository.
-func (r *Repository) RevListCount(refspecs []string, opts ...RevListCountOptions) (int64, error) {
+func (r *Repository) RevListCount(ctx context.Context, refspecs []string, opts ...RevListCountOptions) (int64, error) {
 	var opt RevListCountOptions
 	if len(opts) > 0 {
 		opt = opts[0]
@@ -441,7 +409,7 @@ func (r *Repository) RevListCount(refspecs []string, opts ...RevListCountOptions
 		return 0, errors.New("must have at least one refspec")
 	}
 
-	cmd := NewCommand("rev-list").
+	cmd := NewCommand(ctx, "rev-list").
 		AddOptions(opt.CommandOptions).
 		AddArgs(
 			"--count",
@@ -453,7 +421,7 @@ func (r *Repository) RevListCount(refspecs []string, opts ...RevListCountOptions
 		cmd.AddArgs(escapePath(opt.Path))
 	}
 
-	stdout, err := cmd.RunInDirWithTimeout(opt.Timeout, r.path)
+	stdout, err := cmd.RunInDir(r.path)
 	if err != nil {
 		return 0, err
 	}
@@ -467,16 +435,13 @@ func (r *Repository) RevListCount(refspecs []string, opts ...RevListCountOptions
 type RevListOptions struct {
 	// The relative path of the repository.
 	Path string
-	// The timeout duration before giving up for each shell command execution. The
-	// default timeout duration will be used when not supplied.
-	Timeout time.Duration
 	// The additional options to be passed to the underlying git.
 	CommandOptions
 }
 
 // RevList returns a list of commits based on given refspecs in reverse
 // chronological order.
-func (r *Repository) RevList(refspecs []string, opts ...RevListOptions) ([]*Commit, error) {
+func (r *Repository) RevList(ctx context.Context, refspecs []string, opts ...RevListOptions) ([]*Commit, error) {
 	var opt RevListOptions
 	if len(opts) > 0 {
 		opt = opts[0]
@@ -486,7 +451,7 @@ func (r *Repository) RevList(refspecs []string, opts ...RevListOptions) ([]*Comm
 		return nil, errors.New("must have at least one refspec")
 	}
 
-	cmd := NewCommand("rev-list").AddOptions(opt.CommandOptions)
+	cmd := NewCommand(ctx, "rev-list").AddOptions(opt.CommandOptions)
 	cmd.AddArgs("--end-of-options")
 	cmd.AddArgs(refspecs...)
 	cmd.AddArgs("--")
@@ -494,11 +459,11 @@ func (r *Repository) RevList(refspecs []string, opts ...RevListOptions) ([]*Comm
 		cmd.AddArgs(escapePath(opt.Path))
 	}
 
-	stdout, err := cmd.RunInDirWithTimeout(opt.Timeout, r.path)
+	stdout, err := cmd.RunInDir(r.path)
 	if err != nil {
 		return nil, err
 	}
-	return r.parsePrettyFormatLogToList(opt.Timeout, bytes.TrimSpace(stdout))
+	return r.parsePrettyFormatLogToList(ctx, bytes.TrimSpace(stdout))
 }
 
 // LatestCommitTimeOptions contains optional arguments for getting the latest
@@ -506,21 +471,18 @@ func (r *Repository) RevList(refspecs []string, opts ...RevListOptions) ([]*Comm
 type LatestCommitTimeOptions struct {
 	// To get the latest commit time of the branch. When not set, it checks all branches.
 	Branch string
-	// The timeout duration before giving up for each shell command execution. The
-	// default timeout duration will be used when not supplied.
-	Timeout time.Duration
 	// The additional options to be passed to the underlying git.
 	CommandOptions
 }
 
 // LatestCommitTime returns the time of latest commit of the repository.
-func (r *Repository) LatestCommitTime(opts ...LatestCommitTimeOptions) (time.Time, error) {
+func (r *Repository) LatestCommitTime(ctx context.Context, opts ...LatestCommitTimeOptions) (time.Time, error) {
 	var opt LatestCommitTimeOptions
 	if len(opts) > 0 {
 		opt = opts[0]
 	}
 
-	cmd := NewCommand("for-each-ref").
+	cmd := NewCommand(ctx, "for-each-ref").
 		AddOptions(opt.CommandOptions).
 		AddArgs(
 			"--count=1",
@@ -531,7 +493,7 @@ func (r *Repository) LatestCommitTime(opts ...LatestCommitTimeOptions) (time.Tim
 		cmd.AddArgs(RefsHeads + opt.Branch)
 	}
 
-	stdout, err := cmd.RunInDirWithTimeout(opt.Timeout, r.path)
+	stdout, err := cmd.RunInDir(r.path)
 	if err != nil {
 		return time.Time{}, err
 	}

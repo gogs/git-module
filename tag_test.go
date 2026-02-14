@@ -5,13 +5,15 @@
 package git
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
 func TestTag(t *testing.T) {
-	tag, err := testrepo.Tag("v1.1.0")
+	ctx := context.Background()
+	tag, err := testrepo.Tag(ctx, "v1.1.0")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -31,12 +33,13 @@ func TestTag(t *testing.T) {
 }
 
 func TestTag_Commit(t *testing.T) {
-	tag, err := testrepo.Tag("v1.1.0")
+	ctx := context.Background()
+	tag, err := testrepo.Tag(ctx, "v1.1.0")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	c, err := tag.Commit()
+	c, err := tag.Commit(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -5,12 +5,14 @@
 package git
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
 func TestRepository_Tag(t *testing.T) {
+	ctx := context.Background()
 	tests := []struct {
 		name   string
 		opt    TagOptions
@@ -36,7 +38,7 @@ func TestRepository_Tag(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run("", func(t *testing.T) {
-			tag, err := testrepo.Tag(test.name, test.opt)
+			tag, err := testrepo.Tag(ctx, test.name, test.opt)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -50,8 +52,9 @@ func TestRepository_Tag(t *testing.T) {
 }
 
 func TestRepository_Tags(t *testing.T) {
+	ctx := context.Background()
 	// Make sure it does not blow up
-	tags, err := testrepo.Tags(TagsOptions{})
+	tags, err := testrepo.Tags(ctx, TagsOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -59,22 +62,23 @@ func TestRepository_Tags(t *testing.T) {
 }
 
 func TestRepository_Tags_VersionSort(t *testing.T) {
+	ctx := context.Background()
 	r, cleanup, err := setupTempRepo()
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer cleanup()
 
-	err = r.CreateTag("v3.0.0", "master")
+	err = r.CreateTag(ctx, "v3.0.0", "master")
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = r.CreateTag("v2.999.0", "master")
+	err = r.CreateTag(ctx, "v2.999.0", "master")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	tags, err := r.Tags(TagsOptions{
+	tags, err := r.Tags(ctx, TagsOptions{
 		SortKey: "-version:refname",
 		Pattern: "v*",
 	})
@@ -90,32 +94,34 @@ func TestRepository_Tags_VersionSort(t *testing.T) {
 }
 
 func TestRepository_CreateTag(t *testing.T) {
+	ctx := context.Background()
 	r, cleanup, err := setupTempRepo()
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer cleanup()
 
-	assert.False(t, r.HasReference(RefsTags+"v2.0.0"))
+	assert.False(t, r.HasReference(ctx, RefsTags+"v2.0.0"))
 
-	err = r.CreateTag("v2.0.0", "master", CreateTagOptions{})
+	err = r.CreateTag(ctx, "v2.0.0", "master", CreateTagOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	assert.True(t, r.HasReference(RefsTags+"v2.0.0"))
+	assert.True(t, r.HasReference(ctx, RefsTags+"v2.0.0"))
 }
 
 func TestRepository_CreateAnnotatedTag(t *testing.T) {
+	ctx := context.Background()
 	r, cleanup, err := setupTempRepo()
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer cleanup()
 
-	assert.False(t, r.HasReference(RefsTags+"v2.0.0"))
+	assert.False(t, r.HasReference(ctx, RefsTags+"v2.0.0"))
 
-	err = r.CreateTag("v2.0.0", "master", CreateTagOptions{
+	err = r.CreateTag(ctx, "v2.0.0", "master", CreateTagOptions{
 		Annotated: true,
 		Author: &Signature{
 			Name:  "alice",
@@ -126,9 +132,9 @@ func TestRepository_CreateAnnotatedTag(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	assert.True(t, r.HasReference(RefsTags+"v2.0.0"))
+	assert.True(t, r.HasReference(ctx, RefsTags+"v2.0.0"))
 
-	tag, err := r.Tag("v2.0.0")
+	tag, err := r.Tag(ctx, "v2.0.0")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -139,18 +145,19 @@ func TestRepository_CreateAnnotatedTag(t *testing.T) {
 }
 
 func TestRepository_DeleteTag(t *testing.T) {
+	ctx := context.Background()
 	r, cleanup, err := setupTempRepo()
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer cleanup()
 
-	assert.True(t, r.HasReference(RefsTags+"v1.0.0"))
+	assert.True(t, r.HasReference(ctx, RefsTags+"v1.0.0"))
 
-	err = r.DeleteTag("v1.0.0", DeleteTagOptions{})
+	err = r.DeleteTag(ctx, "v1.0.0", DeleteTagOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	assert.False(t, r.HasReference(RefsTags+"v1.0.0"))
+	assert.False(t, r.HasReference(ctx, RefsTags+"v1.0.0"))
 }

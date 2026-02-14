@@ -5,6 +5,7 @@
 package git
 
 import (
+	"context"
 	"strings"
 	"sync"
 )
@@ -16,13 +17,13 @@ type Tree struct {
 
 	repo *Repository
 
-	entries     Entries
-	entriesOnce sync.Once
-	entriesErr  error
+	entries    Entries
+	entriesMu  sync.Mutex
+	entriesSet bool
 }
 
 // Subtree returns a subtree by given subpath of the tree.
-func (t *Tree) Subtree(subpath string, opts ...LsTreeOptions) (*Tree, error) {
+func (t *Tree) Subtree(ctx context.Context, subpath string, opts ...LsTreeOptions) (*Tree, error) {
 	if len(subpath) == 0 {
 		return t, nil
 	}
@@ -35,7 +36,7 @@ func (t *Tree) Subtree(subpath string, opts ...LsTreeOptions) (*Tree, error) {
 		e   *TreeEntry
 	)
 	for _, name := range paths {
-		e, err = p.TreeEntry(name, opts...)
+		e, err = p.TreeEntry(ctx, name, opts...)
 		if err != nil {
 			return nil, err
 		}
@@ -50,20 +51,21 @@ func (t *Tree) Subtree(subpath string, opts ...LsTreeOptions) (*Tree, error) {
 	return g, nil
 }
 
-// Entries returns all entries of the tree.
-func (t *Tree) Entries(opts ...LsTreeOptions) (Entries, error) {
-	t.entriesOnce.Do(func() {
-		if t.entries != nil {
-			return
-		}
+// Entries returns all entries of the tree. Successful results are cached;
+// failed attempts are not cached, allowing retries with a fresh context.
+func (t *Tree) Entries(ctx context.Context, opts ...LsTreeOptions) (Entries, error) {
+	t.entriesMu.Lock()
+	defer t.entriesMu.Unlock()
 
-		var tt *Tree
-		tt, t.entriesErr = t.repo.LsTree(t.id.String(), opts...)
-		if t.entriesErr != nil {
-			return
-		}
-		t.entries = tt.entries
-	})
+	if t.entriesSet {
+		return t.entries, nil
+	}
 
-	return t.entries, t.entriesErr
+	tt, err := t.repo.LsTree(ctx, t.id.String(), opts...)
+	if err != nil {
+		return nil, err
+	}
+	t.entries = tt.entries
+	t.entriesSet = true
+	return t.entries, nil
 }

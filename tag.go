@@ -4,6 +4,8 @@
 
 package git
 
+import "context"
+
 // Tag contains information of a Git tag.
 type Tag struct {
 	typ      ObjectType
@@ -47,6 +49,6 @@ func (t *Tag) Message() string {
 }
 
 // Commit returns the underlying commit of the tag.
-func (t *Tag) Commit(opts ...CatFileCommitOptions) (*Commit, error) {
-	return t.repo.CatFileCommit(t.commitID.String(), opts...)
+func (t *Tag) Commit(ctx context.Context, opts ...CatFileCommitOptions) (*Commit, error) {
+	return t.repo.CatFileCommit(ctx, t.commitID.String(), opts...)
 }
