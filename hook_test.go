@@ -5,7 +5,6 @@
 package git
 
 import (
-	"io/ioutil"
 	"os"
 	"testing"
 
@@ -43,7 +42,7 @@ func TestHook_Update(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	p, err := ioutil.ReadFile(path)
+	p, err := os.ReadFile(path)
 	if err != nil {
 		t.Fatal(err)
 	}

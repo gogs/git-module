@@ -7,7 +7,6 @@ package git
 import (
 	"bytes"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"strings"
 	"sync"
@@ -154,7 +153,7 @@ func (c *Commit) isImageFile(blob *Blob, err error) (bool, error) {
 		N: int64(buf.Cap()),
 	}
 
-	err = blob.Pipeline(stdout, ioutil.Discard)
+	err = blob.Pipeline(stdout, io.Discard)
 	if err != nil {
 		return false, err
 	}

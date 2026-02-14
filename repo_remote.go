@@ -103,11 +103,8 @@ type RemoteAddOptions struct {
 	CommandOptions
 }
 
-// Deprecated: Use RemoteAddOptions instead.
-type AddRemoteOptions = RemoteAddOptions
-
-// RemoteAdd adds a new remote to the repository in given path.
-func RemoteAdd(repoPath, name, url string, opts ...RemoteAddOptions) error {
+// RemoteAdd adds a new remote to the repository.
+func (r *Repository) RemoteAdd(name, url string, opts ...RemoteAddOptions) error {
 	var opt RemoteAddOptions
 	if len(opts) > 0 {
 		opt = opts[0]
@@ -121,23 +118,8 @@ func RemoteAdd(repoPath, name, url string, opts ...RemoteAddOptions) error {
 		cmd.AddArgs("--mirror=fetch")
 	}
 
-	_, err := cmd.AddArgs("--end-of-options", name, url).RunInDirWithTimeout(opt.Timeout, repoPath)
+	_, err := cmd.AddArgs("--end-of-options", name, url).RunInDirWithTimeout(opt.Timeout, r.path)
 	return err
-}
-
-// Deprecated: Use RemoteAdd instead.
-func RepoAddRemote(repoPath, name, url string, opts ...RemoteAddOptions) error {
-	return RemoteAdd(repoPath, name, url, opts...)
-}
-
-// RemoteAdd adds a new remote to the repository.
-func (r *Repository) RemoteAdd(name, url string, opts ...RemoteAddOptions) error {
-	return RemoteAdd(r.path, name, url, opts...)
-}
-
-// Deprecated: Use RemoteAdd instead.
-func (r *Repository) AddRemote(name, url string, opts ...RemoteAddOptions) error {
-	return RemoteAdd(r.path, name, url, opts...)
 }
 
 // RemoteRemoveOptions contains arguments for removing a remote from the
@@ -154,11 +136,8 @@ type RemoteRemoveOptions struct {
 	CommandOptions
 }
 
-// Deprecated: Use RemoteRemoveOptions instead.
-type RemoveRemoteOptions = RemoteRemoveOptions
-
-// RemoteRemove removes a remote from the repository in given path.
-func RemoteRemove(repoPath, name string, opts ...RemoteRemoveOptions) error {
+// RemoteRemove removes a remote from the repository.
+func (r *Repository) RemoteRemove(name string, opts ...RemoteRemoveOptions) error {
 	var opt RemoteRemoveOptions
 	if len(opts) > 0 {
 		opt = opts[0]
@@ -167,7 +146,7 @@ func RemoteRemove(repoPath, name string, opts ...RemoteRemoveOptions) error {
 	_, err := NewCommand("remote", "remove").
 		AddOptions(opt.CommandOptions).
 		AddArgs("--end-of-options", name).
-		RunInDirWithTimeout(opt.Timeout, repoPath)
+		RunInDirWithTimeout(opt.Timeout, r.path)
 	if err != nil {
 		// the error status may differ from git clients
 		if strings.Contains(err.Error(), "error: No such remote") ||
@@ -177,21 +156,6 @@ func RemoteRemove(repoPath, name string, opts ...RemoteRemoveOptions) error {
 		return err
 	}
 	return nil
-}
-
-// Deprecated: Use RemoteRemove instead.
-func RepoRemoveRemote(repoPath, name string, opts ...RemoteRemoveOptions) error {
-	return RemoteRemove(repoPath, name, opts...)
-}
-
-// RemoteRemove removes a remote from the repository.
-func (r *Repository) RemoteRemove(name string, opts ...RemoteRemoveOptions) error {
-	return RemoteRemove(r.path, name, opts...)
-}
-
-// Deprecated: Use RemoteRemove instead.
-func (r *Repository) RemoveRemote(name string, opts ...RemoteRemoveOptions) error {
-	return RemoteRemove(r.path, name, opts...)
 }
 
 // RemotesOptions contains arguments for listing remotes of the repository.
@@ -207,8 +171,8 @@ type RemotesOptions struct {
 	CommandOptions
 }
 
-// Remotes lists remotes of the repository in given path.
-func Remotes(repoPath string, opts ...RemotesOptions) ([]string, error) {
+// Remotes lists remotes of the repository.
+func (r *Repository) Remotes(opts ...RemotesOptions) ([]string, error) {
 	var opt RemotesOptions
 	if len(opts) > 0 {
 		opt = opts[0]
@@ -216,17 +180,12 @@ func Remotes(repoPath string, opts ...RemotesOptions) ([]string, error) {
 
 	stdout, err := NewCommand("remote").
 		AddOptions(opt.CommandOptions).
-		RunInDirWithTimeout(opt.Timeout, repoPath)
+		RunInDirWithTimeout(opt.Timeout, r.path)
 	if err != nil {
 		return nil, err
 	}
 
 	return bytesToStrings(stdout), nil
-}
-
-// Remotes lists remotes of the repository.
-func (r *Repository) Remotes(opts ...RemotesOptions) ([]string, error) {
-	return Remotes(r.path, opts...)
 }
 
 // RemoteGetURLOptions contains arguments for retrieving URL(s) of a remote of
@@ -248,8 +207,8 @@ type RemoteGetURLOptions struct {
 	CommandOptions
 }
 
-// RemoteGetURL retrieves URL(s) of a remote of the repository in given path.
-func RemoteGetURL(repoPath, name string, opts ...RemoteGetURLOptions) ([]string, error) {
+// RemoteGetURL retrieves URL(s) of a remote of the repository.
+func (r *Repository) RemoteGetURL(name string, opts ...RemoteGetURLOptions) ([]string, error) {
 	var opt RemoteGetURLOptions
 	if len(opts) > 0 {
 		opt = opts[0]
@@ -263,16 +222,11 @@ func RemoteGetURL(repoPath, name string, opts ...RemoteGetURLOptions) ([]string,
 		cmd.AddArgs("--all")
 	}
 
-	stdout, err := cmd.AddArgs("--end-of-options", name).RunInDirWithTimeout(opt.Timeout, repoPath)
+	stdout, err := cmd.AddArgs("--end-of-options", name).RunInDirWithTimeout(opt.Timeout, r.path)
 	if err != nil {
 		return nil, err
 	}
 	return bytesToStrings(stdout), nil
-}
-
-// RemoteGetURL retrieves URL(s) of a remote of the repository in given path.
-func (r *Repository) RemoteGetURL(name string, opts ...RemoteGetURLOptions) ([]string, error) {
-	return RemoteGetURL(r.path, name, opts...)
 }
 
 // RemoteSetURLOptions contains arguments for setting an URL of a remote of the
@@ -293,9 +247,9 @@ type RemoteSetURLOptions struct {
 	CommandOptions
 }
 
-// RemoteSetURL sets first URL of the remote with given name of the repository
-// in given path.
-func RemoteSetURL(repoPath, name, newurl string, opts ...RemoteSetURLOptions) error {
+// RemoteSetURL sets the first URL of the remote with given name of the
+// repository.
+func (r *Repository) RemoteSetURL(name, newurl string, opts ...RemoteSetURLOptions) error {
 	var opt RemoteSetURLOptions
 	if len(opts) > 0 {
 		opt = opts[0]
@@ -312,7 +266,7 @@ func RemoteSetURL(repoPath, name, newurl string, opts ...RemoteSetURLOptions) er
 		cmd.AddArgs(opt.Regex)
 	}
 
-	_, err := cmd.RunInDirWithTimeout(opt.Timeout, repoPath)
+	_, err := cmd.RunInDirWithTimeout(opt.Timeout, r.path)
 	if err != nil {
 		if strings.Contains(err.Error(), "No such URL found") {
 			return ErrURLNotExist
@@ -322,12 +276,6 @@ func RemoteSetURL(repoPath, name, newurl string, opts ...RemoteSetURLOptions) er
 		return err
 	}
 	return nil
-}
-
-// RemoteSetURL sets the first URL of the remote with given name of the
-// repository.
-func (r *Repository) RemoteSetURL(name, newurl string, opts ...RemoteSetURLOptions) error {
-	return RemoteSetURL(r.path, name, newurl, opts...)
 }
 
 // RemoteSetURLAddOptions contains arguments for appending an URL to a remote
@@ -347,8 +295,8 @@ type RemoteSetURLAddOptions struct {
 }
 
 // RemoteSetURLAdd appends an URL to the remote with given name of the
-// repository in given path. Use RemoteSetURL to overwrite the URL(s) instead.
-func RemoteSetURLAdd(repoPath, name, newurl string, opts ...RemoteSetURLAddOptions) error {
+// repository. Use RemoteSetURL to overwrite the URL(s) instead.
+func (r *Repository) RemoteSetURLAdd(name, newurl string, opts ...RemoteSetURLAddOptions) error {
 	var opt RemoteSetURLAddOptions
 	if len(opts) > 0 {
 		opt = opts[0]
@@ -363,17 +311,11 @@ func RemoteSetURLAdd(repoPath, name, newurl string, opts ...RemoteSetURLAddOptio
 
 	cmd.AddArgs("--end-of-options", name, newurl)
 
-	_, err := cmd.RunInDirWithTimeout(opt.Timeout, repoPath)
+	_, err := cmd.RunInDirWithTimeout(opt.Timeout, r.path)
 	if err != nil && strings.Contains(err.Error(), "Will not delete all non-push URLs") {
 		return ErrNotDeleteNonPushURLs
 	}
 	return err
-}
-
-// RemoteSetURLAdd appends an URL to the remote with given name of the
-// repository. Use RemoteSetURL to overwrite the URL(s) instead.
-func (r *Repository) RemoteSetURLAdd(name, newurl string, opts ...RemoteSetURLAddOptions) error {
-	return RemoteSetURLAdd(r.path, name, newurl, opts...)
 }
 
 // RemoteSetURLDeleteOptions contains arguments for deleting an URL of a remote
@@ -392,9 +334,9 @@ type RemoteSetURLDeleteOptions struct {
 	CommandOptions
 }
 
-// RemoteSetURLDelete deletes the remote with given name of the repository in
-// given path.
-func RemoteSetURLDelete(repoPath, name, regex string, opts ...RemoteSetURLDeleteOptions) error {
+// RemoteSetURLDelete deletes all URLs matching regex of the remote with given
+// name of the repository.
+func (r *Repository) RemoteSetURLDelete(name, regex string, opts ...RemoteSetURLDeleteOptions) error {
 	var opt RemoteSetURLDeleteOptions
 	if len(opts) > 0 {
 		opt = opts[0]
@@ -409,15 +351,9 @@ func RemoteSetURLDelete(repoPath, name, regex string, opts ...RemoteSetURLDelete
 
 	cmd.AddArgs("--end-of-options", name, regex)
 
-	_, err := cmd.RunInDirWithTimeout(opt.Timeout, repoPath)
+	_, err := cmd.RunInDirWithTimeout(opt.Timeout, r.path)
 	if err != nil && strings.Contains(err.Error(), "Will not delete all non-push URLs") {
 		return ErrNotDeleteNonPushURLs
 	}
 	return err
-}
-
-// RemoteSetURLDelete deletes all URLs matching regex of the remote with given
-// name of the repository.
-func (r *Repository) RemoteSetURLDelete(name, regex string, opts ...RemoteSetURLDeleteOptions) error {
-	return RemoteSetURLDelete(r.path, name, regex, opts...)
 }

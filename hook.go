@@ -5,7 +5,6 @@
 package git
 
 import (
-	"io/ioutil"
 	"os"
 	"path"
 	"strings"
@@ -235,11 +234,11 @@ func (h *Hook) Content() string {
 // memory copy of the content as well.
 func (h *Hook) Update(content string) error {
 	h.content = strings.TrimSpace(content)
-	h.content = strings.Replace(h.content, "\r", "", -1)
+	h.content = strings.ReplaceAll(h.content, "\r", "")
 
 	if err := os.MkdirAll(path.Dir(h.path), os.ModePerm); err != nil {
 		return err
-	} else if err = ioutil.WriteFile(h.path, []byte(h.content), os.ModePerm); err != nil {
+	} else if err = os.WriteFile(h.path, []byte(h.content), os.ModePerm); err != nil {
 		return err
 	}
 

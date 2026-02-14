@@ -69,13 +69,13 @@ func TestRepository_LsTree(t *testing.T) {
 	err = os.WriteFile(filepath.Join(path, specialName), []byte("content"), 0o644)
 	require.NoError(t, err)
 
-	err = Add(path, AddOptions{All: true})
-	require.NoError(t, err)
-
-	err = CreateCommit(path, &Signature{Name: "test", Email: "test@test.com"}, "initial commit")
-	require.NoError(t, err)
-
 	repo, err := Open(path)
+	require.NoError(t, err)
+
+	err = repo.Add(AddOptions{All: true})
+	require.NoError(t, err)
+
+	err = repo.Commit(&Signature{Name: "test", Email: "test@test.com"}, "initial commit")
 	require.NoError(t, err)
 
 	commit, err := repo.CatFileCommit("HEAD")

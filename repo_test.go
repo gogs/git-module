@@ -5,7 +5,6 @@
 package git
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -320,7 +319,7 @@ func TestRepository_Add(t *testing.T) {
 
 	// Generate a file
 	fpath := filepath.Join(r.Path(), "TESTFILE")
-	err = ioutil.WriteFile(fpath, []byte("something"), 0600)
+	err = os.WriteFile(fpath, []byte("something"), 0600)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -362,7 +361,7 @@ func TestRepository_Commit(t *testing.T) {
 	t.Run("committer is also the author", func(t *testing.T) {
 		// Generate a file and add to index
 		fpath := filepath.Join(r.Path(), "COMMITTER_IS_AUTHOR")
-		err = ioutil.WriteFile(fpath, []byte("something"), 0600)
+		err = os.WriteFile(fpath, []byte("something"), 0600)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -394,7 +393,7 @@ func TestRepository_Commit(t *testing.T) {
 	t.Run("committer is not the author", func(t *testing.T) {
 		// Generate a file and add to index
 		fpath := filepath.Join(r.Path(), "COMMITTER_IS_NOT_AUTHOR")
-		err = ioutil.WriteFile(fpath, []byte("something"), 0600)
+		err = os.WriteFile(fpath, []byte("something"), 0600)
 		if err != nil {
 			t.Fatal(err)
 		}
