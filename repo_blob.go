@@ -21,6 +21,8 @@ func (r *Repository) CatFileBlob(ctx context.Context, rev string, opts ...CatFil
 		opt = opts[0]
 	}
 
+	// Type conversions work because all three option types share the same
+	// underlying structure (CommandOptions only).
 	rev, err := r.RevParse(ctx, rev, RevParseOptions(opt)) //nolint
 	if err != nil {
 		return nil, err

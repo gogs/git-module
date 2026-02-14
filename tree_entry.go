@@ -37,8 +37,9 @@ type TreeEntry struct {
 
 	parent *Tree
 
-	size     int64
-	sizeOnce sync.Once
+	size    int64
+	sizeMu  sync.Mutex
+	sizeSet bool
 }
 
 // Mode returns the entry mode if the tree entry.
@@ -87,22 +88,22 @@ func (e *TreeEntry) Name() string {
 }
 
 // Size returns the size of the entry. It runs a git command to determine the
-// size on first call, using the provided context for cancellation/timeout. The
-// result is cached for subsequent calls (the context is only used on the first
-// invocation).
+// size on first call. Successful results are cached; failed attempts are not
+// cached, allowing retries with a fresh context.
 func (e *TreeEntry) Size(ctx context.Context) int64 {
-	e.sizeOnce.Do(func() {
-		if e.IsTree() {
-			return
-		}
+	e.sizeMu.Lock()
+	defer e.sizeMu.Unlock()
 
-		stdout, err := NewCommand(ctx, "cat-file", "-s", e.id.String()).RunInDir(e.parent.repo.path)
-		if err != nil {
-			return
-		}
-		e.size, _ = strconv.ParseInt(strings.TrimSpace(string(stdout)), 10, 64)
-	})
+	if e.sizeSet || e.IsTree() {
+		return e.size
+	}
 
+	stdout, err := NewCommand(ctx, "cat-file", "-s", e.id.String()).RunInDir(e.parent.repo.path)
+	if err != nil {
+		return 0
+	}
+	e.size, _ = strconv.ParseInt(strings.TrimSpace(string(stdout)), 10, 64)
+	e.sizeSet = true
 	return e.size
 }
 
