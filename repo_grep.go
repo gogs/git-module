@@ -21,7 +21,6 @@ type GrepOptions struct {
 	WordRegexp bool
 	// Whether use extended regular expressions.
 	ExtendedRegexp bool
-	// The additional options to be passed to the underlying Git.
 	CommandOptions
 }
 

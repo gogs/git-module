@@ -8,7 +8,6 @@ import (
 // BlameOptions contains optional arguments for blaming a file.
 // Docs: https://git-scm.com/docs/git-blame
 type BlameOptions struct {
-	// The additional options to be passed to the underlying git.
 	CommandOptions
 }
 

@@ -13,7 +13,6 @@ type DiffOptions struct {
 	// The commit ID to used for computing diff between a range of commits (base,
 	// revision]. When not set, only computes diff for a single commit at revision.
 	Base string
-	// The additional options to be passed to the underlying Git.
 	CommandOptions
 }
 
@@ -71,7 +70,6 @@ const (
 //
 // Docs: https://git-scm.com/docs/git-format-patch
 type RawDiffOptions struct {
-	// The additional options to be passed to the underlying Git.
 	CommandOptions
 }
 
@@ -122,7 +120,6 @@ func (r *Repository) RawDiff(ctx context.Context, rev string, diffType RawDiffFo
 
 // DiffBinaryOptions contains optional arguments for producing binary patch.
 type DiffBinaryOptions struct {
-	// The additional options to be passed to the underlying Git.
 	CommandOptions
 }
 

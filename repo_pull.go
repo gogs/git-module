@@ -9,7 +9,6 @@ import (
 //
 // Docs: https://git-scm.com/docs/git-merge-base
 type MergeBaseOptions struct {
-	// The additional options to be passed to the underlying git.
 	CommandOptions
 }
 

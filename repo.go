@@ -54,7 +54,6 @@ func (r *Repository) parsePrettyFormatLogToList(ctx context.Context, logs []byte
 type InitOptions struct {
 	// Indicates whether the repository should be initialized in bare format.
 	Bare bool
-	// The additional options to be passed to the underlying git.
 	CommandOptions
 }
 
@@ -111,7 +110,6 @@ type CloneOptions struct {
 	Branch string
 	// The number of revisions to clone.
 	Depth uint64
-	// The additional options to be passed to the underlying git.
 	CommandOptions
 }
 
@@ -155,7 +153,6 @@ func Clone(ctx context.Context, url, dst string, opts ...CloneOptions) error {
 type FetchOptions struct {
 	// Indicates whether to prune during fetching.
 	Prune bool
-	// The additional options to be passed to the underlying git.
 	CommandOptions
 }
 
@@ -188,7 +185,6 @@ type PullOptions struct {
 	Remote string
 	// The branch to pull updates from when All=false and Remote is supplied.
 	Branch string
-	// The additional options to be passed to the underlying git.
 	CommandOptions
 }
 
@@ -222,7 +218,8 @@ func (r *Repository) Pull(ctx context.Context, opts ...PullOptions) error {
 //
 // Docs: https://git-scm.com/docs/git-push
 type PushOptions struct {
-	// The additional options to be passed to the underlying git.
+	// Indicates whether to set upstream tracking for the branch.
+	SetUpstream bool
 	CommandOptions
 }
 
@@ -233,7 +230,11 @@ func (r *Repository) Push(ctx context.Context, remote, branch string, opts ...Pu
 		opt = opts[0]
 	}
 
-	args := []string{"push", "--end-of-options", remote, branch}
+	args := []string{"push"}
+	if opt.SetUpstream {
+		args = append(args, "-u")
+	}
+	args = append(args, "--end-of-options", remote, branch)
 	_, err := exec(ctx, r.path, args, opt.Envs)
 	return err
 }
@@ -244,7 +245,6 @@ func (r *Repository) Push(ctx context.Context, remote, branch string, opts ...Pu
 type CheckoutOptions struct {
 	// The base branch if checks out to a new branch.
 	BaseBranch string
-	// The additional options to be passed to the underlying git.
 	CommandOptions
 }
 
@@ -272,7 +272,6 @@ func (r *Repository) Checkout(ctx context.Context, branch string, opts ...Checko
 type ResetOptions struct {
 	// Indicates whether to perform a hard reset.
 	Hard bool
-	// The additional options to be passed to the underlying git.
 	CommandOptions
 }
 
@@ -298,7 +297,6 @@ func (r *Repository) Reset(ctx context.Context, rev string, opts ...ResetOptions
 //
 // Docs: https://git-scm.com/docs/git-mv
 type MoveOptions struct {
-	// The additional options to be passed to the underlying git.
 	CommandOptions
 }
 
@@ -323,7 +321,6 @@ type AddOptions struct {
 	All bool
 	// The specific pathspecs to be added to index.
 	Pathspecs []string
-	// The additional options to be passed to the underlying git.
 	CommandOptions
 }
 
@@ -352,7 +349,6 @@ func (r *Repository) Add(ctx context.Context, opts ...AddOptions) error {
 type CommitOptions struct {
 	// Author is the author of the changes if that's not the same as committer.
 	Author *Signature
-	// The additional options to be passed to the underlying git.
 	CommandOptions
 }
 
@@ -395,7 +391,6 @@ type NameStatus struct {
 //
 // Docs: https://git-scm.com/docs/git-show#Documentation/git-show.txt---name-status
 type ShowNameStatusOptions struct {
-	// The additional options to be passed to the underlying git.
 	CommandOptions
 }
 
@@ -445,7 +440,6 @@ func (r *Repository) ShowNameStatus(ctx context.Context, rev string, opts ...Sho
 //
 // Docs: https://git-scm.com/docs/git-rev-parse
 type RevParseOptions struct {
-	// The additional options to be passed to the underlying git.
 	CommandOptions
 }
 
@@ -485,7 +479,6 @@ type CountObject struct {
 //
 // Docs: https://git-scm.com/docs/git-count-objects
 type CountObjectsOptions struct {
-	// The additional options to be passed to the underlying git.
 	CommandOptions
 }
 
@@ -537,7 +530,6 @@ func (r *Repository) CountObjects(ctx context.Context, opts ...CountObjectsOptio
 //
 // Docs: https://git-scm.com/docs/git-fsck
 type FsckOptions struct {
-	// The additional options to be passed to the underlying git.
 	CommandOptions
 }
 

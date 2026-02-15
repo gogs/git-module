@@ -6,7 +6,6 @@ import "context"
 //
 // Docs: https://git-scm.com/docs/git-cat-file#Documentation/git-cat-file.txt
 type CatFileBlobOptions struct {
-	// The additional options to be passed to the underlying git.
 	CommandOptions
 }
 
