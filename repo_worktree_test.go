@@ -19,7 +19,6 @@ func TestRepository_WorktreeAdd(t *testing.T) {
 		path := tempPath()
 		defer func() { _ = os.RemoveAll(path) }()
 
-		// Use --detach by passing a commit SHA (not a branch name).
 		sha, err := r.RevParse(ctx, "master")
 		require.NoError(t, err)
 
