@@ -7,11 +7,9 @@ package git
 import (
 	"bytes"
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"os"
-	"os/exec"
 	"strconv"
 	"strings"
 	"time"
@@ -33,9 +31,6 @@ const DefaultTimeout = time.Minute
 // variables and working directory. If the context does not already have a
 // deadline, DefaultTimeout will be applied automatically.
 func gitCmd(ctx context.Context, dir string, args []string, envs []string) (*run.Command, context.CancelFunc) {
-	if ctx == nil {
-		ctx = context.Background()
-	}
 	cancel := func() {}
 
 	// Apply default timeout if the context doesn't already have a deadline.
@@ -109,13 +104,10 @@ func gitRun(ctx context.Context, dir string, args []string, envs []string) ([]by
 
 // gitPipeline executes a git command in the given directory, streaming stdout
 // to the given writer. If stderr writer is provided and the command fails,
-// stderr content extracted from the error is written to it. stdin is optional.
-func gitPipeline(ctx context.Context, dir string, args []string, envs []string, stdout, stderr io.Writer, stdin io.Reader) error {
+// stderr content extracted from the error is written to it.
+func gitPipeline(ctx context.Context, dir string, args []string, envs []string, stdout, stderr io.Writer) error {
 	cmd, cancel := gitCmd(ctx, dir, args, envs)
 	defer cancel()
-	if stdin != nil {
-		cmd = cmd.Input(stdin)
-	}
 
 	var buf *bytes.Buffer
 	w := stdout
@@ -216,15 +208,10 @@ func mapContextError(err error, ctx context.Context) error {
 }
 
 // isExitStatus reports whether err represents a specific process exit status
-// code. It handles both the bare "exit status N" format and the
-// "exit status N: <stderr>" format produced by sourcegraph/run.
+// code, using the run.ExitCoder interface provided by sourcegraph/run.
 func isExitStatus(err error, code int) bool {
-	if err == nil {
-		return false
-	}
-	prefix := fmt.Sprintf("exit status %d", code)
-	msg := err.Error()
-	return msg == prefix || strings.HasPrefix(msg, prefix+":")
+	exitCoder, ok := err.(run.ExitCoder)
+	return ok && exitCoder.ExitCode() == code
 }
 
 // extractStderr attempts to extract the stderr portion from a sourcegraph/run
@@ -232,10 +219,6 @@ func isExitStatus(err error, code int) bool {
 func extractStderr(err error) string {
 	if err == nil {
 		return ""
-	}
-	var exitErr *exec.ExitError
-	if errors.As(err, &exitErr) && len(exitErr.Stderr) > 0 {
-		return string(exitErr.Stderr)
 	}
 	msg := err.Error()
 	// sourcegraph/run error format: "exit status N: <stderr>"

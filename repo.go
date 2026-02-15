@@ -448,7 +448,7 @@ func (r *Repository) ShowNameStatus(ctx context.Context, rev string, opts ...Sho
 	args = append(args, opt.Args...)
 	args = append(args, "--end-of-options", rev)
 
-	err := gitPipeline(ctx, r.path, args, opt.Envs, w, nil, nil)
+	err := gitPipeline(ctx, r.path, args, opt.Envs, w, nil)
 	_ = w.Close() // Close writer to exit parsing goroutine
 	if err != nil {
 		return nil, err

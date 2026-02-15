@@ -26,9 +26,13 @@ func TestGitRun_ContextTimeout(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
 		defer cancel()
 
-		// Use a blocking reader so the command starts successfully and blocks
-		// reading stdin until the context deadline fires.
-		err := gitPipeline(ctx, "", []string{"hash-object", "--stdin"}, nil, io.Discard, io.Discard, blockingReader{cancel: ctx.Done()})
+		// Use gitCmd directly with a blocking stdin so the command starts
+		// successfully and blocks reading until the context deadline fires.
+		cmd, timeoutCancel := gitCmd(ctx, "", []string{"hash-object", "--stdin"}, nil)
+		defer timeoutCancel()
+
+		err := cmd.Input(blockingReader{cancel: ctx.Done()}).StdOut().Run().Stream(io.Discard)
+		err = mapContextError(err, ctx)
 		assert.Equal(t, ErrExecTimeout, err)
 	})
 }
@@ -46,7 +50,7 @@ func (r blockingReader) Read(p []byte) (int, error) {
 	return 0, io.EOF
 }
 
-func TestGitPipeline_ContextCancellation(t *testing.T) {
+func TestGitCmd_ContextCancellation(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	// Cancel in the background after a short delay so the command is already
@@ -58,7 +62,11 @@ func TestGitPipeline_ContextCancellation(t *testing.T) {
 		close(done)
 	}()
 
-	err := gitPipeline(ctx, "", []string{"hash-object", "--stdin"}, nil, io.Discard, io.Discard, blockingReader{cancel: done})
+	cmd, timeoutCancel := gitCmd(ctx, "", []string{"hash-object", "--stdin"}, nil)
+	defer timeoutCancel()
+
+	err := cmd.Input(blockingReader{cancel: done}).StdOut().Run().Stream(io.Discard)
+	err = mapContextError(err, ctx)
 	assert.ErrorIs(t, err, context.Canceled)
 	// Must NOT be ErrExecTimeout — cancellation is distinct from deadline.
 	assert.NotEqual(t, ErrExecTimeout, err)
