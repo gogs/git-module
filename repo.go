@@ -393,7 +393,7 @@ func (r *Repository) Commit(ctx context.Context, committer *Signature, message s
 
 	_, err := gitRun(ctx, r.path, args, envs)
 	// No stderr but exit status 1 means nothing to commit.
-	if err != nil && strings.HasPrefix(err.Error(), "exit status 1") {
+	if isExitStatus(err, 1) {
 		return nil
 	}
 	return err
@@ -480,7 +480,7 @@ func (r *Repository) RevParse(ctx context.Context, rev string, opts ...RevParseO
 
 	commitID, err := gitRun(ctx, r.path, args, opt.Envs)
 	if err != nil {
-		if strings.HasPrefix(err.Error(), "exit status 128") {
+		if isExitStatus(err, 128) {
 			return "", ErrRevisionNotExist
 		}
 		return "", err

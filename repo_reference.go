@@ -51,8 +51,9 @@ func (r *Repository) ShowRefVerify(ctx context.Context, ref string, opts ...Show
 		opt = opts[0]
 	}
 
-	args := []string{"show-ref", "--verify", "--end-of-options", ref}
+	args := []string{"show-ref", "--verify"}
 	args = append(args, opt.Args...)
+	args = append(args, "--end-of-options", ref)
 
 	stdout, err := gitRun(ctx, r.path, args, opt.Envs)
 	if err != nil {

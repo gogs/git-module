@@ -31,7 +31,7 @@ func (r *Repository) MergeBase(ctx context.Context, base, head string, opts ...M
 
 	stdout, err := gitRun(ctx, r.path, args, opt.Envs)
 	if err != nil {
-		if strings.HasPrefix(err.Error(), "exit status 1") {
+		if isExitStatus(err, 1) {
 			return "", ErrNoMergeBase
 		}
 		return "", err

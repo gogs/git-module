@@ -14,9 +14,11 @@ import (
 func TestRepository_MergeBase(t *testing.T) {
 	ctx := context.Background()
 
-	t.Run("no merge base", func(t *testing.T) {
+	t.Run("bad revision", func(t *testing.T) {
+		// "bad_revision" doesn't exist, so git fails with exit status 128 (fatal),
+		// not exit status 1 (no merge base).
 		mb, err := testrepo.MergeBase(ctx, "0eedd79eba4394bbef888c804e899731644367fe", "bad_revision")
-		assert.Equal(t, ErrNoMergeBase, err)
+		assert.Error(t, err)
 		assert.Empty(t, mb)
 	})
 

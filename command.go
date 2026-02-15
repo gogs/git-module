@@ -12,6 +12,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"strconv"
 	"strings"
 	"time"
 
@@ -85,10 +86,9 @@ func gitRun(ctx context.Context, dir string, args []string, envs []string) ([]by
 	// line-by-line which corrupts binary-ish output.
 	stdout := new(bytes.Buffer)
 	err := cmd.StdOut().Run().Stream(stdout)
-	if err != nil {
-		return nil, mapContextError(err, ctx)
-	}
 
+	// Capture (partial) stdout for logging even on error, so failed commands
+	// produce a useful log entry rather than an empty one.
 	if logOutput != nil {
 		data := stdout.Bytes()
 		limit := len(data)
@@ -101,6 +101,9 @@ func gitRun(ctx context.Context, dir string, args []string, envs []string) ([]by
 		}
 	}
 
+	if err != nil {
+		return nil, mapContextError(err, ctx)
+	}
 	return stdout.Bytes(), nil
 }
 
@@ -152,7 +155,15 @@ func committerEnvs(committer *Signature) []string {
 func logf(dir string, args []string, output []byte) {
 	cmdStr := "git"
 	if len(args) > 0 {
-		cmdStr = "git " + strings.Join(args, " ")
+		quoted := make([]string, len(args))
+		for i, a := range args {
+			if strings.ContainsAny(a, " \t\n\"'\\<>") {
+				quoted[i] = strconv.Quote(a)
+			} else {
+				quoted[i] = a
+			}
+		}
+		cmdStr = "git " + strings.Join(quoted, " ")
 	}
 	if len(dir) == 0 {
 		log("%s\n%s", cmdStr, output)
@@ -202,6 +213,18 @@ func mapContextError(err error, ctx context.Context) error {
 		return ctxErr
 	}
 	return err
+}
+
+// isExitStatus reports whether err represents a specific process exit status
+// code. It handles both the bare "exit status N" format and the
+// "exit status N: <stderr>" format produced by sourcegraph/run.
+func isExitStatus(err error, code int) bool {
+	if err == nil {
+		return false
+	}
+	prefix := fmt.Sprintf("exit status %d", code)
+	msg := err.Error()
+	return msg == prefix || strings.HasPrefix(msg, prefix+":")
 }
 
 // extractStderr attempts to extract the stderr portion from a sourcegraph/run

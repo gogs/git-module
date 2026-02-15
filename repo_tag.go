@@ -234,8 +234,9 @@ func (r *Repository) DeleteTag(ctx context.Context, name string, opts ...DeleteT
 		opt = opts[0]
 	}
 
-	args := []string{"tag", "--delete", "--end-of-options", name}
+	args := []string{"tag", "--delete"}
 	args = append(args, opt.Args...)
+	args = append(args, "--end-of-options", name)
 
 	_, err := gitRun(ctx, r.path, args, opt.Envs)
 	return err

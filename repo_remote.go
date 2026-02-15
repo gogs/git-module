@@ -136,7 +136,6 @@ func (r *Repository) RemoteRemove(ctx context.Context, name string, opts ...Remo
 
 	_, err := gitRun(ctx, r.path, args, opt.Envs)
 	if err != nil {
-		// the error status may differ from git clients
 		if strings.Contains(err.Error(), "error: No such remote") ||
 			strings.Contains(err.Error(), "fatal: No such remote") {
 			return ErrRemoteNotExist
