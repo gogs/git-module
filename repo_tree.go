@@ -100,7 +100,6 @@ type LsTreeOptions struct {
 	// Verbatim outputs filenames unquoted using the -z flag. This avoids issues
 	// with special characters in filenames that would otherwise be quoted by Git.
 	Verbatim bool
-	// The additional options to be passed to the underlying Git.
 	CommandOptions
 }
 

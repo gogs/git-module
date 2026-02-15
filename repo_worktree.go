@@ -8,7 +8,6 @@ import "context"
 type WorktreeAddOptions struct {
 	// The new branch name to create and checkout in the worktree.
 	Branch string
-	// The additional options to be passed to the underlying Git.
 	CommandOptions
 }
 
@@ -36,7 +35,6 @@ func (r *Repository) WorktreeAdd(ctx context.Context, path, commitIsh string, op
 type WorktreeRemoveOptions struct {
 	// Indicates whether to force removal even if the worktree is dirty.
 	Force bool
-	// The additional options to be passed to the underlying Git.
 	CommandOptions
 }
 

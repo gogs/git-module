@@ -19,7 +19,6 @@ type LsRemoteOptions struct {
 	Refs bool
 	// The list of patterns to filter results.
 	Patterns []string
-	// The additional options to be passed to the underlying Git.
 	CommandOptions
 }
 
@@ -84,7 +83,6 @@ type RemoteAddOptions struct {
 	Fetch bool
 	// Indicates whether to add remote as mirror with --mirror=fetch.
 	MirrorFetch bool
-	// The additional options to be passed to the underlying Git.
 	CommandOptions
 }
 
@@ -113,7 +111,6 @@ func (r *Repository) RemoteAdd(ctx context.Context, name, url string, opts ...Re
 //
 // Docs: https://git-scm.com/docs/git-remote#Documentation/git-remote.txt-emremoveem
 type RemoteRemoveOptions struct {
-	// The additional options to be passed to the underlying Git.
 	CommandOptions
 }
 
@@ -140,7 +137,6 @@ func (r *Repository) RemoteRemove(ctx context.Context, name string, opts ...Remo
 // /
 // Docs: https://git-scm.com/docs/git-remote#_commands
 type RemotesOptions struct {
-	// The additional options to be passed to the underlying Git.
 	CommandOptions
 }
 
@@ -170,7 +166,6 @@ type RemoteGetURLOptions struct {
 	// Indicates whether to get all URLs, including lists that are not part of main
 	// URLs. This option is independent of the Push option.
 	All bool
-	// The additional options to be passed to the underlying Git.
 	CommandOptions
 }
 
@@ -206,7 +201,6 @@ type RemoteSetURLOptions struct {
 	Push bool
 	// The regex to match existing URLs to replace (instead of first).
 	Regex string
-	// The additional options to be passed to the underlying Git.
 	CommandOptions
 }
 
@@ -246,7 +240,6 @@ func (r *Repository) RemoteSetURL(ctx context.Context, name, newurl string, opts
 type RemoteSetURLAddOptions struct {
 	// Indicates whether to get push URLs instead of fetch URLs.
 	Push bool
-	// The additional options to be passed to the underlying Git.
 	CommandOptions
 }
 
@@ -278,7 +271,6 @@ func (r *Repository) RemoteSetURLAdd(ctx context.Context, name, newurl string, o
 type RemoteSetURLDeleteOptions struct {
 	// Indicates whether to get push URLs instead of fetch URLs.
 	Push bool
-	// The additional options to be passed to the underlying Git.
 	CommandOptions
 }
 

@@ -33,7 +33,6 @@ type Reference struct {
 //
 // Docs: https://git-scm.com/docs/git-show-ref#Documentation/git-show-ref.txt---verify
 type ShowRefVerifyOptions struct {
-	// The additional options to be passed to the underlying Git.
 	CommandOptions
 }
 
@@ -96,7 +95,6 @@ type SymbolicRefOptions struct {
 	// The name of the reference, e.g. "refs/heads/master". When set, it will be
 	// used to update the symbolic ref.
 	Ref string
-	// The additional options to be passed to the underlying Git.
 	CommandOptions
 }
 
@@ -135,7 +133,6 @@ type ShowRefOptions struct {
 	Tags bool
 	// The list of patterns to filter results.
 	Patterns []string
-	// The additional options to be passed to the underlying Git.
 	CommandOptions
 }
 
@@ -198,7 +195,6 @@ func (r *Repository) Branches(ctx context.Context) ([]string, error) {
 type DeleteBranchOptions struct {
 	// Indicates whether to force delete the branch.
 	Force bool
-	// The additional options to be passed to the underlying Git.
 	CommandOptions
 }
 
