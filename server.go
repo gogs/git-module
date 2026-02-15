@@ -27,11 +27,13 @@ func UpdateServerInfo(ctx context.Context, path string, opts ...UpdateServerInfo
 	if len(opts) > 0 {
 		opt = opts[0]
 	}
-	cmd := NewCommand(ctx, "update-server-info").AddOptions(opt.CommandOptions)
+
+	args := []string{"update-server-info"}
 	if opt.Force {
-		cmd.AddArgs("--force")
+		args = append(args, "--force")
 	}
-	_, err := cmd.RunInDir(path)
+	args = append(args, "--end-of-options")
+	_, err := exec(ctx, path, args, opt.Envs)
 	return err
 }
 
@@ -54,15 +56,16 @@ func ReceivePack(ctx context.Context, path string, opts ...ReceivePackOptions) (
 	if len(opts) > 0 {
 		opt = opts[0]
 	}
-	cmd := NewCommand(ctx, "receive-pack").AddOptions(opt.CommandOptions)
+
+	args := []string{"receive-pack"}
 	if opt.Quiet {
-		cmd.AddArgs("--quiet")
+		args = append(args, "--quiet")
 	}
 	if opt.HTTPBackendInfoRefs {
-		cmd.AddArgs("--http-backend-info-refs")
+		args = append(args, "--http-backend-info-refs")
 	}
-	cmd.AddArgs(".")
-	return cmd.RunInDir(path)
+	args = append(args, "--end-of-options", ".")
+	return exec(ctx, path, args, opt.Envs)
 }
 
 // UploadPackOptions contains optional arguments for sending the packfile to the
@@ -91,19 +94,20 @@ func UploadPack(ctx context.Context, path string, opts ...UploadPackOptions) ([]
 	if len(opts) > 0 {
 		opt = opts[0]
 	}
-	cmd := NewCommand(ctx, "upload-pack").AddOptions(opt.CommandOptions)
+
+	args := []string{"upload-pack"}
 	if opt.StatelessRPC {
-		cmd.AddArgs("--stateless-rpc")
+		args = append(args, "--stateless-rpc")
 	}
 	if opt.Strict {
-		cmd.AddArgs("--strict")
+		args = append(args, "--strict")
 	}
 	if opt.InactivityTimeout > 0 {
-		cmd.AddArgs("--timeout", opt.InactivityTimeout.String())
+		args = append(args, "--timeout", opt.InactivityTimeout.String())
 	}
 	if opt.HTTPBackendInfoRefs {
-		cmd.AddArgs("--http-backend-info-refs")
+		args = append(args, "--http-backend-info-refs")
 	}
-	cmd.AddArgs(".")
-	return cmd.RunInDir(path)
+	args = append(args, "--end-of-options", ".")
+	return exec(ctx, path, args, opt.Envs)
 }

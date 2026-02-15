@@ -23,33 +23,33 @@ type LsRemoteOptions struct {
 	Refs bool
 	// The list of patterns to filter results.
 	Patterns []string
-	// The additional options to be passed to the underlying git.
+	// The additional options to be passed to the underlying Git.
 	CommandOptions
 }
 
-// LsRemote returns a list references in the remote repository.
+// LsRemote returns a list of references in the remote repository.
 func LsRemote(ctx context.Context, url string, opts ...LsRemoteOptions) ([]*Reference, error) {
 	var opt LsRemoteOptions
 	if len(opts) > 0 {
 		opt = opts[0]
 	}
 
-	cmd := NewCommand(ctx, "ls-remote", "--quiet").AddOptions(opt.CommandOptions)
+	args := []string{"ls-remote", "--quiet"}
 	if opt.Heads {
-		cmd.AddArgs("--heads")
+		args = append(args, "--heads")
 	}
 	if opt.Tags {
-		cmd.AddArgs("--tags")
+		args = append(args, "--tags")
 	}
 	if opt.Refs {
-		cmd.AddArgs("--refs")
+		args = append(args, "--refs")
 	}
-	cmd.AddArgs("--end-of-options", url)
+	args = append(args, "--end-of-options", url)
 	if len(opt.Patterns) > 0 {
-		cmd.AddArgs(opt.Patterns...)
+		args = append(args, opt.Patterns...)
 	}
 
-	stdout, err := cmd.Run()
+	stdout, err := exec(ctx, "", args, opt.Envs)
 	if err != nil {
 		return nil, err
 	}
@@ -88,7 +88,7 @@ type RemoteAddOptions struct {
 	Fetch bool
 	// Indicates whether to add remote as mirror with --mirror=fetch.
 	MirrorFetch bool
-	// The additional options to be passed to the underlying git.
+	// The additional options to be passed to the underlying Git.
 	CommandOptions
 }
 
@@ -99,15 +99,16 @@ func (r *Repository) RemoteAdd(ctx context.Context, name, url string, opts ...Re
 		opt = opts[0]
 	}
 
-	cmd := NewCommand(ctx, "remote", "add").AddOptions(opt.CommandOptions)
+	args := []string{"remote", "add"}
 	if opt.Fetch {
-		cmd.AddArgs("-f")
+		args = append(args, "-f")
 	}
 	if opt.MirrorFetch {
-		cmd.AddArgs("--mirror=fetch")
+		args = append(args, "--mirror=fetch")
 	}
+	args = append(args, "--end-of-options", name, url)
 
-	_, err := cmd.AddArgs("--end-of-options", name, url).RunInDir(r.path)
+	_, err := exec(ctx, r.path, args, opt.Envs)
 	return err
 }
 
@@ -116,7 +117,7 @@ func (r *Repository) RemoteAdd(ctx context.Context, name, url string, opts ...Re
 //
 // Docs: https://git-scm.com/docs/git-remote#Documentation/git-remote.txt-emremoveem
 type RemoteRemoveOptions struct {
-	// The additional options to be passed to the underlying git.
+	// The additional options to be passed to the underlying Git.
 	CommandOptions
 }
 
@@ -127,12 +128,9 @@ func (r *Repository) RemoteRemove(ctx context.Context, name string, opts ...Remo
 		opt = opts[0]
 	}
 
-	_, err := NewCommand(ctx, "remote", "remove").
-		AddOptions(opt.CommandOptions).
-		AddArgs("--end-of-options", name).
-		RunInDir(r.path)
+	args := []string{"remote", "remove", "--end-of-options", name}
+	_, err := exec(ctx, r.path, args, opt.Envs)
 	if err != nil {
-		// the error status may differ from git clients
 		if strings.Contains(err.Error(), "error: No such remote") ||
 			strings.Contains(err.Error(), "fatal: No such remote") {
 			return ErrRemoteNotExist
@@ -146,7 +144,7 @@ func (r *Repository) RemoteRemove(ctx context.Context, name string, opts ...Remo
 // /
 // Docs: https://git-scm.com/docs/git-remote#_commands
 type RemotesOptions struct {
-	// The additional options to be passed to the underlying git.
+	// The additional options to be passed to the underlying Git.
 	CommandOptions
 }
 
@@ -157,9 +155,8 @@ func (r *Repository) Remotes(ctx context.Context, opts ...RemotesOptions) ([]str
 		opt = opts[0]
 	}
 
-	stdout, err := NewCommand(ctx, "remote").
-		AddOptions(opt.CommandOptions).
-		RunInDir(r.path)
+	args := []string{"remote", "--end-of-options"}
+	stdout, err := exec(ctx, r.path, args, opt.Envs)
 	if err != nil {
 		return nil, err
 	}
@@ -177,7 +174,7 @@ type RemoteGetURLOptions struct {
 	// Indicates whether to get all URLs, including lists that are not part of main
 	// URLs. This option is independent of the Push option.
 	All bool
-	// The additional options to be passed to the underlying git.
+	// The additional options to be passed to the underlying Git.
 	CommandOptions
 }
 
@@ -188,15 +185,16 @@ func (r *Repository) RemoteGetURL(ctx context.Context, name string, opts ...Remo
 		opt = opts[0]
 	}
 
-	cmd := NewCommand(ctx, "remote", "get-url").AddOptions(opt.CommandOptions)
+	args := []string{"remote", "get-url"}
 	if opt.Push {
-		cmd.AddArgs("--push")
+		args = append(args, "--push")
 	}
 	if opt.All {
-		cmd.AddArgs("--all")
+		args = append(args, "--all")
 	}
+	args = append(args, "--end-of-options", name)
 
-	stdout, err := cmd.AddArgs("--end-of-options", name).RunInDir(r.path)
+	stdout, err := exec(ctx, r.path, args, opt.Envs)
 	if err != nil {
 		return nil, err
 	}
@@ -212,7 +210,7 @@ type RemoteSetURLOptions struct {
 	Push bool
 	// The regex to match existing URLs to replace (instead of first).
 	Regex string
-	// The additional options to be passed to the underlying git.
+	// The additional options to be passed to the underlying Git.
 	CommandOptions
 }
 
@@ -224,18 +222,16 @@ func (r *Repository) RemoteSetURL(ctx context.Context, name, newurl string, opts
 		opt = opts[0]
 	}
 
-	cmd := NewCommand(ctx, "remote", "set-url").AddOptions(opt.CommandOptions)
+	args := []string{"remote", "set-url"}
 	if opt.Push {
-		cmd.AddArgs("--push")
+		args = append(args, "--push")
 	}
-
-	cmd.AddArgs("--end-of-options", name, newurl)
-
+	args = append(args, "--end-of-options", name, newurl)
 	if opt.Regex != "" {
-		cmd.AddArgs(opt.Regex)
+		args = append(args, opt.Regex)
 	}
 
-	_, err := cmd.RunInDir(r.path)
+	_, err := exec(ctx, r.path, args, opt.Envs)
 	if err != nil {
 		if strings.Contains(err.Error(), "No such URL found") {
 			return ErrURLNotExist
@@ -254,7 +250,7 @@ func (r *Repository) RemoteSetURL(ctx context.Context, name, newurl string, opts
 type RemoteSetURLAddOptions struct {
 	// Indicates whether to get push URLs instead of fetch URLs.
 	Push bool
-	// The additional options to be passed to the underlying git.
+	// The additional options to be passed to the underlying Git.
 	CommandOptions
 }
 
@@ -266,16 +262,13 @@ func (r *Repository) RemoteSetURLAdd(ctx context.Context, name, newurl string, o
 		opt = opts[0]
 	}
 
-	cmd := NewCommand(ctx, "remote", "set-url").
-		AddOptions(opt.CommandOptions).
-		AddArgs("--add")
+	args := []string{"remote", "set-url", "--add"}
 	if opt.Push {
-		cmd.AddArgs("--push")
+		args = append(args, "--push")
 	}
+	args = append(args, "--end-of-options", name, newurl)
 
-	cmd.AddArgs("--end-of-options", name, newurl)
-
-	_, err := cmd.RunInDir(r.path)
+	_, err := exec(ctx, r.path, args, opt.Envs)
 	if err != nil && strings.Contains(err.Error(), "Will not delete all non-push URLs") {
 		return ErrNotDeleteNonPushURLs
 	}
@@ -289,7 +282,7 @@ func (r *Repository) RemoteSetURLAdd(ctx context.Context, name, newurl string, o
 type RemoteSetURLDeleteOptions struct {
 	// Indicates whether to get push URLs instead of fetch URLs.
 	Push bool
-	// The additional options to be passed to the underlying git.
+	// The additional options to be passed to the underlying Git.
 	CommandOptions
 }
 
@@ -301,16 +294,13 @@ func (r *Repository) RemoteSetURLDelete(ctx context.Context, name, regex string,
 		opt = opts[0]
 	}
 
-	cmd := NewCommand(ctx, "remote", "set-url").
-		AddOptions(opt.CommandOptions).
-		AddArgs("--delete")
+	args := []string{"remote", "set-url", "--delete"}
 	if opt.Push {
-		cmd.AddArgs("--push")
+		args = append(args, "--push")
 	}
+	args = append(args, "--end-of-options", name, regex)
 
-	cmd.AddArgs("--end-of-options", name, regex)
-
-	_, err := cmd.RunInDir(r.path)
+	_, err := exec(ctx, r.path, args, opt.Envs)
 	if err != nil && strings.Contains(err.Error(), "Will not delete all non-push URLs") {
 		return ErrNotDeleteNonPushURLs
 	}

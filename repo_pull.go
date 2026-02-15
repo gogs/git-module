@@ -25,15 +25,10 @@ func (r *Repository) MergeBase(ctx context.Context, base, head string, opts ...M
 		opt = opts[0]
 	}
 
-	stdout, err := NewCommand(ctx, "merge-base").
-		AddOptions(opt.CommandOptions).
-		AddArgs(
-			"--end-of-options",
-			base,
-			head,
-		).RunInDir(r.path)
+	args := []string{"merge-base", "--end-of-options", base, head}
+	stdout, err := exec(ctx, r.path, args, opt.Envs)
 	if err != nil {
-		if strings.Contains(err.Error(), "exit status 1") {
+		if isExitStatus(err, 1) {
 			return "", ErrNoMergeBase
 		}
 		return "", err

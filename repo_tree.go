@@ -117,7 +117,7 @@ func (r *Repository) LsTree(ctx context.Context, treeID string, opts ...LsTreeOp
 
 	cache, ok := r.cachedTrees.Get(treeID)
 	if ok {
-		log("Cached tree hit: %s", treeID)
+		logf("Cached tree hit: %s", treeID)
 		return cache.(*Tree), nil
 	}
 
@@ -131,14 +131,13 @@ func (r *Repository) LsTree(ctx context.Context, treeID string, opts ...LsTreeOp
 		repo: r,
 	}
 
-	cmd := NewCommand(ctx, "ls-tree")
+	args := []string{"ls-tree"}
 	if opt.Verbatim {
-		cmd.AddArgs("-z")
+		args = append(args, "-z")
 	}
-	stdout, err := cmd.
-		AddOptions(opt.CommandOptions).
-		AddArgs(treeID).
-		RunInDir(r.path)
+	args = append(args, "--end-of-options", treeID)
+
+	stdout, err := exec(ctx, r.path, args, opt.Envs)
 	if err != nil {
 		return nil, err
 	}

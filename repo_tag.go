@@ -55,7 +55,7 @@ l:
 func (r *Repository) getTag(ctx context.Context, id *SHA1) (*Tag, error) {
 	t, ok := r.cachedTags.Get(id.String())
 	if ok {
-		log("Cached tag hit: %s", id)
+		logf("Cached tag hit: %s", id)
 		return t.(*Tag), nil
 	}
 
@@ -76,7 +76,7 @@ func (r *Repository) getTag(ctx context.Context, id *SHA1) (*Tag, error) {
 		}
 
 	case ObjectTag: // Tag is an annotation
-		data, err := NewCommand(ctx, "cat-file", "-p", id.String()).RunInDir(r.path)
+		data, err := exec(ctx, r.path, []string{"cat-file", "-p", id.String()}, nil)
 		if err != nil {
 			return nil, err
 		}
@@ -155,19 +155,18 @@ func (r *Repository) Tags(ctx context.Context, opts ...TagsOptions) ([]string, e
 		opt = opts[0]
 	}
 
-	cmd := NewCommand(ctx, "tag", "--list").AddOptions(opt.CommandOptions)
-
+	args := []string{"tag", "--list"}
 	if opt.SortKey != "" {
-		cmd.AddArgs("--sort=" + opt.SortKey)
+		args = append(args, "--sort="+opt.SortKey)
 	} else {
-		cmd.AddArgs("--sort=-creatordate")
+		args = append(args, "--sort=-creatordate")
 	}
-
+	args = append(args, "--end-of-options")
 	if opt.Pattern != "" {
-		cmd.AddArgs(opt.Pattern)
+		args = append(args, opt.Pattern)
 	}
 
-	stdout, err := cmd.RunInDir(r.path)
+	stdout, err := exec(ctx, r.path, args, opt.Envs)
 	if err != nil {
 		return nil, err
 	}
@@ -199,21 +198,21 @@ func (r *Repository) CreateTag(ctx context.Context, name, rev string, opts ...Cr
 		opt = opts[0]
 	}
 
-	cmd := NewCommand(ctx, "tag").AddOptions(opt.CommandOptions)
+	args := []string{"tag"}
+	var envs []string
 	if opt.Annotated {
-		cmd.AddArgs("-a", name)
-		cmd.AddArgs("--message", opt.Message)
+		args = append(args, "-a", name)
+		args = append(args, "--message", opt.Message)
 		if opt.Author != nil {
-			cmd.AddCommitter(opt.Author)
+			envs = committerEnvs(opt.Author)
 		}
-		cmd.AddArgs("--end-of-options")
+		args = append(args, "--end-of-options")
 	} else {
-		cmd.AddArgs("--end-of-options", name)
+		args = append(args, "--end-of-options", name)
 	}
-
-	cmd.AddArgs(rev)
-
-	_, err := cmd.RunInDir(r.path)
+	args = append(args, rev)
+	envs = append(envs, opt.Envs...)
+	_, err := exec(ctx, r.path, args, envs)
 	return err
 }
 
@@ -232,8 +231,7 @@ func (r *Repository) DeleteTag(ctx context.Context, name string, opts ...DeleteT
 		opt = opts[0]
 	}
 
-	_, err := NewCommand(ctx, "tag", "--delete", "--end-of-options", name).
-		AddOptions(opt.CommandOptions).
-		RunInDir(r.path)
+	args := []string{"tag", "--delete", "--end-of-options", name}
+	_, err := exec(ctx, r.path, args, opt.Envs)
 	return err
 }

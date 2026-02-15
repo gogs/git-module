@@ -5,7 +5,6 @@
 package git
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -18,7 +17,7 @@ type DiffOptions struct {
 	// The commit ID to used for computing diff between a range of commits (base,
 	// revision]. When not set, only computes diff for a single commit at revision.
 	Base string
-	// The additional options to be passed to the underlying git.
+	// The additional options to be passed to the underlying Git.
 	CommandOptions
 }
 
@@ -34,37 +33,30 @@ func (r *Repository) Diff(ctx context.Context, rev string, maxFiles, maxFileLine
 		return nil, err
 	}
 
-	cmd := NewCommand(ctx)
+	var args []string
 	if opt.Base == "" {
 		// First commit of repository
 		if commit.ParentsCount() == 0 {
-			cmd = cmd.AddArgs("show").
-				AddOptions(opt.CommandOptions).
-				AddArgs("--full-index", "--end-of-options", rev)
+			args = []string{"show", "--full-index", "--end-of-options", rev}
 		} else {
 			c, err := commit.Parent(ctx, 0)
 			if err != nil {
 				return nil, err
 			}
-			cmd = cmd.AddArgs("diff").
-				AddOptions(opt.CommandOptions).
-				AddArgs("--full-index", "-M", c.ID.String(), "--end-of-options", rev)
+			args = []string{"diff", "--full-index", "-M", c.ID.String(), "--end-of-options", rev}
 		}
 	} else {
-		cmd = cmd.AddArgs("diff").
-			AddOptions(opt.CommandOptions).
-			AddArgs("--full-index", "-M", opt.Base, "--end-of-options", rev)
+		args = []string{"diff", "--full-index", "-M", opt.Base, "--end-of-options", rev}
 	}
 
 	stdout, w := io.Pipe()
 	done := make(chan SteamParseDiffResult)
 	go StreamParseDiff(stdout, done, maxFiles, maxFileLines, maxLineChars)
 
-	stderr := new(bytes.Buffer)
-	err = cmd.RunInDirPipeline(w, stderr, r.path)
+	err = pipe(ctx, r.path, args, opt.Envs, w)
 	_ = w.Close() // Close writer to exit parsing goroutine
 	if err != nil {
-		return nil, concatenateError(err, stderr.String())
+		return nil, err
 	}
 
 	result := <-done
@@ -83,7 +75,7 @@ const (
 //
 // Docs: https://git-scm.com/docs/git-format-patch
 type RawDiffOptions struct {
-	// The additional options to be passed to the underlying git.
+	// The additional options to be passed to the underlying Git.
 	CommandOptions
 }
 
@@ -100,50 +92,41 @@ func (r *Repository) RawDiff(ctx context.Context, rev string, diffType RawDiffFo
 		return err
 	}
 
-	cmd := NewCommand(ctx)
+	var args []string
 	switch diffType {
 	case RawDiffNormal:
 		if commit.ParentsCount() == 0 {
-			cmd = cmd.AddArgs("show").
-				AddOptions(opt.CommandOptions).
-				AddArgs("--full-index", "--end-of-options", rev)
+			args = []string{"show", "--full-index", "--end-of-options", rev}
 		} else {
 			c, err := commit.Parent(ctx, 0)
 			if err != nil {
 				return err
 			}
-			cmd = cmd.AddArgs("diff").
-				AddOptions(opt.CommandOptions).
-				AddArgs("--full-index", "-M", c.ID.String(), "--end-of-options", rev)
+			args = []string{"diff", "--full-index", "-M", c.ID.String(), "--end-of-options", rev}
 		}
 	case RawDiffPatch:
 		if commit.ParentsCount() == 0 {
-			cmd = cmd.AddArgs("format-patch").
-				AddOptions(opt.CommandOptions).
-				AddArgs("--full-index", "--no-signoff", "--no-signature", "--stdout", "--root", "--end-of-options", rev)
+			args = []string{"format-patch", "--full-index", "--no-signoff", "--no-signature", "--stdout", "--root", "--end-of-options", rev}
 		} else {
 			c, err := commit.Parent(ctx, 0)
 			if err != nil {
 				return err
 			}
-			cmd = cmd.AddArgs("format-patch").
-				AddOptions(opt.CommandOptions).
-				AddArgs("--full-index", "--no-signoff", "--no-signature", "--stdout", "--end-of-options", rev+"..."+c.ID.String())
+			args = []string{"format-patch", "--full-index", "--no-signoff", "--no-signature", "--stdout", "--end-of-options", rev + "..." + c.ID.String()}
 		}
 	default:
 		return fmt.Errorf("invalid diffType: %s", diffType)
 	}
 
-	stderr := new(bytes.Buffer)
-	if err = cmd.RunInDirPipeline(w, stderr, r.path); err != nil {
-		return concatenateError(err, stderr.String())
+	if err = pipe(ctx, r.path, args, opt.Envs, w); err != nil {
+		return err
 	}
 	return nil
 }
 
 // DiffBinaryOptions contains optional arguments for producing binary patch.
 type DiffBinaryOptions struct {
-	// The additional options to be passed to the underlying git.
+	// The additional options to be passed to the underlying Git.
 	CommandOptions
 }
 
@@ -155,8 +138,6 @@ func (r *Repository) DiffBinary(ctx context.Context, base, head string, opts ...
 		opt = opts[0]
 	}
 
-	return NewCommand(ctx, "diff").
-		AddOptions(opt.CommandOptions).
-		AddArgs("--full-index", "--binary", base, head).
-		RunInDir(r.path)
+	args := []string{"diff", "--full-index", "--binary", "--end-of-options", base, head}
+	return exec(ctx, r.path, args, opt.Envs)
 }

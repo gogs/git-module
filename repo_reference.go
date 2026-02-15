@@ -37,7 +37,7 @@ type Reference struct {
 //
 // Docs: https://git-scm.com/docs/git-show-ref#Documentation/git-show-ref.txt---verify
 type ShowRefVerifyOptions struct {
-	// The additional options to be passed to the underlying git.
+	// The additional options to be passed to the underlying Git.
 	CommandOptions
 }
 
@@ -51,8 +51,8 @@ func (r *Repository) ShowRefVerify(ctx context.Context, ref string, opts ...Show
 		opt = opts[0]
 	}
 
-	cmd := NewCommand(ctx, "show-ref", "--verify", "--end-of-options", ref).AddOptions(opt.CommandOptions)
-	stdout, err := cmd.RunInDir(r.path)
+	args := []string{"show-ref", "--verify", "--end-of-options", ref}
+	stdout, err := exec(ctx, r.path, args, opt.Envs)
 	if err != nil {
 		if strings.Contains(err.Error(), "not a valid ref") {
 			return "", ErrReferenceNotExist
@@ -100,7 +100,7 @@ type SymbolicRefOptions struct {
 	// The name of the reference, e.g. "refs/heads/master". When set, it will be
 	// used to update the symbolic ref.
 	Ref string
-	// The additional options to be passed to the underlying git.
+	// The additional options to be passed to the underlying Git.
 	CommandOptions
 }
 
@@ -113,16 +113,16 @@ func (r *Repository) SymbolicRef(ctx context.Context, opts ...SymbolicRefOptions
 		opt = opts[0]
 	}
 
-	cmd := NewCommand(ctx, "symbolic-ref").AddOptions(opt.CommandOptions)
+	args := []string{"symbolic-ref"}
 	if opt.Name == "" {
 		opt.Name = "HEAD"
 	}
-	cmd.AddArgs("--end-of-options", opt.Name)
+	args = append(args, "--end-of-options", opt.Name)
 	if opt.Ref != "" {
-		cmd.AddArgs(opt.Ref)
+		args = append(args, opt.Ref)
 	}
 
-	stdout, err := cmd.RunInDir(r.path)
+	stdout, err := exec(ctx, r.path, args, opt.Envs)
 	if err != nil {
 		return "", err
 	}
@@ -139,7 +139,7 @@ type ShowRefOptions struct {
 	Tags bool
 	// The list of patterns to filter results.
 	Patterns []string
-	// The additional options to be passed to the underlying git.
+	// The additional options to be passed to the underlying Git.
 	CommandOptions
 }
 
@@ -150,19 +150,19 @@ func (r *Repository) ShowRef(ctx context.Context, opts ...ShowRefOptions) ([]*Re
 		opt = opts[0]
 	}
 
-	cmd := NewCommand(ctx, "show-ref").AddOptions(opt.CommandOptions)
+	args := []string{"show-ref"}
 	if opt.Heads {
-		cmd.AddArgs("--heads")
+		args = append(args, "--heads")
 	}
 	if opt.Tags {
-		cmd.AddArgs("--tags")
+		args = append(args, "--tags")
 	}
-	cmd.AddArgs("--")
+	args = append(args, "--")
 	if len(opt.Patterns) > 0 {
-		cmd.AddArgs(opt.Patterns...)
+		args = append(args, opt.Patterns...)
 	}
 
-	stdout, err := cmd.RunInDir(r.path)
+	stdout, err := exec(ctx, r.path, args, opt.Envs)
 	if err != nil {
 		return nil, err
 	}
@@ -202,7 +202,7 @@ func (r *Repository) Branches(ctx context.Context) ([]string, error) {
 type DeleteBranchOptions struct {
 	// Indicates whether to force delete the branch.
 	Force bool
-	// The additional options to be passed to the underlying git.
+	// The additional options to be passed to the underlying Git.
 	CommandOptions
 }
 
@@ -213,12 +213,13 @@ func (r *Repository) DeleteBranch(ctx context.Context, name string, opts ...Dele
 		opt = opts[0]
 	}
 
-	cmd := NewCommand(ctx, "branch").AddOptions(opt.CommandOptions)
+	args := []string{"branch"}
 	if opt.Force {
-		cmd.AddArgs("-D")
+		args = append(args, "-D")
 	} else {
-		cmd.AddArgs("-d")
+		args = append(args, "-d")
 	}
-	_, err := cmd.AddArgs("--end-of-options", name).RunInDir(r.path)
+	args = append(args, "--end-of-options", name)
+	_, err := exec(ctx, r.path, args, opt.Envs)
 	return err
 }

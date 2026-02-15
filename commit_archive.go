@@ -19,14 +19,20 @@ const (
 	ArchiveTarGz ArchiveFormat = "tar.gz"
 )
 
-// CreateArchive creates given format of archive to the destination.
-func (c *Commit) CreateArchive(ctx context.Context, format ArchiveFormat, dst string) error {
+// Archive creates given format of archive to the destination.
+func (c *Commit) Archive(ctx context.Context, format ArchiveFormat, dst string) error {
 	prefix := filepath.Base(strings.TrimSuffix(c.repo.path, ".git")) + "/"
-	_, err := NewCommand(ctx, "archive",
-		"--prefix="+prefix,
-		"--format="+string(format),
-		"-o", dst,
-		c.ID.String(),
-	).RunInDir(c.repo.path)
+	_, err := exec(ctx,
+		c.repo.path,
+		[]string{
+			"archive",
+			"--prefix=" + prefix,
+			"--format=" + string(format),
+			"-o", dst,
+			"--end-of-options",
+			c.ID.String(),
+		},
+		nil,
+	)
 	return err
 }

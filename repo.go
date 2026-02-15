@@ -74,12 +74,12 @@ func Init(ctx context.Context, path string, opts ...InitOptions) error {
 		return err
 	}
 
-	cmd := NewCommand(ctx, "init").AddOptions(opt.CommandOptions)
+	args := []string{"init"}
 	if opt.Bare {
-		cmd.AddArgs("--bare")
+		args = append(args, "--bare")
 	}
-	cmd.AddArgs("--end-of-options")
-	_, err = cmd.RunInDir(path)
+	args = append(args, "--end-of-options")
+	_, err = exec(ctx, path, args, opt.Envs)
 	return err
 }
 
@@ -131,25 +131,25 @@ func Clone(ctx context.Context, url, dst string, opts ...CloneOptions) error {
 		return err
 	}
 
-	cmd := NewCommand(ctx, "clone").AddOptions(opt.CommandOptions)
+	args := []string{"clone"}
 	if opt.Mirror {
-		cmd.AddArgs("--mirror")
+		args = append(args, "--mirror")
 	}
 	if opt.Bare {
-		cmd.AddArgs("--bare")
+		args = append(args, "--bare")
 	}
 	if opt.Quiet {
-		cmd.AddArgs("--quiet")
+		args = append(args, "--quiet")
 	}
 	if !opt.Bare && opt.Branch != "" {
-		cmd.AddArgs("-b", opt.Branch)
+		args = append(args, "-b", opt.Branch)
 	}
 	if opt.Depth > 0 {
-		cmd.AddArgs("--depth", strconv.FormatUint(opt.Depth, 10))
+		args = append(args, "--depth", strconv.FormatUint(opt.Depth, 10))
 	}
 
-	cmd.AddArgs("--end-of-options")
-	_, err = cmd.AddArgs(url, dst).Run()
+	args = append(args, "--end-of-options", url, dst)
+	_, err = exec(ctx, "", args, opt.Envs)
 	return err
 }
 
@@ -170,12 +170,13 @@ func (r *Repository) Fetch(ctx context.Context, opts ...FetchOptions) error {
 		opt = opts[0]
 	}
 
-	cmd := NewCommand(ctx, "fetch").AddOptions(opt.CommandOptions)
+	args := []string{"fetch"}
 	if opt.Prune {
-		cmd.AddArgs("--prune")
+		args = append(args, "--prune")
 	}
+	args = append(args, "--end-of-options")
 
-	_, err := cmd.RunInDir(r.path)
+	_, err := exec(ctx, r.path, args, opt.Envs)
 	return err
 }
 
@@ -202,21 +203,22 @@ func (r *Repository) Pull(ctx context.Context, opts ...PullOptions) error {
 		opt = opts[0]
 	}
 
-	cmd := NewCommand(ctx, "pull").AddOptions(opt.CommandOptions)
+	args := []string{"pull"}
 	if opt.Rebase {
-		cmd.AddArgs("--rebase")
+		args = append(args, "--rebase")
 	}
 	if opt.All {
-		cmd.AddArgs("--all")
+		args = append(args, "--all")
 	}
+	args = append(args, "--end-of-options")
 	if !opt.All && opt.Remote != "" {
-		cmd.AddArgs(opt.Remote)
+		args = append(args, opt.Remote)
 		if opt.Branch != "" {
-			cmd.AddArgs(opt.Branch)
+			args = append(args, opt.Branch)
 		}
 	}
 
-	_, err := cmd.RunInDir(r.path)
+	_, err := exec(ctx, r.path, args, opt.Envs)
 	return err
 }
 
@@ -235,8 +237,8 @@ func (r *Repository) Push(ctx context.Context, remote, branch string, opts ...Pu
 		opt = opts[0]
 	}
 
-	cmd := NewCommand(ctx, "push").AddOptions(opt.CommandOptions).AddArgs("--end-of-options", remote, branch)
-	_, err := cmd.RunInDir(r.path)
+	args := []string{"push", "--end-of-options", remote, branch}
+	_, err := exec(ctx, r.path, args, opt.Envs)
 	return err
 }
 
@@ -257,16 +259,14 @@ func (r *Repository) Checkout(ctx context.Context, branch string, opts ...Checko
 		opt = opts[0]
 	}
 
-	cmd := NewCommand(ctx, "checkout").AddOptions(opt.CommandOptions)
+	args := []string{"checkout"}
 	if opt.BaseBranch != "" {
-		cmd.AddArgs("-b")
-	}
-	cmd.AddArgs(branch)
-	if opt.BaseBranch != "" {
-		cmd.AddArgs(opt.BaseBranch)
+		args = append(args, "-b", branch, "--end-of-options", opt.BaseBranch)
+	} else {
+		args = append(args, "--end-of-options", branch)
 	}
 
-	_, err := cmd.RunInDir(r.path)
+	_, err := exec(ctx, r.path, args, opt.Envs)
 	return err
 }
 
@@ -287,12 +287,13 @@ func (r *Repository) Reset(ctx context.Context, rev string, opts ...ResetOptions
 		opt = opts[0]
 	}
 
-	cmd := NewCommand(ctx, "reset")
+	args := []string{"reset"}
 	if opt.Hard {
-		cmd.AddArgs("--hard")
+		args = append(args, "--hard")
 	}
+	args = append(args, "--end-of-options", rev)
 
-	_, err := cmd.AddOptions(opt.CommandOptions).AddArgs("--end-of-options", rev).RunInDir(r.path)
+	_, err := exec(ctx, r.path, args, opt.Envs)
 	return err
 }
 
@@ -313,7 +314,8 @@ func (r *Repository) Move(ctx context.Context, src, dst string, opts ...MoveOpti
 		opt = opts[0]
 	}
 
-	_, err := NewCommand(ctx, "mv").AddOptions(opt.CommandOptions).AddArgs("--end-of-options", src, dst).RunInDir(r.path)
+	args := []string{"mv", "--end-of-options", src, dst}
+	_, err := exec(ctx, r.path, args, opt.Envs)
 	return err
 }
 
@@ -336,15 +338,15 @@ func (r *Repository) Add(ctx context.Context, opts ...AddOptions) error {
 		opt = opts[0]
 	}
 
-	cmd := NewCommand(ctx, "add").AddOptions(opt.CommandOptions)
+	args := []string{"add"}
 	if opt.All {
-		cmd.AddArgs("--all")
+		args = append(args, "--all")
 	}
 	if len(opt.Pathspecs) > 0 {
-		cmd.AddArgs("--")
-		cmd.AddArgs(opt.Pathspecs...)
+		args = append(args, "--")
+		args = append(args, opt.Pathspecs...)
 	}
-	_, err := cmd.RunInDir(r.path)
+	_, err := exec(ctx, r.path, args, opt.Envs)
 	return err
 }
 
@@ -366,19 +368,21 @@ func (r *Repository) Commit(ctx context.Context, committer *Signature, message s
 		opt = opts[0]
 	}
 
-	cmd := NewCommand(ctx, "commit")
-	cmd.AddCommitter(committer)
+	envs := committerEnvs(committer)
+	envs = append(envs, opt.Envs...)
 
 	if opt.Author == nil {
 		opt.Author = committer
 	}
-	cmd = cmd.AddArgs(fmt.Sprintf("--author='%s <%s>'", opt.Author.Name, opt.Author.Email)).
-		AddArgs("-m", message).
-		AddOptions(opt.CommandOptions)
 
-	_, err := cmd.RunInDir(r.path)
+	args := []string{"commit"}
+	args = append(args, fmt.Sprintf("--author=%s <%s>", opt.Author.Name, opt.Author.Email))
+	args = append(args, "-m", message)
+	args = append(args, "--end-of-options")
+
+	_, err := exec(ctx, r.path, args, envs)
 	// No stderr but exit status 1 means nothing to commit.
-	if err != nil && err.Error() == "exit status 1" {
+	if isExitStatus(err, 1) {
 		return nil
 	}
 	return err
@@ -429,14 +433,12 @@ func (r *Repository) ShowNameStatus(ctx context.Context, rev string, opts ...Sho
 		done <- struct{}{}
 	}()
 
-	stderr := new(bytes.Buffer)
-	cmd := NewCommand(ctx, "show", "--name-status", "--pretty=format:''").
-		AddOptions(opt.CommandOptions).
-		AddArgs("--end-of-options", rev)
-	err := cmd.RunInDirPipeline(w, stderr, r.path)
+	args := []string{"show", "--name-status", "--pretty=format:''", "--end-of-options", rev}
+
+	err := pipe(ctx, r.path, args, opt.Envs, w)
 	_ = w.Close() // Close writer to exit parsing goroutine
 	if err != nil {
-		return nil, concatenateError(err, stderr.String())
+		return nil, err
 	}
 
 	<-done
@@ -459,12 +461,11 @@ func (r *Repository) RevParse(ctx context.Context, rev string, opts ...RevParseO
 		opt = opts[0]
 	}
 
-	commitID, err := NewCommand(ctx, "rev-parse").
-		AddOptions(opt.CommandOptions).
-		AddArgs(rev).
-		RunInDir(r.path)
+	args := []string{"rev-parse", rev}
+
+	commitID, err := exec(ctx, r.path, args, opt.Envs)
 	if err != nil {
-		if strings.Contains(err.Error(), "exit status 128") {
+		if isExitStatus(err, 128) {
 			return "", ErrRevisionNotExist
 		}
 		return "", err
@@ -499,9 +500,9 @@ func (r *Repository) CountObjects(ctx context.Context, opts ...CountObjectsOptio
 		opt = opts[0]
 	}
 
-	stdout, err := NewCommand(ctx, "count-objects", "-v").
-		AddOptions(opt.CommandOptions).
-		RunInDir(r.path)
+	args := []string{"count-objects", "-v", "--end-of-options"}
+
+	stdout, err := exec(ctx, r.path, args, opt.Envs)
 	if err != nil {
 		return nil, err
 	}
@@ -552,7 +553,7 @@ func (r *Repository) Fsck(ctx context.Context, opts ...FsckOptions) error {
 		opt = opts[0]
 	}
 
-	cmd := NewCommand(ctx, "fsck").AddOptions(opt.CommandOptions)
-	_, err := cmd.RunInDir(r.path)
+	args := []string{"fsck", "--end-of-options"}
+	_, err := exec(ctx, r.path, args, opt.Envs)
 	return err
 }

@@ -154,7 +154,7 @@ func (c *Commit) isImageFile(ctx context.Context, blob *Blob, err error) (bool, 
 		N: int64(buf.Cap()),
 	}
 
-	err = blob.Pipeline(ctx, stdout, io.Discard)
+	err = blob.Pipe(ctx, stdout)
 	if err != nil {
 		return false, err
 	}

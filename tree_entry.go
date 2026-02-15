@@ -98,7 +98,7 @@ func (e *TreeEntry) Size(ctx context.Context) int64 {
 		return e.size
 	}
 
-	stdout, err := NewCommand(ctx, "cat-file", "-s", e.id.String()).RunInDir(e.parent.repo.path)
+	stdout, err := exec(ctx, e.parent.repo.path, []string{"cat-file", "-s", e.id.String()}, nil)
 	if err != nil {
 		return 0
 	}

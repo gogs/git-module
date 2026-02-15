@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestTreeEntry(t *testing.T) {
@@ -29,6 +30,39 @@ func TestTreeEntry(t *testing.T) {
 	assert.Equal(t, ObjectTree, e.Type())
 	assert.Equal(t, e.id, e.ID())
 	assert.Equal(t, "go.mod", e.Name())
+}
+
+func TestTreeEntry_Size(t *testing.T) {
+	ctx := context.Background()
+	tree, err := testrepo.LsTree(ctx, "0eedd79eba4394bbef888c804e899731644367fe")
+	require.NoError(t, err)
+
+	es, err := tree.Entries(ctx)
+	require.NoError(t, err)
+
+	t.Run("blob", func(t *testing.T) {
+		var entry *TreeEntry
+		for _, e := range es {
+			if e.Name() == "README.txt" {
+				entry = e
+				break
+			}
+		}
+		require.NotNil(t, entry, "entry README.txt not found")
+		assert.Equal(t, int64(795), entry.Size(ctx))
+	})
+
+	t.Run("tree returns zero", func(t *testing.T) {
+		var entry *TreeEntry
+		for _, e := range es {
+			if e.IsTree() {
+				entry = e
+				break
+			}
+		}
+		require.NotNil(t, entry, "tree entry not found")
+		assert.Equal(t, int64(0), entry.Size(ctx))
+	})
 }
 
 func TestEntries_Sort(t *testing.T) {

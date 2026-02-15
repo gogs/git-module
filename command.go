@@ -7,81 +7,155 @@ package git
 import (
 	"bytes"
 	"context"
-	"fmt"
+	"errors"
 	"io"
 	"os"
-	"os/exec"
+	"strconv"
 	"strings"
 	"time"
+
+	"github.com/sourcegraph/run"
 )
 
-// Command contains the name, arguments and environment variables of a command.
-type Command struct {
-	name string
-	args []string
-	envs []string
-	ctx  context.Context
-}
-
-// CommandOptions contains options for running a command.
+// CommandOptions contains additional options for running a Git command.
 type CommandOptions struct {
-	Args []string
 	Envs []string
-}
-
-// String returns the string representation of the command.
-func (c *Command) String() string {
-	if len(c.args) == 0 {
-		return c.name
-	}
-	return fmt.Sprintf("%s %s", c.name, strings.Join(c.args, " "))
-}
-
-// NewCommand creates and returns a new Command with given arguments for "git".
-func NewCommand(ctx context.Context, args ...string) *Command {
-	return &Command{
-		name: "git",
-		args: args,
-		ctx:  ctx,
-	}
-}
-
-// AddArgs appends given arguments to the command.
-func (c *Command) AddArgs(args ...string) *Command {
-	c.args = append(c.args, args...)
-	return c
-}
-
-// AddEnvs appends given environment variables to the command.
-func (c *Command) AddEnvs(envs ...string) *Command {
-	c.envs = append(c.envs, envs...)
-	return c
-}
-
-// WithContext returns a new Command with the given context.
-func (c Command) WithContext(ctx context.Context) *Command {
-	c.ctx = ctx
-	return &c
-}
-
-// AddOptions adds options to the command.
-func (c *Command) AddOptions(opts ...CommandOptions) *Command {
-	for _, opt := range opts {
-		c.AddArgs(opt.Args...)
-		c.AddEnvs(opt.Envs...)
-	}
-	return c
-}
-
-// AddCommitter appends given committer to the command.
-func (c *Command) AddCommitter(committer *Signature) *Command {
-	c.AddEnvs("GIT_COMMITTER_NAME="+committer.Name, "GIT_COMMITTER_EMAIL="+committer.Email)
-	return c
 }
 
 // DefaultTimeout is the default timeout duration for all commands. It is
 // applied when the context does not already have a deadline.
 const DefaultTimeout = time.Minute
+
+// cmd builds a *run.Command for git with the given arguments, environment
+// variables and working directory. DefaultTimeout will be applied if the context
+// does not already have a deadline.
+func cmd(ctx context.Context, dir string, args []string, envs []string) (*run.Command, context.CancelFunc) {
+	cancel := func() {}
+	if _, ok := ctx.Deadline(); !ok {
+		var timeoutCancel context.CancelFunc
+		ctx, timeoutCancel = context.WithTimeout(ctx, DefaultTimeout)
+		cancel = timeoutCancel
+	}
+
+	// run.Cmd joins all parts into a single string and then shell-parses it. We must
+	// quote each argument so that special characters (spaces, quotes, angle
+	// brackets, etc.) are preserved correctly.
+	parts := make([]string, 0, 1+len(args))
+	parts = append(parts, "git")
+	for _, arg := range args {
+		parts = append(parts, run.Arg(arg))
+	}
+
+	c := run.Cmd(ctx, parts...)
+	if dir != "" {
+		c = c.Dir(dir)
+	}
+	if len(envs) > 0 {
+		c = c.Environ(append(os.Environ(), envs...))
+	}
+	return c, cancel
+}
+
+// exec executes a git command in the given directory and returns stdout as
+// bytes. Stderr is included in the error message on failure. DefaultTimeout will
+// be applied if the context does not already have a deadline. It returns
+// ErrExecTimeout if the execution was timed out.
+func exec(ctx context.Context, dir string, args []string, envs []string) ([]byte, error) {
+	c, cancel := cmd(ctx, dir, args, envs)
+	defer cancel()
+
+	var logBuf *bytes.Buffer
+	if logOutput != nil {
+		logBuf = new(bytes.Buffer)
+		logBuf.Grow(512)
+		defer func() {
+			log(dir, args, logBuf.Bytes())
+		}()
+	}
+
+	// Use Stream to a buffer to preserve raw bytes (including NUL bytes from
+	// commands like "ls-tree -z"). The String/Lines methods process output
+	// line-by-line which corrupts binary-ish output.
+	stdout := new(bytes.Buffer)
+	err := c.StdOut().Run().Stream(stdout)
+
+	// Capture (partial) stdout for logging even on error, so failed commands produce
+	// a useful log entry rather than an empty one.
+	if logOutput != nil {
+		data := stdout.Bytes()
+		limit := len(data)
+		if limit > 512 {
+			limit = 512
+		}
+		logBuf.Write(data[:limit])
+		if len(data) > 512 {
+			logBuf.WriteString("... (more omitted)")
+		}
+	}
+
+	if err != nil {
+		return nil, mapContextError(err, ctx)
+	}
+	return stdout.Bytes(), nil
+}
+
+// pipe executes a git command in the given directory, streaming stdout to the
+// given io.Writer.
+func pipe(ctx context.Context, dir string, args []string, envs []string, stdout io.Writer) error {
+	c, cancel := cmd(ctx, dir, args, envs)
+	defer cancel()
+
+	var buf *bytes.Buffer
+	w := stdout
+	if logOutput != nil {
+		buf = new(bytes.Buffer)
+		buf.Grow(512)
+		w = &limitDualWriter{
+			W: buf,
+			N: int64(buf.Cap()),
+			w: stdout,
+		}
+
+		defer func() {
+			log(dir, args, buf.Bytes())
+		}()
+	}
+
+	streamErr := c.StdOut().Run().Stream(w)
+	if streamErr != nil {
+		return mapContextError(streamErr, ctx)
+	}
+	return nil
+}
+
+// committerEnvs returns environment variables for setting the Git committer.
+func committerEnvs(committer *Signature) []string {
+	return []string{
+		"GIT_COMMITTER_NAME=" + committer.Name,
+		"GIT_COMMITTER_EMAIL=" + committer.Email,
+	}
+}
+
+// log logs a git command execution with its output.
+func log(dir string, args []string, output []byte) {
+	cmdStr := "git"
+	if len(args) > 0 {
+		quoted := make([]string, len(args))
+		for i, a := range args {
+			if strings.ContainsAny(a, " \t\n\"'\\<>") {
+				quoted[i] = strconv.Quote(a)
+			} else {
+				quoted[i] = a
+			}
+		}
+		cmdStr = "git " + strings.Join(quoted, " ")
+	}
+	if len(dir) == 0 {
+		logf("%s\n%s", cmdStr, output)
+	} else {
+		logf("%s: %s\n%s", dir, cmdStr, output)
+	}
+}
 
 // A limitDualWriter writes to W but limits the amount of data written to just N
 // bytes. On the other hand, it passes everything to w.
@@ -111,134 +185,25 @@ func (w *limitDualWriter) Write(p []byte) (int, error) {
 	return w.w.Write(p)
 }
 
-// RunInDirOptions contains options for running a command in a directory.
-type RunInDirOptions struct {
-	// Stdin is the input to the command.
-	Stdin io.Reader
-	// Stdout is the outputs from the command.
-	Stdout io.Writer
-	// Stderr is the error output from the command.
-	Stderr io.Writer
-}
-
-// RunInDirWithOptions executes the command in given directory and options. It
-// pipes stdin from supplied io.Reader, and pipes stdout and stderr to supplied
-// io.Writer. If the command's context does not have a deadline, DefaultTimeout
-// will be applied automatically. It returns an ErrExecTimeout if the execution
-// was timed out.
-func (c *Command) RunInDirWithOptions(dir string, opts ...RunInDirOptions) (err error) {
-	var opt RunInDirOptions
-	if len(opts) > 0 {
-		opt = opts[0]
-	}
-
-	buf := new(bytes.Buffer)
-	w := opt.Stdout
-	if logOutput != nil {
-		buf.Grow(512)
-		w = &limitDualWriter{
-			W: buf,
-			N: int64(buf.Cap()),
-			w: opt.Stdout,
-		}
-	}
-
-	defer func() {
-		if len(dir) == 0 {
-			log("%s\n%s", c, buf.Bytes())
-		} else {
-			log("%s: %s\n%s", dir, c, buf.Bytes())
-		}
-	}()
-
-	ctx := c.ctx
+// mapContextError maps context errors to the appropriate sentinel errors used
+// by this package.
+func mapContextError(err error, ctx context.Context) error {
 	if ctx == nil {
-		ctx = context.Background()
-	}
-
-	// Apply default timeout if the context doesn't already have a deadline.
-	if _, ok := ctx.Deadline(); !ok {
-		var cancel context.CancelFunc
-		ctx, cancel = context.WithTimeout(ctx, DefaultTimeout)
-		defer cancel()
-	}
-
-	cmd := exec.CommandContext(ctx, c.name, c.args...)
-	if len(c.envs) > 0 {
-		cmd.Env = append(os.Environ(), c.envs...)
-	}
-	cmd.Dir = dir
-	cmd.Stdin = opt.Stdin
-	cmd.Stdout = w
-	cmd.Stderr = opt.Stderr
-	if err = cmd.Start(); err != nil {
-		if ctx.Err() == context.DeadlineExceeded {
-			return ErrExecTimeout
-		} else if ctx.Err() != nil {
-			return ctx.Err()
-		}
 		return err
 	}
-
-	result := make(chan error)
-	go func() {
-		result <- cmd.Wait()
-	}()
-
-	select {
-	case <-ctx.Done():
-		// Kill the process before waiting so cancellation is enforced promptly.
-		if cmd.Process != nil {
-			_ = cmd.Process.Kill()
-		}
-		<-result
-
-		if ctx.Err() == context.DeadlineExceeded {
+	if ctxErr := ctx.Err(); ctxErr != nil {
+		if errors.Is(ctxErr, context.DeadlineExceeded) {
 			return ErrExecTimeout
 		}
-		return ctx.Err()
-	case err = <-result:
-		// Normalize errors when the context may have expired around the same time.
-		if err != nil {
-			if ctxErr := ctx.Err(); ctxErr != nil {
-				if ctxErr == context.DeadlineExceeded {
-					return ErrExecTimeout
-				}
-				return ctxErr
-			}
-		}
-		return err
+		return ctxErr
 	}
-
+	return err
 }
 
-// RunInDirPipeline executes the command in given directory. It pipes stdout and
-// stderr to supplied io.Writer.
-func (c *Command) RunInDirPipeline(stdout, stderr io.Writer, dir string) error {
-	return c.RunInDirWithOptions(dir, RunInDirOptions{
-		Stdin:  nil,
-		Stdout: stdout,
-		Stderr: stderr,
-	})
-}
-
-// RunInDir executes the command in given directory. It returns stdout and error
-// (combined with stderr).
-func (c *Command) RunInDir(dir string) ([]byte, error) {
-	stdout := new(bytes.Buffer)
-	stderr := new(bytes.Buffer)
-	if err := c.RunInDirPipeline(stdout, stderr, dir); err != nil {
-		return nil, concatenateError(err, stderr.String())
-	}
-	return stdout.Bytes(), nil
-}
-
-// Run executes the command in working directory. It returns stdout and
-// error (combined with stderr).
-func (c *Command) Run() ([]byte, error) {
-	stdout, err := c.RunInDir("")
-	if err != nil {
-		return nil, err
-	}
-	return stdout, nil
+// isExitStatus reports whether err represents a specific process exit status
+// code, using the run.ExitCoder interface provided by sourcegraph/run.
+func isExitStatus(err error, code int) bool {
+	var exitCoder run.ExitCoder
+	ok := errors.As(err, &exitCoder)
+	return ok && exitCoder.ExitCode() == code
 }

@@ -29,7 +29,7 @@ func SetPrefix(prefix string) {
 	logPrefix = prefix
 }
 
-func log(format string, args ...interface{}) {
+func logf(format string, args ...interface{}) {
 	if logOutput == nil {
 		return
 	}
@@ -58,7 +58,7 @@ func BinVersion(ctx context.Context) (string, error) {
 		return gitVersion, nil
 	}
 
-	stdout, err := NewCommand(ctx, "version").Run()
+	stdout, err := exec(ctx, "", []string{"version"}, nil)
 	if err != nil {
 		return "", err
 	}
