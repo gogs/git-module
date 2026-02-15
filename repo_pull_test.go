@@ -24,8 +24,8 @@ func TestRepository_MergeBase(t *testing.T) {
 	})
 
 	tests := []struct {
-		base         string
-		head         string
+		base          string
+		head          string
 		opt           MergeBaseOptions
 		wantMergeBase string
 	}{

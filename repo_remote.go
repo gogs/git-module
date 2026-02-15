@@ -27,7 +27,7 @@ type LsRemoteOptions struct {
 	CommandOptions
 }
 
-// LsRemote returns a list references in the remote repository.
+// LsRemote returns a list of references in the remote repository.
 func LsRemote(ctx context.Context, url string, opts ...LsRemoteOptions) ([]*Reference, error) {
 	var opt LsRemoteOptions
 	if len(opts) > 0 {
