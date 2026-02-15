@@ -33,7 +33,7 @@ func UpdateServerInfo(ctx context.Context, path string, opts ...UpdateServerInfo
 	if opt.Force {
 		args = append(args, "--force")
 	}
-	_, err := gitRun(ctx, path, args, opt.Envs)
+	_, err := exec(ctx, path, args, opt.Envs)
 	return err
 }
 
@@ -66,7 +66,7 @@ func ReceivePack(ctx context.Context, path string, opts ...ReceivePackOptions) (
 		args = append(args, "--http-backend-info-refs")
 	}
 	args = append(args, ".")
-	return gitRun(ctx, path, args, opt.Envs)
+	return exec(ctx, path, args, opt.Envs)
 }
 
 // UploadPackOptions contains optional arguments for sending the packfile to the
@@ -111,5 +111,5 @@ func UploadPack(ctx context.Context, path string, opts ...UploadPackOptions) ([]
 		args = append(args, "--http-backend-info-refs")
 	}
 	args = append(args, ".")
-	return gitRun(ctx, path, args, opt.Envs)
+	return exec(ctx, path, args, opt.Envs)
 }

@@ -59,7 +59,7 @@ func (r *Repository) Diff(ctx context.Context, rev string, maxFiles, maxFileLine
 	done := make(chan SteamParseDiffResult)
 	go StreamParseDiff(stdout, done, maxFiles, maxFileLines, maxLineChars)
 
-	err = gitPipeline(ctx, r.path, args, opt.Envs, w, nil)
+	err = pipe(ctx, r.path, args, opt.Envs, w)
 	_ = w.Close() // Close writer to exit parsing goroutine
 	if err != nil {
 		return nil, err
@@ -132,7 +132,7 @@ func (r *Repository) RawDiff(ctx context.Context, rev string, diffType RawDiffFo
 		return fmt.Errorf("invalid diffType: %s", diffType)
 	}
 
-	if err = gitPipeline(ctx, r.path, args, opt.Envs, w, nil); err != nil {
+	if err = pipe(ctx, r.path, args, opt.Envs, w); err != nil {
 		return err
 	}
 	return nil
@@ -156,5 +156,5 @@ func (r *Repository) DiffBinary(ctx context.Context, base, head string, opts ...
 	args = append(args, opt.Args...)
 	args = append(args, "--full-index", "--binary", "--end-of-options", base, head)
 
-	return gitRun(ctx, r.path, args, opt.Envs)
+	return exec(ctx, r.path, args, opt.Envs)
 }

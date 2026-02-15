@@ -76,7 +76,7 @@ func (r *Repository) getTag(ctx context.Context, id *SHA1) (*Tag, error) {
 		}
 
 	case ObjectTag: // Tag is an annotation
-		data, err := gitRun(ctx, r.path, []string{"cat-file", "-p", id.String()}, nil)
+		data, err := exec(ctx, r.path, []string{"cat-file", "-p", id.String()}, nil)
 		if err != nil {
 			return nil, err
 		}
@@ -166,7 +166,7 @@ func (r *Repository) Tags(ctx context.Context, opts ...TagsOptions) ([]string, e
 		args = append(args, opt.Pattern)
 	}
 
-	stdout, err := gitRun(ctx, r.path, args, opt.Envs)
+	stdout, err := exec(ctx, r.path, args, opt.Envs)
 	if err != nil {
 		return nil, err
 	}
@@ -215,7 +215,7 @@ func (r *Repository) CreateTag(ctx context.Context, name, rev string, opts ...Cr
 	args = append(args, rev)
 
 	envs = append(envs, opt.Envs...)
-	_, err := gitRun(ctx, r.path, args, envs)
+	_, err := exec(ctx, r.path, args, envs)
 	return err
 }
 
@@ -238,6 +238,6 @@ func (r *Repository) DeleteTag(ctx context.Context, name string, opts ...DeleteT
 	args = append(args, opt.Args...)
 	args = append(args, "--end-of-options", name)
 
-	_, err := gitRun(ctx, r.path, args, opt.Envs)
+	_, err := exec(ctx, r.path, args, opt.Envs)
 	return err
 }

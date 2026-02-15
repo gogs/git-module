@@ -58,7 +58,7 @@ func BinVersion(ctx context.Context) (string, error) {
 		return gitVersion, nil
 	}
 
-	stdout, err := gitRun(ctx, "", []string{"version"}, nil)
+	stdout, err := exec(ctx, "", []string{"version"}, nil)
 	if err != nil {
 		return "", err
 	}

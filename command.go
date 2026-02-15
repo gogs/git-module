@@ -7,7 +7,6 @@ package git
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"io"
 	"os"
 	"strconv"
@@ -27,10 +26,10 @@ type CommandOptions struct {
 // applied when the context does not already have a deadline.
 const DefaultTimeout = time.Minute
 
-// gitCmd builds a *run.Command for "git" with the given arguments, environment
+// cmd builds a *run.Command for "git" with the given arguments, environment
 // variables and working directory. If the context does not already have a
 // deadline, DefaultTimeout will be applied automatically.
-func gitCmd(ctx context.Context, dir string, args []string, envs []string) (*run.Command, context.CancelFunc) {
+func cmd(ctx context.Context, dir string, args []string, envs []string) (*run.Command, context.CancelFunc) {
 	cancel := func() {}
 
 	// Apply default timeout if the context doesn't already have a deadline.
@@ -49,22 +48,22 @@ func gitCmd(ctx context.Context, dir string, args []string, envs []string) (*run
 		parts = append(parts, run.Arg(arg))
 	}
 
-	cmd := run.Cmd(ctx, parts...)
+	c := run.Cmd(ctx, parts...)
 	if dir != "" {
-		cmd = cmd.Dir(dir)
+		c = c.Dir(dir)
 	}
 	if len(envs) > 0 {
-		cmd = cmd.Environ(append(os.Environ(), envs...))
+		c = c.Environ(append(os.Environ(), envs...))
 	}
-	return cmd, cancel
+	return c, cancel
 }
 
-// gitRun executes a git command in the given directory and returns stdout as
+// exec executes a git command in the given directory and returns stdout as
 // bytes. Stderr is included in the error message on failure. If the command's
 // context does not have a deadline, DefaultTimeout will be applied
 // automatically. It returns an ErrExecTimeout if the execution was timed out.
-func gitRun(ctx context.Context, dir string, args []string, envs []string) ([]byte, error) {
-	cmd, cancel := gitCmd(ctx, dir, args, envs)
+func exec(ctx context.Context, dir string, args []string, envs []string) ([]byte, error) {
+	c, cancel := cmd(ctx, dir, args, envs)
 	defer cancel()
 
 	var logBuf *bytes.Buffer
@@ -80,7 +79,7 @@ func gitRun(ctx context.Context, dir string, args []string, envs []string) ([]by
 	// commands like "ls-tree -z"). The String/Lines methods process output
 	// line-by-line which corrupts binary-ish output.
 	stdout := new(bytes.Buffer)
-	err := cmd.StdOut().Run().Stream(stdout)
+	err := c.StdOut().Run().Stream(stdout)
 
 	// Capture (partial) stdout for logging even on error, so failed commands
 	// produce a useful log entry rather than an empty one.
@@ -102,11 +101,10 @@ func gitRun(ctx context.Context, dir string, args []string, envs []string) ([]by
 	return stdout.Bytes(), nil
 }
 
-// gitPipeline executes a git command in the given directory, streaming stdout
-// to the given writer. If stderr writer is provided and the command fails,
-// stderr content extracted from the error is written to it.
-func gitPipeline(ctx context.Context, dir string, args []string, envs []string, stdout, stderr io.Writer) error {
-	cmd, cancel := gitCmd(ctx, dir, args, envs)
+// pipe executes a git command in the given directory, streaming stdout to the
+// given writer.
+func pipe(ctx context.Context, dir string, args []string, envs []string, stdout io.Writer) error {
+	c, cancel := cmd(ctx, dir, args, envs)
 	defer cancel()
 
 	var buf *bytes.Buffer
@@ -125,11 +123,8 @@ func gitPipeline(ctx context.Context, dir string, args []string, envs []string, 
 		}()
 	}
 
-	streamErr := cmd.StdOut().Run().Stream(w)
+	streamErr := c.StdOut().Run().Stream(w)
 	if streamErr != nil {
-		if stderr != nil {
-			_, _ = fmt.Fprint(stderr, extractStderr(streamErr))
-		}
 		return mapContextError(streamErr, ctx)
 	}
 	return nil
@@ -212,18 +207,4 @@ func mapContextError(err error, ctx context.Context) error {
 func isExitStatus(err error, code int) bool {
 	exitCoder, ok := err.(run.ExitCoder)
 	return ok && exitCoder.ExitCode() == code
-}
-
-// extractStderr attempts to extract the stderr portion from a sourcegraph/run
-// error. The error format is typically "exit status N: <stderr content>".
-func extractStderr(err error) string {
-	if err == nil {
-		return ""
-	}
-	msg := err.Error()
-	// sourcegraph/run error format: "exit status N: <stderr>"
-	if idx := strings.Index(msg, ": "); idx >= 0 && strings.HasPrefix(msg, "exit status") {
-		return msg[idx+2:]
-	}
-	return msg
 }

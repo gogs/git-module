@@ -98,7 +98,7 @@ func (r *Repository) CatFileCommit(ctx context.Context, rev string, opts ...CatF
 	args = append(args, opt.Args...)
 	args = append(args, "commit", commitID)
 
-	stdout, err := gitRun(ctx, r.path, args, opt.Envs)
+	stdout, err := exec(ctx, r.path, args, opt.Envs)
 	if err != nil {
 		return nil, err
 	}
@@ -133,7 +133,7 @@ func (r *Repository) CatFileType(ctx context.Context, rev string, opts ...CatFil
 	args = append(args, opt.Args...)
 	args = append(args, "-t", rev)
 
-	typ, err := gitRun(ctx, r.path, args, opt.Envs)
+	typ, err := exec(ctx, r.path, args, opt.Envs)
 	if err != nil {
 		return "", err
 	}
@@ -216,7 +216,7 @@ func (r *Repository) Log(ctx context.Context, rev string, opts ...LogOptions) ([
 		args = append(args, escapePath(opt.Path))
 	}
 
-	stdout, err := gitRun(ctx, r.path, args, opt.Envs)
+	stdout, err := exec(ctx, r.path, args, opt.Envs)
 	if err != nil {
 		return nil, err
 	}
@@ -371,7 +371,7 @@ func (r *Repository) DiffNameOnly(ctx context.Context, base, head string, opts .
 		args = append(args, escapePath(opt.Path))
 	}
 
-	stdout, err := gitRun(ctx, r.path, args, opt.Envs)
+	stdout, err := exec(ctx, r.path, args, opt.Envs)
 	if err != nil {
 		return nil, err
 	}
@@ -419,7 +419,7 @@ func (r *Repository) RevListCount(ctx context.Context, refspecs []string, opts .
 		args = append(args, escapePath(opt.Path))
 	}
 
-	stdout, err := gitRun(ctx, r.path, args, opt.Envs)
+	stdout, err := exec(ctx, r.path, args, opt.Envs)
 	if err != nil {
 		return 0, err
 	}
@@ -458,7 +458,7 @@ func (r *Repository) RevList(ctx context.Context, refspecs []string, opts ...Rev
 		args = append(args, escapePath(opt.Path))
 	}
 
-	stdout, err := gitRun(ctx, r.path, args, opt.Envs)
+	stdout, err := exec(ctx, r.path, args, opt.Envs)
 	if err != nil {
 		return nil, err
 	}
@@ -488,7 +488,7 @@ func (r *Repository) LatestCommitTime(ctx context.Context, opts ...LatestCommitT
 		args = append(args, RefsHeads+opt.Branch)
 	}
 
-	stdout, err := gitRun(ctx, r.path, args, opt.Envs)
+	stdout, err := exec(ctx, r.path, args, opt.Envs)
 	if err != nil {
 		return time.Time{}, err
 	}

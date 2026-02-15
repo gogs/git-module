@@ -80,7 +80,7 @@ func Init(ctx context.Context, path string, opts ...InitOptions) error {
 		args = append(args, "--bare")
 	}
 	args = append(args, "--end-of-options")
-	_, err = gitRun(ctx, path, args, opt.Envs)
+	_, err = exec(ctx, path, args, opt.Envs)
 	return err
 }
 
@@ -151,7 +151,7 @@ func Clone(ctx context.Context, url, dst string, opts ...CloneOptions) error {
 	}
 
 	args = append(args, "--end-of-options", url, dst)
-	_, err = gitRun(ctx, "", args, opt.Envs)
+	_, err = exec(ctx, "", args, opt.Envs)
 	return err
 }
 
@@ -178,7 +178,7 @@ func (r *Repository) Fetch(ctx context.Context, opts ...FetchOptions) error {
 		args = append(args, "--prune")
 	}
 
-	_, err := gitRun(ctx, r.path, args, opt.Envs)
+	_, err := exec(ctx, r.path, args, opt.Envs)
 	return err
 }
 
@@ -220,7 +220,7 @@ func (r *Repository) Pull(ctx context.Context, opts ...PullOptions) error {
 		}
 	}
 
-	_, err := gitRun(ctx, r.path, args, opt.Envs)
+	_, err := exec(ctx, r.path, args, opt.Envs)
 	return err
 }
 
@@ -242,7 +242,7 @@ func (r *Repository) Push(ctx context.Context, remote, branch string, opts ...Pu
 	args := []string{"push"}
 	args = append(args, opt.Args...)
 	args = append(args, "--end-of-options", remote, branch)
-	_, err := gitRun(ctx, r.path, args, opt.Envs)
+	_, err := exec(ctx, r.path, args, opt.Envs)
 	return err
 }
 
@@ -273,7 +273,7 @@ func (r *Repository) Checkout(ctx context.Context, branch string, opts ...Checko
 		args = append(args, opt.BaseBranch)
 	}
 
-	_, err := gitRun(ctx, r.path, args, opt.Envs)
+	_, err := exec(ctx, r.path, args, opt.Envs)
 	return err
 }
 
@@ -301,7 +301,7 @@ func (r *Repository) Reset(ctx context.Context, rev string, opts ...ResetOptions
 	args = append(args, opt.Args...)
 	args = append(args, "--end-of-options", rev)
 
-	_, err := gitRun(ctx, r.path, args, opt.Envs)
+	_, err := exec(ctx, r.path, args, opt.Envs)
 	return err
 }
 
@@ -325,7 +325,7 @@ func (r *Repository) Move(ctx context.Context, src, dst string, opts ...MoveOpti
 	args := []string{"mv"}
 	args = append(args, opt.Args...)
 	args = append(args, "--end-of-options", src, dst)
-	_, err := gitRun(ctx, r.path, args, opt.Envs)
+	_, err := exec(ctx, r.path, args, opt.Envs)
 	return err
 }
 
@@ -357,7 +357,7 @@ func (r *Repository) Add(ctx context.Context, opts ...AddOptions) error {
 		args = append(args, "--")
 		args = append(args, opt.Pathspecs...)
 	}
-	_, err := gitRun(ctx, r.path, args, opt.Envs)
+	_, err := exec(ctx, r.path, args, opt.Envs)
 	return err
 }
 
@@ -391,7 +391,7 @@ func (r *Repository) Commit(ctx context.Context, committer *Signature, message s
 	args = append(args, "-m", message)
 	args = append(args, opt.Args...)
 
-	_, err := gitRun(ctx, r.path, args, envs)
+	_, err := exec(ctx, r.path, args, envs)
 	// No stderr but exit status 1 means nothing to commit.
 	if isExitStatus(err, 1) {
 		return nil
@@ -448,7 +448,7 @@ func (r *Repository) ShowNameStatus(ctx context.Context, rev string, opts ...Sho
 	args = append(args, opt.Args...)
 	args = append(args, "--end-of-options", rev)
 
-	err := gitPipeline(ctx, r.path, args, opt.Envs, w, nil)
+	err := pipe(ctx, r.path, args, opt.Envs, w)
 	_ = w.Close() // Close writer to exit parsing goroutine
 	if err != nil {
 		return nil, err
@@ -478,7 +478,7 @@ func (r *Repository) RevParse(ctx context.Context, rev string, opts ...RevParseO
 	args = append(args, opt.Args...)
 	args = append(args, rev)
 
-	commitID, err := gitRun(ctx, r.path, args, opt.Envs)
+	commitID, err := exec(ctx, r.path, args, opt.Envs)
 	if err != nil {
 		if isExitStatus(err, 128) {
 			return "", ErrRevisionNotExist
@@ -518,7 +518,7 @@ func (r *Repository) CountObjects(ctx context.Context, opts ...CountObjectsOptio
 	args := []string{"count-objects", "-v"}
 	args = append(args, opt.Args...)
 
-	stdout, err := gitRun(ctx, r.path, args, opt.Envs)
+	stdout, err := exec(ctx, r.path, args, opt.Envs)
 	if err != nil {
 		return nil, err
 	}
@@ -571,6 +571,6 @@ func (r *Repository) Fsck(ctx context.Context, opts ...FsckOptions) error {
 
 	args := []string{"fsck"}
 	args = append(args, opt.Args...)
-	_, err := gitRun(ctx, r.path, args, opt.Envs)
+	_, err := exec(ctx, r.path, args, opt.Envs)
 	return err
 }

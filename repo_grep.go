@@ -96,7 +96,7 @@ func (r *Repository) Grep(ctx context.Context, pattern string, opts ...GrepOptio
 		args = append(args, "--", opt.Pathspec)
 	}
 
-	stdout, err := gitRun(ctx, r.path, args, opt.Envs)
+	stdout, err := exec(ctx, r.path, args, opt.Envs)
 	if err != nil {
 		return nil
 	}

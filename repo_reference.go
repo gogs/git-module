@@ -55,7 +55,7 @@ func (r *Repository) ShowRefVerify(ctx context.Context, ref string, opts ...Show
 	args = append(args, opt.Args...)
 	args = append(args, "--end-of-options", ref)
 
-	stdout, err := gitRun(ctx, r.path, args, opt.Envs)
+	stdout, err := exec(ctx, r.path, args, opt.Envs)
 	if err != nil {
 		if strings.Contains(err.Error(), "not a valid ref") {
 			return "", ErrReferenceNotExist
@@ -126,7 +126,7 @@ func (r *Repository) SymbolicRef(ctx context.Context, opts ...SymbolicRefOptions
 		args = append(args, opt.Ref)
 	}
 
-	stdout, err := gitRun(ctx, r.path, args, opt.Envs)
+	stdout, err := exec(ctx, r.path, args, opt.Envs)
 	if err != nil {
 		return "", err
 	}
@@ -167,7 +167,7 @@ func (r *Repository) ShowRef(ctx context.Context, opts ...ShowRefOptions) ([]*Re
 		args = append(args, opt.Patterns...)
 	}
 
-	stdout, err := gitRun(ctx, r.path, args, opt.Envs)
+	stdout, err := exec(ctx, r.path, args, opt.Envs)
 	if err != nil {
 		return nil, err
 	}
@@ -227,6 +227,6 @@ func (r *Repository) DeleteBranch(ctx context.Context, name string, opts ...Dele
 	}
 	args = append(args, "--end-of-options", name)
 
-	_, err := gitRun(ctx, r.path, args, opt.Envs)
+	_, err := exec(ctx, r.path, args, opt.Envs)
 	return err
 }

@@ -138,7 +138,7 @@ func (r *Repository) LsTree(ctx context.Context, treeID string, opts ...LsTreeOp
 	}
 	args = append(args, treeID)
 
-	stdout, err := gitRun(ctx, r.path, args, opt.Envs)
+	stdout, err := exec(ctx, r.path, args, opt.Envs)
 	if err != nil {
 		return nil, err
 	}

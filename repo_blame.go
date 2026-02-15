@@ -28,7 +28,7 @@ func (r *Repository) Blame(ctx context.Context, rev, file string, opts ...BlameO
 	args = append(args, opt.Args...)
 	args = append(args, "-l", "-s", rev, "--", file)
 
-	stdout, err := gitRun(ctx, r.path, args, opt.Envs)
+	stdout, err := exec(ctx, r.path, args, opt.Envs)
 	if err != nil {
 		return nil, err
 	}

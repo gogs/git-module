@@ -50,7 +50,7 @@ This demo also includes an image with changes on a branch for examination of ima
 
 	t.Run("get data with pipeline", func(t *testing.T) {
 		stdout := new(bytes.Buffer)
-		err := blob.Pipeline(ctx, stdout, nil)
+		err := blob.Pipeline(ctx, stdout)
 		assert.Nil(t, err)
 		assert.Equal(t, expOutput, stdout.String())
 	})
