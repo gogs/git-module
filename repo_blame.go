@@ -24,9 +24,7 @@ func (r *Repository) Blame(ctx context.Context, rev, file string, opts ...BlameO
 		opt = opts[0]
 	}
 
-	args := []string{"blame"}
-	args = append(args, opt.Args...)
-	args = append(args, "-l", "-s", rev, "--", file)
+	args := []string{"blame", "-l", "-s", rev, "--", file}
 
 	stdout, err := exec(ctx, r.path, args, opt.Envs)
 	if err != nil {

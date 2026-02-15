@@ -132,11 +132,10 @@ func (r *Repository) LsTree(ctx context.Context, treeID string, opts ...LsTreeOp
 	}
 
 	args := []string{"ls-tree"}
-	args = append(args, opt.Args...)
 	if opt.Verbatim {
 		args = append(args, "-z")
 	}
-	args = append(args, treeID)
+	args = append(args, "--end-of-options", treeID)
 
 	stdout, err := exec(ctx, r.path, args, opt.Envs)
 	if err != nil {

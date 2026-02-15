@@ -156,12 +156,12 @@ func (r *Repository) Tags(ctx context.Context, opts ...TagsOptions) ([]string, e
 	}
 
 	args := []string{"tag", "--list"}
-	args = append(args, opt.Args...)
 	if opt.SortKey != "" {
 		args = append(args, "--sort="+opt.SortKey)
 	} else {
 		args = append(args, "--sort=-creatordate")
 	}
+	args = append(args, "--end-of-options")
 	if opt.Pattern != "" {
 		args = append(args, opt.Pattern)
 	}
@@ -199,7 +199,6 @@ func (r *Repository) CreateTag(ctx context.Context, name, rev string, opts ...Cr
 	}
 
 	args := []string{"tag"}
-	args = append(args, opt.Args...)
 
 	var envs []string
 	if opt.Annotated {
@@ -234,9 +233,7 @@ func (r *Repository) DeleteTag(ctx context.Context, name string, opts ...DeleteT
 		opt = opts[0]
 	}
 
-	args := []string{"tag", "--delete"}
-	args = append(args, opt.Args...)
-	args = append(args, "--end-of-options", name)
+	args := []string{"tag", "--delete", "--end-of-options", name}
 
 	_, err := exec(ctx, r.path, args, opt.Envs)
 	return err

@@ -17,9 +17,9 @@ import (
 	"github.com/sourcegraph/run"
 )
 
-// CommandOptions contains options for running a command.
+// CommandOptions contains additional options for running a Git command.
 type CommandOptions struct {
-	Args []string
+	// The additional environment variables to be passed to the underlying Git.
 	Envs []string
 }
 

@@ -25,7 +25,7 @@ type GrepOptions struct {
 	WordRegexp bool
 	// Whether use extended regular expressions.
 	ExtendedRegexp bool
-	// The additional options to be passed to the underlying git.
+	// The additional options to be passed to the underlying Git.
 	CommandOptions
 }
 
@@ -79,7 +79,6 @@ func (r *Repository) Grep(ctx context.Context, pattern string, opts ...GrepOptio
 	}
 
 	args := []string{"grep"}
-	args = append(args, opt.Args...)
 	// Display full-name, line number and column number
 	args = append(args, "--full-name", "--line-number", "--column")
 	if opt.IgnoreCase {

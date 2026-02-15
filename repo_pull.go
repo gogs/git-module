@@ -26,7 +26,6 @@ func (r *Repository) MergeBase(ctx context.Context, base, head string, opts ...M
 	}
 
 	args := []string{"merge-base"}
-	args = append(args, opt.Args...)
 	args = append(args, "--end-of-options", base, head)
 
 	stdout, err := exec(ctx, r.path, args, opt.Envs)

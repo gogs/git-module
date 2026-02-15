@@ -37,7 +37,7 @@ type Reference struct {
 //
 // Docs: https://git-scm.com/docs/git-show-ref#Documentation/git-show-ref.txt---verify
 type ShowRefVerifyOptions struct {
-	// The additional options to be passed to the underlying git.
+	// The additional options to be passed to the underlying Git.
 	CommandOptions
 }
 
@@ -51,9 +51,7 @@ func (r *Repository) ShowRefVerify(ctx context.Context, ref string, opts ...Show
 		opt = opts[0]
 	}
 
-	args := []string{"show-ref", "--verify"}
-	args = append(args, opt.Args...)
-	args = append(args, "--end-of-options", ref)
+	args := []string{"show-ref", "--verify", "--end-of-options", ref}
 
 	stdout, err := exec(ctx, r.path, args, opt.Envs)
 	if err != nil {
@@ -103,7 +101,7 @@ type SymbolicRefOptions struct {
 	// The name of the reference, e.g. "refs/heads/master". When set, it will be
 	// used to update the symbolic ref.
 	Ref string
-	// The additional options to be passed to the underlying git.
+	// The additional options to be passed to the underlying Git.
 	CommandOptions
 }
 
@@ -117,7 +115,6 @@ func (r *Repository) SymbolicRef(ctx context.Context, opts ...SymbolicRefOptions
 	}
 
 	args := []string{"symbolic-ref"}
-	args = append(args, opt.Args...)
 	if opt.Name == "" {
 		opt.Name = "HEAD"
 	}
@@ -143,7 +140,7 @@ type ShowRefOptions struct {
 	Tags bool
 	// The list of patterns to filter results.
 	Patterns []string
-	// The additional options to be passed to the underlying git.
+	// The additional options to be passed to the underlying Git.
 	CommandOptions
 }
 
@@ -155,7 +152,6 @@ func (r *Repository) ShowRef(ctx context.Context, opts ...ShowRefOptions) ([]*Re
 	}
 
 	args := []string{"show-ref"}
-	args = append(args, opt.Args...)
 	if opt.Heads {
 		args = append(args, "--heads")
 	}
@@ -207,7 +203,7 @@ func (r *Repository) Branches(ctx context.Context) ([]string, error) {
 type DeleteBranchOptions struct {
 	// Indicates whether to force delete the branch.
 	Force bool
-	// The additional options to be passed to the underlying git.
+	// The additional options to be passed to the underlying Git.
 	CommandOptions
 }
 
@@ -219,7 +215,6 @@ func (r *Repository) DeleteBranch(ctx context.Context, name string, opts ...Dele
 	}
 
 	args := []string{"branch"}
-	args = append(args, opt.Args...)
 	if opt.Force {
 		args = append(args, "-D")
 	} else {

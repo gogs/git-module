@@ -94,9 +94,7 @@ func (r *Repository) CatFileCommit(ctx context.Context, rev string, opts ...CatF
 		return nil, err
 	}
 
-	args := []string{"cat-file"}
-	args = append(args, opt.Args...)
-	args = append(args, "commit", commitID)
+	args := []string{"cat-file", "commit", commitID}
 
 	stdout, err := exec(ctx, r.path, args, opt.Envs)
 	if err != nil {
@@ -129,9 +127,7 @@ func (r *Repository) CatFileType(ctx context.Context, rev string, opts ...CatFil
 		opt = opts[0]
 	}
 
-	args := []string{"cat-file"}
-	args = append(args, opt.Args...)
-	args = append(args, "-t", rev)
+	args := []string{"cat-file", "-t", rev}
 
 	typ, err := exec(ctx, r.path, args, opt.Envs)
 	if err != nil {
@@ -193,9 +189,7 @@ func (r *Repository) Log(ctx context.Context, rev string, opts ...LogOptions) ([
 		opt = opts[0]
 	}
 
-	args := []string{"log"}
-	args = append(args, opt.Args...)
-	args = append(args, "--pretty="+LogFormatHashOnly)
+	args := []string{"log", "--pretty=" + LogFormatHashOnly}
 	if opt.MaxCount > 0 {
 		args = append(args, "--max-count="+strconv.Itoa(opt.MaxCount))
 	}
@@ -358,9 +352,7 @@ func (r *Repository) DiffNameOnly(ctx context.Context, base, head string, opts .
 		opt = opts[0]
 	}
 
-	args := []string{"diff"}
-	args = append(args, opt.Args...)
-	args = append(args, "--name-only", "--end-of-options")
+	args := []string{"diff", "--name-only", "--end-of-options"}
 	if opt.NeedsMergeBase {
 		args = append(args, base+"..."+head)
 	} else {
@@ -410,9 +402,7 @@ func (r *Repository) RevListCount(ctx context.Context, refspecs []string, opts .
 		return 0, errors.New("must have at least one refspec")
 	}
 
-	args := []string{"rev-list"}
-	args = append(args, opt.Args...)
-	args = append(args, "--count", "--end-of-options")
+	args := []string{"rev-list", "--count", "--end-of-options"}
 	args = append(args, refspecs...)
 	args = append(args, "--")
 	if opt.Path != "" {
@@ -449,9 +439,7 @@ func (r *Repository) RevList(ctx context.Context, refspecs []string, opts ...Rev
 		return nil, errors.New("must have at least one refspec")
 	}
 
-	args := []string{"rev-list"}
-	args = append(args, opt.Args...)
-	args = append(args, "--end-of-options")
+	args := []string{"rev-list", "--end-of-options"}
 	args = append(args, refspecs...)
 	args = append(args, "--")
 	if opt.Path != "" {
@@ -481,9 +469,7 @@ func (r *Repository) LatestCommitTime(ctx context.Context, opts ...LatestCommitT
 		opt = opts[0]
 	}
 
-	args := []string{"for-each-ref"}
-	args = append(args, opt.Args...)
-	args = append(args, "--count=1", "--sort=-committerdate", "--format=%(committerdate:iso8601)")
+	args := []string{"for-each-ref", "--count=1", "--sort=-committerdate", "--format=%(committerdate:iso8601)", "--end-of-options"}
 	if opt.Branch != "" {
 		args = append(args, RefsHeads+opt.Branch)
 	}

@@ -75,7 +75,6 @@ func Init(ctx context.Context, path string, opts ...InitOptions) error {
 	}
 
 	args := []string{"init"}
-	args = append(args, opt.Args...)
 	if opt.Bare {
 		args = append(args, "--bare")
 	}
@@ -133,7 +132,6 @@ func Clone(ctx context.Context, url, dst string, opts ...CloneOptions) error {
 	}
 
 	args := []string{"clone"}
-	args = append(args, opt.Args...)
 	if opt.Mirror {
 		args = append(args, "--mirror")
 	}
@@ -173,10 +171,10 @@ func (r *Repository) Fetch(ctx context.Context, opts ...FetchOptions) error {
 	}
 
 	args := []string{"fetch"}
-	args = append(args, opt.Args...)
 	if opt.Prune {
 		args = append(args, "--prune")
 	}
+	args = append(args, "--end-of-options")
 
 	_, err := exec(ctx, r.path, args, opt.Envs)
 	return err
@@ -206,13 +204,13 @@ func (r *Repository) Pull(ctx context.Context, opts ...PullOptions) error {
 	}
 
 	args := []string{"pull"}
-	args = append(args, opt.Args...)
 	if opt.Rebase {
 		args = append(args, "--rebase")
 	}
 	if opt.All {
 		args = append(args, "--all")
 	}
+	args = append(args, "--end-of-options")
 	if !opt.All && opt.Remote != "" {
 		args = append(args, opt.Remote)
 		if opt.Branch != "" {
@@ -239,9 +237,7 @@ func (r *Repository) Push(ctx context.Context, remote, branch string, opts ...Pu
 		opt = opts[0]
 	}
 
-	args := []string{"push"}
-	args = append(args, opt.Args...)
-	args = append(args, "--end-of-options", remote, branch)
+	args := []string{"push", "--end-of-options", remote, branch}
 	_, err := exec(ctx, r.path, args, opt.Envs)
 	return err
 }
@@ -264,13 +260,10 @@ func (r *Repository) Checkout(ctx context.Context, branch string, opts ...Checko
 	}
 
 	args := []string{"checkout"}
-	args = append(args, opt.Args...)
 	if opt.BaseBranch != "" {
-		args = append(args, "-b")
-	}
-	args = append(args, branch)
-	if opt.BaseBranch != "" {
-		args = append(args, opt.BaseBranch)
+		args = append(args, "-b", branch, "--end-of-options", opt.BaseBranch)
+	} else {
+		args = append(args, "--end-of-options", branch)
 	}
 
 	_, err := exec(ctx, r.path, args, opt.Envs)
@@ -298,7 +291,6 @@ func (r *Repository) Reset(ctx context.Context, rev string, opts ...ResetOptions
 	if opt.Hard {
 		args = append(args, "--hard")
 	}
-	args = append(args, opt.Args...)
 	args = append(args, "--end-of-options", rev)
 
 	_, err := exec(ctx, r.path, args, opt.Envs)
@@ -322,9 +314,7 @@ func (r *Repository) Move(ctx context.Context, src, dst string, opts ...MoveOpti
 		opt = opts[0]
 	}
 
-	args := []string{"mv"}
-	args = append(args, opt.Args...)
-	args = append(args, "--end-of-options", src, dst)
+	args := []string{"mv", "--end-of-options", src, dst}
 	_, err := exec(ctx, r.path, args, opt.Envs)
 	return err
 }
@@ -349,7 +339,6 @@ func (r *Repository) Add(ctx context.Context, opts ...AddOptions) error {
 	}
 
 	args := []string{"add"}
-	args = append(args, opt.Args...)
 	if opt.All {
 		args = append(args, "--all")
 	}
@@ -389,7 +378,7 @@ func (r *Repository) Commit(ctx context.Context, committer *Signature, message s
 	args := []string{"commit"}
 	args = append(args, fmt.Sprintf("--author=%s <%s>", opt.Author.Name, opt.Author.Email))
 	args = append(args, "-m", message)
-	args = append(args, opt.Args...)
+	args = append(args, "--end-of-options")
 
 	_, err := exec(ctx, r.path, args, envs)
 	// No stderr but exit status 1 means nothing to commit.
@@ -444,9 +433,7 @@ func (r *Repository) ShowNameStatus(ctx context.Context, rev string, opts ...Sho
 		done <- struct{}{}
 	}()
 
-	args := []string{"show", "--name-status", "--pretty=format:''"}
-	args = append(args, opt.Args...)
-	args = append(args, "--end-of-options", rev)
+	args := []string{"show", "--name-status", "--pretty=format:''", "--end-of-options", rev}
 
 	err := pipe(ctx, r.path, args, opt.Envs, w)
 	_ = w.Close() // Close writer to exit parsing goroutine
@@ -474,9 +461,7 @@ func (r *Repository) RevParse(ctx context.Context, rev string, opts ...RevParseO
 		opt = opts[0]
 	}
 
-	args := []string{"rev-parse"}
-	args = append(args, opt.Args...)
-	args = append(args, rev)
+	args := []string{"rev-parse", rev}
 
 	commitID, err := exec(ctx, r.path, args, opt.Envs)
 	if err != nil {
@@ -515,8 +500,7 @@ func (r *Repository) CountObjects(ctx context.Context, opts ...CountObjectsOptio
 		opt = opts[0]
 	}
 
-	args := []string{"count-objects", "-v"}
-	args = append(args, opt.Args...)
+	args := []string{"count-objects", "-v", "--end-of-options"}
 
 	stdout, err := exec(ctx, r.path, args, opt.Envs)
 	if err != nil {
@@ -569,8 +553,7 @@ func (r *Repository) Fsck(ctx context.Context, opts ...FsckOptions) error {
 		opt = opts[0]
 	}
 
-	args := []string{"fsck"}
-	args = append(args, opt.Args...)
+	args := []string{"fsck", "--end-of-options"}
 	_, err := exec(ctx, r.path, args, opt.Envs)
 	return err
 }
