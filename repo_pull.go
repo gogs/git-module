@@ -6,7 +6,6 @@ package git
 
 import (
 	"context"
-	"fmt"
 	"strings"
 )
 
@@ -29,7 +28,6 @@ func (r *Repository) MergeBase(ctx context.Context, base, head string, opts ...M
 	args := []string{"merge-base", "--end-of-options", base, head}
 	stdout, err := exec(ctx, r.path, args, opt.Envs)
 	if err != nil {
-		fmt.Printf("%+v\n", err)
 		if isExitStatus(err, 1) {
 			return "", ErrNoMergeBase
 		}

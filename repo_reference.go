@@ -52,7 +52,6 @@ func (r *Repository) ShowRefVerify(ctx context.Context, ref string, opts ...Show
 	}
 
 	args := []string{"show-ref", "--verify", "--end-of-options", ref}
-
 	stdout, err := exec(ctx, r.path, args, opt.Envs)
 	if err != nil {
 		if strings.Contains(err.Error(), "not a valid ref") {
@@ -221,7 +220,6 @@ func (r *Repository) DeleteBranch(ctx context.Context, name string, opts ...Dele
 		args = append(args, "-d")
 	}
 	args = append(args, "--end-of-options", name)
-
 	_, err := exec(ctx, r.path, args, opt.Envs)
 	return err
 }
