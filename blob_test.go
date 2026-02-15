@@ -48,9 +48,9 @@ This demo also includes an image with changes on a branch for examination of ima
 		assert.Equal(t, expOutput, string(p))
 	})
 
-	t.Run("get data with pipeline", func(t *testing.T) {
+	t.Run("get data with pipe", func(t *testing.T) {
 		stdout := new(bytes.Buffer)
-		err := blob.Pipeline(ctx, stdout)
+		err := blob.Pipe(ctx, stdout)
 		assert.Nil(t, err)
 		assert.Equal(t, expOutput, stdout.String())
 	})

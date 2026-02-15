@@ -55,7 +55,7 @@ l:
 func (r *Repository) getTag(ctx context.Context, id *SHA1) (*Tag, error) {
 	t, ok := r.cachedTags.Get(id.String())
 	if ok {
-		log("Cached tag hit: %s", id)
+		logf("Cached tag hit: %s", id)
 		return t.(*Tag), nil
 	}
 

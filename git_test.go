@@ -83,7 +83,7 @@ func Test_log(t *testing.T) {
 			var buf bytes.Buffer
 			SetOutput(&buf)
 
-			log(test.format, test.args...)
+			logf(test.format, test.args...)
 			assert.Equal(t, test.expOutput, buf.String())
 		})
 	}

@@ -29,7 +29,7 @@ func SetPrefix(prefix string) {
 	logPrefix = prefix
 }
 
-func log(format string, args ...interface{}) {
+func logf(format string, args ...interface{}) {
 	if logOutput == nil {
 		return
 	}

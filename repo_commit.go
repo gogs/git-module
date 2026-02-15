@@ -85,7 +85,7 @@ func (r *Repository) CatFileCommit(ctx context.Context, rev string, opts ...CatF
 
 	cache, ok := r.cachedCommits.Get(rev)
 	if ok {
-		log("Cached commit hit: %s", rev)
+		logf("Cached commit hit: %s", rev)
 		return cache.(*Commit), nil
 	}
 

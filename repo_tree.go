@@ -117,7 +117,7 @@ func (r *Repository) LsTree(ctx context.Context, treeID string, opts ...LsTreeOp
 
 	cache, ok := r.cachedTrees.Get(treeID)
 	if ok {
-		log("Cached tree hit: %s", treeID)
+		logf("Cached tree hit: %s", treeID)
 		return cache.(*Tree), nil
 	}
 
