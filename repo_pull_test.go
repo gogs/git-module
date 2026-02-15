@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestRepository_MergeBase(t *testing.T) {
@@ -25,28 +26,25 @@ func TestRepository_MergeBase(t *testing.T) {
 	tests := []struct {
 		base         string
 		head         string
-		opt          MergeBaseOptions
-		expMergeBase string
+		opt           MergeBaseOptions
+		wantMergeBase string
 	}{
 		{
-			base:         "4e59b72440188e7c2578299fc28ea425fbe9aece",
-			head:         "0eedd79eba4394bbef888c804e899731644367fe",
-			expMergeBase: "4e59b72440188e7c2578299fc28ea425fbe9aece",
+			base:          "4e59b72440188e7c2578299fc28ea425fbe9aece",
+			head:          "0eedd79eba4394bbef888c804e899731644367fe",
+			wantMergeBase: "4e59b72440188e7c2578299fc28ea425fbe9aece",
 		},
 		{
-			base:         "master",
-			head:         "release-1.0",
-			expMergeBase: "0eedd79eba4394bbef888c804e899731644367fe",
+			base:          "master",
+			head:          "release-1.0",
+			wantMergeBase: "0eedd79eba4394bbef888c804e899731644367fe",
 		},
 	}
 	for _, test := range tests {
 		t.Run("", func(t *testing.T) {
 			mb, err := testrepo.MergeBase(ctx, test.base, test.head, test.opt)
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			assert.Equal(t, test.expMergeBase, mb)
+			require.NoError(t, err)
+			assert.Equal(t, test.wantMergeBase, mb)
 		})
 	}
 }

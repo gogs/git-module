@@ -25,7 +25,6 @@ func (r *Repository) Blame(ctx context.Context, rev, file string, opts ...BlameO
 	}
 
 	args := []string{"blame", "-l", "-s", rev, "--", file}
-
 	stdout, err := exec(ctx, r.path, args, opt.Envs)
 	if err != nil {
 		return nil, err

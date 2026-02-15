@@ -79,7 +79,6 @@ func (r *Repository) Grep(ctx context.Context, pattern string, opts ...GrepOptio
 	}
 
 	args := []string{"grep"}
-	// Display full-name, line number and column number
 	args = append(args, "--full-name", "--line-number", "--column")
 	if opt.IgnoreCase {
 		args = append(args, "--ignore-case")

@@ -19,7 +19,6 @@ import (
 
 // CommandOptions contains additional options for running a Git command.
 type CommandOptions struct {
-	// The additional environment variables to be passed to the underlying Git.
 	Envs []string
 }
 

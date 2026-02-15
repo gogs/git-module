@@ -95,7 +95,6 @@ func (r *Repository) CatFileCommit(ctx context.Context, rev string, opts ...CatF
 	}
 
 	args := []string{"cat-file", "commit", commitID}
-
 	stdout, err := exec(ctx, r.path, args, opt.Envs)
 	if err != nil {
 		return nil, err
@@ -128,7 +127,6 @@ func (r *Repository) CatFileType(ctx context.Context, rev string, opts ...CatFil
 	}
 
 	args := []string{"cat-file", "-t", rev}
-
 	typ, err := exec(ctx, r.path, args, opt.Envs)
 	if err != nil {
 		return "", err
