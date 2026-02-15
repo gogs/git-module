@@ -26,8 +26,8 @@ func TestExec_ContextTimeout(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
 		defer cancel()
 
-		// Use cmd directly with a blocking stdin so the command starts
-		// successfully and blocks reading until the context deadline fires.
+		// Use cmd directly with a blocking stdin so the command starts successfully and
+		// blocks reading until the context deadline fires.
 		c, timeoutCancel := cmd(ctx, "", []string{"hash-object", "--stdin"}, nil)
 		defer timeoutCancel()
 
@@ -37,10 +37,10 @@ func TestExec_ContextTimeout(t *testing.T) {
 	})
 }
 
-// blockingReader is an io.Reader that blocks until its cancel channel is
-// closed, simulating a stdin that never provides data. When cancelled it
-// returns io.EOF so that the stdin copy goroutine can exit cleanly,
-// allowing cmd.Wait() to return.
+// blockingReader is an io.Reader that blocks until its cancel channel is closed,
+// simulating a stdin that never provides data. When canceled it returns io.EOF
+// so that the stdin copy goroutine can exit cleanly, allowing cmd.Wait() to
+// return.
 type blockingReader struct {
 	cancel <-chan struct{}
 }
@@ -53,8 +53,8 @@ func (r blockingReader) Read(p []byte) (int, error) {
 func TestCmd_ContextCancellation(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 
-	// Cancel in the background after a short delay so the command is already
-	// running when cancellation arrives. Close done to unblock the reader.
+	// Cancel in the background after a short delay so the command is already running
+	// when cancellation arrives. Close done to unblock the reader.
 	done := make(chan struct{})
 	go func() {
 		time.Sleep(50 * time.Millisecond)
@@ -73,9 +73,9 @@ func TestCmd_ContextCancellation(t *testing.T) {
 }
 
 func TestExec_DefaultTimeoutApplied(t *testing.T) {
-	// A plain context.Background() has no deadline. The command should still
-	// succeed because DefaultTimeout (1 min) is applied automatically and
-	// "git version" completes well within that.
+	// A plain context.Background() has no deadline. The command should still succeed
+	// because DefaultTimeout is applied automatically and "git version" completes
+	// well within that.
 	ctx := context.Background()
 	stdout, err := exec(ctx, "", []string{"version"}, nil)
 	assert.NoError(t, err)

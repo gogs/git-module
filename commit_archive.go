@@ -22,13 +22,17 @@ const (
 // Archive creates given format of archive to the destination.
 func (c *Commit) Archive(ctx context.Context, format ArchiveFormat, dst string) error {
 	prefix := filepath.Base(strings.TrimSuffix(c.repo.path, ".git")) + "/"
-	_, err := exec(ctx, c.repo.path, []string{
-		"archive",
-		"--prefix=" + prefix,
-		"--format=" + string(format),
-		"-o", dst,
-		"--end-of-options",
-		c.ID.String(),
-	}, nil)
+	_, err := exec(ctx,
+		c.repo.path,
+		[]string{
+			"archive",
+			"--prefix=" + prefix,
+			"--format=" + string(format),
+			"-o", dst,
+			"--end-of-options",
+			c.ID.String(),
+		},
+		nil,
+	)
 	return err
 }
