@@ -66,7 +66,7 @@ loop:
 //
 // Docs: https://git-scm.com/docs/git-cat-file#Documentation/git-cat-file.txt-lttypegt
 type CatFileCommitOptions struct {
-	// The additional options to be passed to the underlying git.
+	// The additional options to be passed to the underlying Git.
 	CommandOptions
 }
 
@@ -111,7 +111,7 @@ func (r *Repository) CatFileCommit(ctx context.Context, rev string, opts ...CatF
 //
 // Docs: https://git-scm.com/docs/git-cat-file#Documentation/git-cat-file.txt--t
 type CatFileTypeOptions struct {
-	// The additional options to be passed to the underlying git.
+	// The additional options to be passed to the underlying Git.
 	CommandOptions
 }
 
@@ -159,7 +159,7 @@ type LogOptions struct {
 	RegexpIgnoreCase bool
 	// The relative path of the repository.
 	Path string
-	// The additional options to be passed to the underlying git.
+	// The additional options to be passed to the underlying Git.
 	CommandOptions
 }
 
@@ -217,7 +217,7 @@ func (r *Repository) Log(ctx context.Context, rev string, opts ...LogOptions) ([
 type CommitByRevisionOptions struct {
 	// The relative path of the repository.
 	Path string
-	// The additional options to be passed to the underlying git.
+	// The additional options to be passed to the underlying Git.
 	CommandOptions
 }
 
@@ -251,7 +251,7 @@ func (r *Repository) CommitByRevision(ctx context.Context, rev string, opts ...C
 type CommitsByPageOptions struct {
 	// The relative path of the repository.
 	Path string
-	// The additional options to be passed to the underlying git.
+	// The additional options to be passed to the underlying Git.
 	CommandOptions
 }
 
@@ -279,7 +279,7 @@ type SearchCommitsOptions struct {
 	MaxCount int
 	// The relative path of the repository.
 	Path string
-	// The additional options to be passed to the underlying git.
+	// The additional options to be passed to the underlying Git.
 	CommandOptions
 }
 
@@ -307,7 +307,7 @@ func (r *Repository) SearchCommits(ctx context.Context, rev, pattern string, opt
 type CommitsSinceOptions struct {
 	// The relative path of the repository.
 	Path string
-	// The additional options to be passed to the underlying git.
+	// The additional options to be passed to the underlying Git.
 	CommandOptions
 }
 
@@ -334,7 +334,7 @@ type DiffNameOnlyOptions struct {
 	NeedsMergeBase bool
 	// The relative path of the repository.
 	Path string
-	// The additional options to be passed to the underlying git.
+	// The additional options to be passed to the underlying Git.
 	CommandOptions
 }
 
@@ -380,7 +380,7 @@ func (r *Repository) DiffNameOnly(ctx context.Context, base, head string, opts .
 type RevListCountOptions struct {
 	// The relative path of the repository.
 	Path string
-	// The additional options to be passed to the underlying git.
+	// The additional options to be passed to the underlying Git.
 	CommandOptions
 }
 
@@ -417,7 +417,7 @@ func (r *Repository) RevListCount(ctx context.Context, refspecs []string, opts .
 type RevListOptions struct {
 	// The relative path of the repository.
 	Path string
-	// The additional options to be passed to the underlying git.
+	// The additional options to be passed to the underlying Git.
 	CommandOptions
 }
 
@@ -452,7 +452,7 @@ func (r *Repository) RevList(ctx context.Context, refspecs []string, opts ...Rev
 type LatestCommitTimeOptions struct {
 	// To get the latest commit time of the branch. When not set, it checks all branches.
 	Branch string
-	// The additional options to be passed to the underlying git.
+	// The additional options to be passed to the underlying Git.
 	CommandOptions
 }
 

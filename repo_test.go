@@ -214,6 +214,11 @@ func TestRepository_Push(t *testing.T) {
 			branch: "master",
 			opt:    PushOptions{},
 		},
+		{
+			remote: "origin",
+			branch: "master",
+			opt:    PushOptions{SetUpstream: true},
+		},
 	}
 	for _, test := range tests {
 		t.Run("", func(t *testing.T) {

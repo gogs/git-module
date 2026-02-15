@@ -12,7 +12,7 @@ import (
 type UpdateServerInfoOptions struct {
 	// Indicates whether to overwrite the existing server info.
 	Force bool
-	// The additional options to be passed to the underlying git.
+	// The additional options to be passed to the underlying Git.
 	CommandOptions
 }
 
@@ -42,7 +42,7 @@ type ReceivePackOptions struct {
 	Quiet bool
 	// Indicates whether to generate the "info/refs" used by the "git http-backend".
 	HTTPBackendInfoRefs bool
-	// The additional options to be passed to the underlying git.
+	// The additional options to be passed to the underlying Git.
 	CommandOptions
 }
 
@@ -80,7 +80,7 @@ type UploadPackOptions struct {
 	// This is separate from the command execution timeout which is controlled via
 	// context.Context.
 	InactivityTimeout time.Duration
-	// The additional options to be passed to the underlying git.
+	// The additional options to be passed to the underlying Git.
 	CommandOptions
 }
 

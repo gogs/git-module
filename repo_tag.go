@@ -96,7 +96,7 @@ func (r *Repository) getTag(ctx context.Context, id *SHA1) (*Tag, error) {
 //
 // Docs: https://git-scm.com/docs/git-cat-file
 type TagOptions struct {
-	// The additional options to be passed to the underlying git.
+	// The additional options to be passed to the underlying Git.
 	CommandOptions
 }
 
@@ -140,7 +140,7 @@ type TagsOptions struct {
 	SortKey string
 	// Pattern filters tags matching the specified pattern.
 	Pattern string
-	// The additional options to be passed to the underlying git.
+	// The additional options to be passed to the underlying Git.
 	CommandOptions
 }
 
@@ -183,7 +183,7 @@ type CreateTagOptions struct {
 	Message string
 	// Author is the author of the tag. It is ignored when tag is not annotated.
 	Author *Signature
-	// The additional options to be passed to the underlying git.
+	// The additional options to be passed to the underlying Git.
 	CommandOptions
 }
 
@@ -216,7 +216,7 @@ func (r *Repository) CreateTag(ctx context.Context, name, rev string, opts ...Cr
 //
 // Docs: https://git-scm.com/docs/git-tag#Documentation/git-tag.txt---delete
 type DeleteTagOptions struct {
-	// The additional options to be passed to the underlying git.
+	// The additional options to be passed to the underlying Git.
 	CommandOptions
 }
 
