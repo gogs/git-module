@@ -129,7 +129,6 @@ func (r *Repository) RemoteRemove(ctx context.Context, name string, opts ...Remo
 	}
 
 	args := []string{"remote", "remove", "--end-of-options", name}
-
 	_, err := exec(ctx, r.path, args, opt.Envs)
 	if err != nil {
 		if strings.Contains(err.Error(), "error: No such remote") ||
@@ -157,7 +156,6 @@ func (r *Repository) Remotes(ctx context.Context, opts ...RemotesOptions) ([]str
 	}
 
 	args := []string{"remote", "--end-of-options"}
-
 	stdout, err := exec(ctx, r.path, args, opt.Envs)
 	if err != nil {
 		return nil, err

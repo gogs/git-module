@@ -199,7 +199,6 @@ func (r *Repository) CreateTag(ctx context.Context, name, rev string, opts ...Cr
 	}
 
 	args := []string{"tag"}
-
 	var envs []string
 	if opt.Annotated {
 		args = append(args, "-a", name)
@@ -212,7 +211,6 @@ func (r *Repository) CreateTag(ctx context.Context, name, rev string, opts ...Cr
 		args = append(args, "--end-of-options", name)
 	}
 	args = append(args, rev)
-
 	envs = append(envs, opt.Envs...)
 	_, err := exec(ctx, r.path, args, envs)
 	return err
@@ -234,7 +232,6 @@ func (r *Repository) DeleteTag(ctx context.Context, name string, opts ...DeleteT
 	}
 
 	args := []string{"tag", "--delete", "--end-of-options", name}
-
 	_, err := exec(ctx, r.path, args, opt.Envs)
 	return err
 }
