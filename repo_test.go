@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestRepository(t *testing.T) {
@@ -251,6 +252,38 @@ func TestRepository_Checkout(t *testing.T) {
 			if err := r.Checkout(test.branch, test.opt); err != nil {
 				t.Fatal(err)
 			}
+		})
+	}
+}
+
+func TestReset(t *testing.T) {
+	tests := []struct {
+		name string
+		rev  string
+		opt  ResetOptions
+	}{
+		{
+			name: "soft reset",
+			rev:  "978fb7f6388b49b532fbef8b856681cfa6fcaa0a",
+		},
+		{
+			name: "hard reset",
+			rev:  "978fb7f6388b49b532fbef8b856681cfa6fcaa0a",
+			opt: ResetOptions{
+				Hard: true,
+			},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			path := tempPath()
+			defer func() { _ = os.RemoveAll(path) }()
+
+			err := Clone(testrepo.Path(), path)
+			require.NoError(t, err)
+
+			err = Reset(path, test.rev, test.opt)
+			assert.NoError(t, err)
 		})
 	}
 }
