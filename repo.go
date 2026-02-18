@@ -348,7 +348,7 @@ func Reset(repoPath, rev string, opts ...ResetOptions) error {
 		cmd.AddArgs("--hard")
 	}
 
-	_, err := cmd.AddOptions(opt.CommandOptions).AddArgs("--end-of-options", rev).RunInDir(repoPath)
+	_, err := cmd.AddOptions(opt.CommandOptions).AddArgs(rev).RunInDir(repoPath)
 	return err
 }
 
