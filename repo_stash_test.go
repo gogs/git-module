@@ -5,76 +5,53 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestStashWorktreeError(t *testing.T) {
 	_, err := testrepo.StashList()
-	if err == nil {
-		t.Errorf("StashList() error = %v, wantErr %v", err, true)
-		return
-	}
+	assert.Errorf(t, err, "StashList() should return an error when not run in a work tree")
 }
 
 func TestStash(t *testing.T) {
 	tmp := t.TempDir()
 	path, err := filepath.Abs(repoPath)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
-	if err := Clone("file://"+path, tmp); err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, Clone("file://"+path, tmp))
 
 	repo, err := Open(tmp)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
-	if err := os.WriteFile(tmp+"/resources/newfile", []byte("hello, world!"), 0o644); err != nil {
-		t.Fatal(err)
-	}
+	err = os.WriteFile(tmp+"/resources/newfile", []byte("hello, world!"), 0o644)
+	require.NoError(t, err)
 
 	f, err := os.OpenFile(tmp+"/README.txt", os.O_APPEND|os.O_WRONLY, 0o644)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
-	if _, err := f.WriteString("\n\ngit-module"); err != nil {
-		t.Fatal(err)
-	}
+	_, err = f.WriteString("\n\ngit-module")
+	require.NoError(t, err)
 
 	f.Close()
-	if err := repo.Add(AddOptions{
-		All: true,
-	}); err != nil {
-		t.Fatal(err)
-	}
+	err = repo.Add(AddOptions{All: true})
+	require.NoError(t, err)
 
-	if err := repo.StashPush(""); err != nil {
-		t.Fatal(err)
-	}
+	err = repo.StashPush("")
+	require.NoError(t, err)
 
 	f, err = os.OpenFile(tmp+"/README.txt", os.O_APPEND|os.O_WRONLY, 0o644)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
-	if _, err := f.WriteString("\n\nstash 1"); err != nil {
-		t.Fatal(err)
-	}
+	_, err = f.WriteString("\n\nstash 1")
+	require.NoError(t, err)
 
 	f.Close()
-	if err := repo.Add(AddOptions{
-		All: true,
-	}); err != nil {
-		t.Fatal(err)
-	}
+	err = repo.Add(AddOptions{All: true})
+	require.NoError(t, err)
 
-	if err := repo.StashPush("custom message"); err != nil {
-		t.Fatal(err)
-	}
+	err = repo.StashPush("custom message")
+	require.NoError(t, err)
 
 	want := []*Stash{
 		{
