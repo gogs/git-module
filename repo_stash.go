@@ -43,7 +43,7 @@ func (r *Repository) StashList(opts ...StashListOptions) ([]*Stash, error) {
 
 	var stash *Stash
 	lines := strings.Split(stdout.String(), "\n")
-	for i := 0; i < len(lines); i++ {
+	for i := range lines {
 		line := strings.TrimSpace(lines[i])
 		// Init entry
 		if match := stashLineRegexp.FindStringSubmatch(line); len(match) == 3 {
@@ -54,7 +54,7 @@ func (r *Repository) StashList(opts ...StashListOptions) ([]*Stash, error) {
 
 			idx, err := strconv.Atoi(match[1])
 			if err != nil {
-				idx = -1
+				continue
 			}
 			stash = &Stash{
 				Index:   idx,
