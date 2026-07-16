@@ -168,6 +168,6 @@ func (r *Repository) DiffBinary(base, head string, opts ...DiffBinaryOptions) ([
 
 	return NewCommand("diff").
 		AddOptions(opt.CommandOptions).
-		AddArgs("--full-index", "--binary", base, head).
+		AddArgs("--full-index", "--binary", "--end-of-options", base, head).
 		RunInDirWithTimeout(opt.Timeout, r.path)
 }
