@@ -71,15 +71,15 @@ func (c *Command) AddEnvs(envs ...string) *Command {
 }
 
 // WithContext returns a new Command with the given context.
-func (c Command) WithContext(ctx context.Context) *Command {
+func (c *Command) WithContext(ctx context.Context) *Command {
 	c.ctx = ctx
-	return &c
+	return c
 }
 
 // WithTimeout returns a new Command with given timeout.
-func (c Command) WithTimeout(timeout time.Duration) *Command {
+func (c *Command) WithTimeout(timeout time.Duration) *Command {
 	c.timeout = timeout
-	return &c
+	return c
 }
 
 // SetTimeout sets the timeout for the command.
