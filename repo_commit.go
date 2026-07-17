@@ -555,6 +555,7 @@ func (r *Repository) LatestCommitTime(opts ...LatestCommitTimeOptions) (time.Tim
 			"--count=1",
 			"--sort=-committerdate",
 			"--format=%(committerdate:iso8601)",
+			"--end-of-options",
 		)
 	if opt.Branch != "" {
 		cmd.AddArgs(RefsHeads + opt.Branch)

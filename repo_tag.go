@@ -184,6 +184,7 @@ func RepoTags(repoPath string, opts ...TagsOptions) ([]string, error) {
 		sorted = true
 	}
 
+	cmd.AddArgs("--end-of-options")
 	if opt.Pattern != "" {
 		cmd.AddArgs(opt.Pattern)
 	}

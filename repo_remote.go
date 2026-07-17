@@ -216,6 +216,7 @@ func Remotes(repoPath string, opts ...RemotesOptions) ([]string, error) {
 
 	stdout, err := NewCommand("remote").
 		AddOptions(opt.CommandOptions).
+		AddArgs("--end-of-options").
 		RunInDirWithTimeout(opt.Timeout, repoPath)
 	if err != nil {
 		return nil, err

@@ -33,6 +33,7 @@ func UpdateServerInfo(path string, opts ...UpdateServerInfoOptions) error {
 	if opt.Force {
 		cmd.AddArgs("--force")
 	}
+	cmd.AddArgs("--end-of-options")
 	_, err := cmd.RunInDirWithTimeout(opt.Timeout, path)
 	return err
 }
@@ -66,7 +67,7 @@ func ReceivePack(path string, opts ...ReceivePackOptions) ([]byte, error) {
 	if opt.HTTPBackendInfoRefs {
 		cmd.AddArgs("--http-backend-info-refs")
 	}
-	cmd.AddArgs(".")
+	cmd.AddArgs("--end-of-options", ".")
 	return cmd.RunInDirWithTimeout(opt.Timeout, path)
 }
 
@@ -108,6 +109,6 @@ func UploadPack(path string, opts ...UploadPackOptions) ([]byte, error) {
 	if opt.HTTPBackendInfoRefs {
 		cmd.AddArgs("--http-backend-info-refs")
 	}
-	cmd.AddArgs(".")
+	cmd.AddArgs("--end-of-options", ".")
 	return cmd.RunInDirWithTimeout(opt.Timeout, path)
 }

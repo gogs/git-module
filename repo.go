@@ -189,6 +189,7 @@ func (r *Repository) Fetch(opts ...FetchOptions) error {
 	if opt.Prune {
 		cmd.AddArgs("--prune")
 	}
+	cmd.AddArgs("--end-of-options")
 
 	_, err := cmd.RunInDirWithTimeout(opt.Timeout, r.path)
 	return err
@@ -229,6 +230,7 @@ func (r *Repository) Pull(opts ...PullOptions) error {
 	if opt.All {
 		cmd.AddArgs("--all")
 	}
+	cmd.AddArgs("--end-of-options")
 	if !opt.All && opt.Remote != "" {
 		cmd.AddArgs(opt.Remote)
 		if opt.Branch != "" {
@@ -300,11 +302,9 @@ func Checkout(repoPath, branch string, opts ...CheckoutOptions) error {
 
 	cmd := NewCommand("checkout").AddOptions(opt.CommandOptions)
 	if opt.BaseBranch != "" {
-		cmd.AddArgs("-b")
-	}
-	cmd.AddArgs(branch)
-	if opt.BaseBranch != "" {
-		cmd.AddArgs(opt.BaseBranch)
+		cmd.AddArgs("-b", branch, "--end-of-options", opt.BaseBranch)
+	} else {
+		cmd.AddArgs("--end-of-options", branch)
 	}
 
 	_, err := cmd.RunInDirWithTimeout(opt.Timeout, repoPath)
@@ -348,7 +348,7 @@ func Reset(repoPath, rev string, opts ...ResetOptions) error {
 		cmd.AddArgs("--hard")
 	}
 
-	_, err := cmd.AddOptions(opt.CommandOptions).AddArgs(rev).RunInDir(repoPath)
+	_, err := cmd.AddOptions(opt.CommandOptions).AddArgs("--end-of-options", rev).RunInDir(repoPath)
 	return err
 }
 
@@ -476,7 +476,8 @@ func CreateCommit(repoPath string, committer *Signature, message string, opts ..
 	}
 	cmd = cmd.AddArgs(fmt.Sprintf("--author='%s <%s>'", opt.Author.Name, opt.Author.Email)).
 		AddArgs("-m", message).
-		AddOptions(opt.CommandOptions)
+		AddOptions(opt.CommandOptions).
+		AddArgs("--end-of-options")
 
 	_, err := cmd.RunInDirWithTimeout(opt.Timeout, repoPath)
 	// No stderr but exit status 1 means nothing to commit.
@@ -649,6 +650,7 @@ func CountObjects(repoPath string, opts ...CountObjectsOptions) (*CountObject, e
 
 	stdout, err := NewCommand("count-objects", "-v").
 		AddOptions(opt.CommandOptions).
+		AddArgs("--end-of-options").
 		RunInDirWithTimeout(opt.Timeout, repoPath)
 	if err != nil {
 		return nil, err
@@ -715,7 +717,7 @@ func Fsck(repoPath string, opts ...FsckOptions) error {
 		opt = opts[0]
 	}
 
-	cmd := NewCommand("fsck").AddOptions(opt.CommandOptions)
+	cmd := NewCommand("fsck").AddOptions(opt.CommandOptions).AddArgs("--end-of-options")
 	_, err := cmd.RunInDirWithTimeout(opt.Timeout, repoPath)
 	return err
 }

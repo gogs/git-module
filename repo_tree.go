@@ -142,7 +142,7 @@ func (r *Repository) LsTree(treeID string, opts ...LsTreeOptions) (*Tree, error)
 	}
 	stdout, err := cmd.
 		AddOptions(opt.CommandOptions).
-		AddArgs(treeID).
+		AddArgs("--end-of-options", treeID).
 		RunInDirWithTimeout(opt.Timeout, r.path)
 	if err != nil {
 		return nil, err
