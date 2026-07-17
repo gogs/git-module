@@ -494,6 +494,19 @@ func TestRepository_RevParse(t *testing.T) {
 			expID:  "",
 			expErr: ErrRevisionNotExist,
 		},
+
+		// A revision starting with a dash must be rejected to prevent argument
+		// injection into "git rev-parse".
+		{
+			rev:    "--absolute-git-dir",
+			expID:  "",
+			expErr: ErrRevisionNotExist,
+		},
+		{
+			rev:    "-h",
+			expID:  "",
+			expErr: ErrRevisionNotExist,
+		},
 	}
 	for _, test := range tests {
 		t.Run("", func(t *testing.T) {
