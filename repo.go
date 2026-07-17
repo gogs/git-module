@@ -451,6 +451,15 @@ func (r *Repository) RevParse(ctx context.Context, rev string, opts ...RevParseO
 		opt = opts[0]
 	}
 
+	// A revision that starts with a dash is never a valid object and would
+	// instead be interpreted by "git rev-parse" as a command-line option,
+	// allowing argument injection. The "--end-of-options" separator does not
+	// help here because "git rev-parse" does not honor it for revisions, so
+	// reject such input outright.
+	if strings.HasPrefix(rev, "-") {
+		return "", ErrRevisionNotExist
+	}
+
 	args := []string{"rev-parse", rev}
 
 	commitID, err := exec(ctx, r.path, args, opt.Envs)
