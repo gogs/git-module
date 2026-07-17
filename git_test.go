@@ -2,16 +2,12 @@ package git
 
 import (
 	"bytes"
-	"context"
 	"flag"
-	stdlog "log"
 	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
-
-const repoPath = "testdata/testrepo.git"
 
 var testrepo *Repository
 
@@ -22,22 +18,7 @@ func TestMain(m *testing.M) {
 		SetOutput(os.Stdout)
 	}
 
-	ctx := context.Background()
-
-	// Set up the test repository
-	if !isExist(repoPath) {
-		if err := Clone(ctx, "https://github.com/gogs/git-module-testrepo.git", repoPath, CloneOptions{
-			Bare: true,
-		}); err != nil {
-			stdlog.Fatal(err)
-		}
-	}
-
-	var err error
-	testrepo, err = Open(repoPath)
-	if err != nil {
-		stdlog.Fatal(err)
-	}
+	initTestRepo()
 
 	os.Exit(m.Run())
 }

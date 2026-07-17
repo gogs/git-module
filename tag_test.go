@@ -15,8 +15,8 @@ func TestTag(t *testing.T) {
 	}
 
 	assert.Equal(t, ObjectTag, tag.Type())
-	assert.Equal(t, "b39c8508bbc4b00ad2e24d358012ea123bcafd8d", tag.ID().String())
-	assert.Equal(t, "0eedd79eba4394bbef888c804e899731644367fe", tag.CommitID().String())
+	assert.Equal(t, testrepoMarks[50].String(), tag.ID().String())
+	assert.Equal(t, testrepoMarks[30].String(), tag.CommitID().String())
 	assert.Equal(t, "refs/tags/v1.1.0", tag.Refspec())
 
 	t.Run("Tagger", func(t *testing.T) {
@@ -40,5 +40,5 @@ func TestTag_Commit(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	assert.Equal(t, "0eedd79eba4394bbef888c804e899731644367fe", c.ID.String())
+	assert.Equal(t, testrepoMarks[30].String(), c.ID.String())
 }

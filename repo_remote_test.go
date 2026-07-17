@@ -23,7 +23,7 @@ func TestLsRemote(t *testing.T) {
 			},
 			expRefs: []*Reference{
 				{
-					ID:      "0eedd79eba4394bbef888c804e899731644367fe",
+					ID:      testrepoMarks[30].String(),
 					Refspec: "refs/heads/release-1.0",
 				},
 			},
@@ -35,7 +35,7 @@ func TestLsRemote(t *testing.T) {
 			},
 			expRefs: []*Reference{
 				{
-					ID:      "0eedd79eba4394bbef888c804e899731644367fe",
+					ID:      testrepoMarks[30].String(),
 					Refspec: "refs/tags/v1.0.0",
 				},
 			},
@@ -47,7 +47,7 @@ func TestLsRemote(t *testing.T) {
 			},
 			expRefs: []*Reference{
 				{
-					ID:      "0eedd79eba4394bbef888c804e899731644367fe",
+					ID:      testrepoMarks[30].String(),
 					Refspec: "refs/tags/v1.0.0",
 				},
 			},
@@ -92,9 +92,13 @@ func TestRepository_RemoteAdd(t *testing.T) {
 	defer func() {
 		_ = os.RemoveAll(path)
 	}()
-
-	err := Init(ctx, path, InitOptions{
-		Bare: true,
+	objfmt, err := testrepo.ObjectFormat(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = Init(ctx, path, InitOptions{
+		Bare:         true,
+		ObjectFormat: objfmt,
 	})
 	if err != nil {
 		t.Fatal(err)

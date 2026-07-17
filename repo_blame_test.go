@@ -16,7 +16,7 @@ func TestRepository_Blame(t *testing.T) {
 		assert.Error(t, err)
 	})
 
-	blame, err := testrepo.Blame(ctx, "cfc3b2993f74726356887a5ec093de50486dc617", "README.txt")
+	blame, err := testrepo.Blame(ctx, testrepoMarks[32].String(), "README.txt")
 	assert.Nil(t, err)
 
 	// Assert representative commits
@@ -25,10 +25,10 @@ func TestRepository_Blame(t *testing.T) {
 		line  int
 		expID string
 	}{
-		{line: 1, expID: "755fd577edcfd9209d0ac072eed3b022cbe4d39b"},
-		{line: 3, expID: "a13dba1e469944772490909daa58c53ac8fa4b0d"},
-		{line: 5, expID: "755fd577edcfd9209d0ac072eed3b022cbe4d39b"},
-		{line: 13, expID: "8d2636da55da593c421e1cb09eea502a05556a69"},
+		{line: 1, expID: testrepoMarks[1].String()},
+		{line: 3, expID: testrepoMarks[20].String()},
+		{line: 5, expID: testrepoMarks[1].String()},
+		{line: 13, expID: testrepoMarks[13].String()},
 	}
 	for _, test := range tests {
 		t.Run(fmt.Sprintf("Line %d", test.line), func(t *testing.T) {

@@ -18,16 +18,16 @@ func TestRepository_Tag(t *testing.T) {
 			name: "v1.0.0",
 			expTag: &Tag{
 				typ:      ObjectCommit,
-				id:       MustIDFromString("0eedd79eba4394bbef888c804e899731644367fe"),
-				commitID: MustIDFromString("0eedd79eba4394bbef888c804e899731644367fe"),
+				id:       MustIDFromString(testrepoMarks[30].String()),
+				commitID: MustIDFromString(testrepoMarks[30].String()),
 				refspec:  "refs/tags/v1.0.0",
 			},
 		}, {
 			name: "v1.1.0",
 			expTag: &Tag{
 				typ:      ObjectTag,
-				id:       MustIDFromString("b39c8508bbc4b00ad2e24d358012ea123bcafd8d"),
-				commitID: MustIDFromString("0eedd79eba4394bbef888c804e899731644367fe"),
+				id:       MustIDFromString(testrepoMarks[50].String()),
+				commitID: MustIDFromString(testrepoMarks[30].String()),
 				refspec:  "refs/tags/v1.1.0",
 			},
 		},

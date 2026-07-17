@@ -26,7 +26,7 @@ func TestTree_TreeEntry(t *testing.T) {
 
 func TestTree_Blob(t *testing.T) {
 	ctx := context.Background()
-	tree, err := testrepo.LsTree(ctx, "d58e3ef9f123eea6857161c79275ee22b228f659")
+	tree, err := testrepo.LsTree(ctx, testrepoMarks[31].String())
 	if err != nil {
 		t.Fatal(err)
 	}

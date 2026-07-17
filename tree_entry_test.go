@@ -9,7 +9,7 @@ import (
 )
 
 func TestTreeEntry(t *testing.T) {
-	id := MustIDFromString("0eedd79eba4394bbef888c804e899731644367fe")
+	id := MustIDFromString(testrepoMarks[12].String())
 	e := &TreeEntry{
 		mode: EntrySymlink,
 		typ:  ObjectTree,
@@ -30,7 +30,7 @@ func TestTreeEntry(t *testing.T) {
 
 func TestTreeEntry_Size(t *testing.T) {
 	ctx := context.Background()
-	tree, err := testrepo.LsTree(ctx, "0eedd79eba4394bbef888c804e899731644367fe")
+	tree, err := testrepo.LsTree(ctx, testrepoMarks[30].String())
 	require.NoError(t, err)
 
 	es, err := tree.Entries(ctx)
@@ -63,7 +63,7 @@ func TestTreeEntry_Size(t *testing.T) {
 
 func TestEntries_Sort(t *testing.T) {
 	ctx := context.Background()
-	tree, err := testrepo.LsTree(ctx, "0eedd79eba4394bbef888c804e899731644367fe")
+	tree, err := testrepo.LsTree(ctx, testrepoMarks[30].String())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -79,67 +79,67 @@ func TestEntries_Sort(t *testing.T) {
 		{
 			mode: EntryTree,
 			typ:  ObjectTree,
-			id:   MustIDFromString("fcf7087e732bfe3c25328248a9bf8c3ccd85bed4"),
+			id:   MustIDFromString(testrepoMarks[41].String()),
 			name: "gogs",
 		}, {
 			mode: EntryTree,
 			typ:  ObjectTree,
-			id:   MustIDFromString("a41a5a6cfd2d5ec3c0c1101e7cc05c9dedc3e11d"),
+			id:   MustIDFromString(testrepoMarks[42].String()),
 			name: "img",
 		}, {
 			mode: EntryTree,
 			typ:  ObjectTree,
-			id:   MustIDFromString("aaa0af6b82db99c660b169962524e2201ac7079c"),
+			id:   MustIDFromString(testrepoMarks[44].String()),
 			name: "resources",
 		}, {
 			mode: EntryTree,
 			typ:  ObjectTree,
-			id:   MustIDFromString("007cb92318c7bd3b56908ea8c2e54370245562f8"),
+			id:   MustIDFromString(testrepoMarks[47].String()),
 			name: "src",
 		}, {
 			mode: EntryBlob,
 			typ:  ObjectBlob,
-			id:   MustIDFromString("021a721a61a1de65865542c405796d1eb985f784"),
+			id:   MustIDFromString(testrepoMarks[34].String()),
 			name: ".DS_Store",
 		}, {
 			mode: EntryBlob,
 			typ:  ObjectBlob,
-			id:   MustIDFromString("412eeda78dc9de1186c2e0e1526764af82ab3431"),
+			id:   MustIDFromString(testrepoMarks[35].String()),
 			name: ".gitattributes",
 		}, {
 			mode: EntryBlob,
 			typ:  ObjectBlob,
-			id:   MustIDFromString("7c820833a9ad5fbfc96efd533d55f5edc65dc977"),
+			id:   MustIDFromString(testrepoMarks[36].String()),
 			name: ".gitignore",
 		}, {
 			mode: EntryBlob,
 			typ:  ObjectBlob,
-			id:   MustIDFromString("6abde17f49a6d43df40366e57d8964fee0dfda11"),
+			id:   MustIDFromString(testrepoMarks[37].String()),
 			name: ".gitmodules",
 		}, {
 			mode: EntryBlob,
 			typ:  ObjectBlob,
-			id:   MustIDFromString("17eccd68b7cafa718d53c8b4db666194646e2bd9"),
+			id:   MustIDFromString(testrepoMarks[38].String()),
 			name: ".travis.yml",
 		}, {
 			mode: EntryBlob,
 			typ:  ObjectBlob,
-			id:   MustIDFromString("adfd6da3c0a3fb038393144becbf37f14f780087"),
+			id:   MustIDFromString(testrepoMarks[39].String()),
 			name: "README.txt",
 		}, {
 			mode: EntryBlob,
 			typ:  ObjectBlob,
-			id:   MustIDFromString("6058be211566308428ca6dcab3f08cf270cd9568"),
+			id:   MustIDFromString(testrepoMarks[40].String()),
 			name: "build.gradle",
 		}, {
 			mode: EntryBlob,
 			typ:  ObjectBlob,
-			id:   MustIDFromString("99975710477a65b89233b2d12bf60f7c0ffc1f5c"),
+			id:   MustIDFromString(testrepoMarks[43].String()),
 			name: "pom.xml",
 		}, {
 			mode: EntryExec,
 			typ:  ObjectBlob,
-			id:   MustIDFromString("fb4bd4ec9220ed4fe0d9526d1b77147490ce8842"),
+			id:   MustIDFromString(testrepoMarks[45].String()),
 			name: "run.sh",
 		},
 	}
@@ -153,7 +153,7 @@ func TestEntries_Sort(t *testing.T) {
 
 func TestEntries_CommitsInfo(t *testing.T) {
 	ctx := context.Background()
-	tree, err := testrepo.LsTree(ctx, "cfc3b2993f74726356887a5ec093de50486dc617")
+	tree, err := testrepo.LsTree(ctx, testrepoMarks[32].String())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -180,98 +180,98 @@ func TestEntries_CommitsInfo(t *testing.T) {
 					name: ".DS_Store",
 				},
 				Commit: &Commit{
-					ID: MustIDFromString("4eaa8d4b05e731e950e2eaf9e8b92f522303ab41"),
+					ID: MustIDFromString(testrepoMarks[28].String()),
 				},
 			}, {
 				Entry: &TreeEntry{
 					name: ".gitattributes",
 				},
 				Commit: &Commit{
-					ID: MustIDFromString("bf7a9a5ee025edee0e610bd7ba23c0704b53c6db"),
+					ID: MustIDFromString(testrepoMarks[15].String()),
 				},
 			}, {
 				Entry: &TreeEntry{
 					name: ".gitignore",
 				},
 				Commit: &Commit{
-					ID: MustIDFromString("d2280d000c84f1e595e4dec435ae6c1e6c245367"),
+					ID: MustIDFromString(testrepoMarks[16].String()),
 				},
 			}, {
 				Entry: &TreeEntry{
 					name: ".gitmodules",
 				},
 				Commit: &Commit{
-					ID: MustIDFromString("4e59b72440188e7c2578299fc28ea425fbe9aece"),
+					ID: MustIDFromString(testrepoMarks[29].String()),
 				},
 			}, {
 				Entry: &TreeEntry{
 					name: ".travis.yml",
 				},
 				Commit: &Commit{
-					ID: MustIDFromString("9805760644754c38d10a9f1522a54a4bdc00fa8a"),
+					ID: MustIDFromString(testrepoMarks[23].String()),
 				},
 			}, {
 				Entry: &TreeEntry{
 					name: "README.txt",
 				},
 				Commit: &Commit{
-					ID: MustIDFromString("a13dba1e469944772490909daa58c53ac8fa4b0d"),
+					ID: MustIDFromString(testrepoMarks[20].String()),
 				},
 			}, {
 				Entry: &TreeEntry{
 					name: "build.gradle",
 				},
 				Commit: &Commit{
-					ID: MustIDFromString("c59479302142d79e46f84d11438a41b39ba51a1f"),
+					ID: MustIDFromString(testrepoMarks[17].String()),
 				},
 			}, {
 				Entry: &TreeEntry{
 					name: "gogs",
 				},
 				Commit: &Commit{
-					ID: MustIDFromString("4e59b72440188e7c2578299fc28ea425fbe9aece"),
+					ID: MustIDFromString(testrepoMarks[29].String()),
 				},
 			}, {
 				Entry: &TreeEntry{
 					name: "img",
 				},
 				Commit: &Commit{
-					ID: MustIDFromString("4eaa8d4b05e731e950e2eaf9e8b92f522303ab41"),
+					ID: MustIDFromString(testrepoMarks[28].String()),
 				},
 			}, {
 				Entry: &TreeEntry{
 					name: "pom.xml",
 				},
 				Commit: &Commit{
-					ID: MustIDFromString("ef7bebf8bdb1919d947afe46ab4b2fb4278039b3"),
+					ID: MustIDFromString(testrepoMarks[26].String()),
 				},
 			}, {
 				Entry: &TreeEntry{
 					name: "resources",
 				},
 				Commit: &Commit{
-					ID: MustIDFromString("755fd577edcfd9209d0ac072eed3b022cbe4d39b"),
+					ID: MustIDFromString(testrepoMarks[1].String()),
 				},
 			}, {
 				Entry: &TreeEntry{
 					name: "run.sh",
 				},
 				Commit: &Commit{
-					ID: MustIDFromString("0eedd79eba4394bbef888c804e899731644367fe"),
+					ID: MustIDFromString(testrepoMarks[30].String()),
 				},
 			}, {
 				Entry: &TreeEntry{
 					name: "sameSHAs",
 				},
 				Commit: &Commit{
-					ID: MustIDFromString("cfc3b2993f74726356887a5ec093de50486dc617"),
+					ID: MustIDFromString(testrepoMarks[32].String()),
 				},
 			}, {
 				Entry: &TreeEntry{
 					name: "src",
 				},
 				Commit: &Commit{
-					ID: MustIDFromString("ebbbf773431ba07510251bb03f9525c7bab2b13a"),
+					ID: MustIDFromString(testrepoMarks[25].String()),
 				},
 			},
 		}
@@ -305,7 +305,7 @@ func TestEntries_CommitsInfo(t *testing.T) {
 					name: "docs-api",
 				},
 				Commit: &Commit{
-					ID: MustIDFromString("4e59b72440188e7c2578299fc28ea425fbe9aece"),
+					ID: MustIDFromString(testrepoMarks[29].String()),
 				},
 			},
 		}
@@ -339,14 +339,14 @@ func TestEntries_CommitsInfo(t *testing.T) {
 					name: "file1.txt",
 				},
 				Commit: &Commit{
-					ID: MustIDFromString("cfc3b2993f74726356887a5ec093de50486dc617"),
+					ID: MustIDFromString(testrepoMarks[32].String()),
 				},
 			}, {
 				Entry: &TreeEntry{
 					name: "file2.txt",
 				},
 				Commit: &Commit{
-					ID: MustIDFromString("cfc3b2993f74726356887a5ec093de50486dc617"),
+					ID: MustIDFromString(testrepoMarks[32].String()),
 				},
 			},
 		}

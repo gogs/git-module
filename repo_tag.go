@@ -47,8 +47,8 @@ l:
 	return tag, nil
 }
 
-// getTag returns a tag by given SHA1 hash.
-func (r *Repository) getTag(ctx context.Context, id *SHA1) (*Tag, error) {
+// getTag returns a tag by given object id.
+func (r *Repository) getTag(ctx context.Context, id Oid) (*Tag, error) {
 	t, ok := r.cachedTags.Get(id.String())
 	if ok {
 		logf("Cached tag hit: %s", id)

@@ -48,7 +48,7 @@ func TestRepository_ShowRefVerify(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	assert.Equal(t, "0eedd79eba4394bbef888c804e899731644367fe", rev)
+	assert.Equal(t, testrepoMarks[30].String(), rev)
 }
 
 func TestRepository_BranchCommitID(t *testing.T) {
@@ -65,7 +65,7 @@ func TestRepository_BranchCommitID(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	assert.Equal(t, "0eedd79eba4394bbef888c804e899731644367fe", rev)
+	assert.Equal(t, testrepoMarks[30].String(), rev)
 }
 
 func TestRepository_TagCommitID(t *testing.T) {
@@ -82,7 +82,7 @@ func TestRepository_TagCommitID(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	assert.Equal(t, "0eedd79eba4394bbef888c804e899731644367fe", rev)
+	assert.Equal(t, testrepoMarks[30].String(), rev)
 }
 
 func TestRepository_HasReference(t *testing.T) {
@@ -205,7 +205,7 @@ func TestRepository_ShowRef(t *testing.T) {
 			},
 			expRefs: []*Reference{
 				{
-					ID:      "0eedd79eba4394bbef888c804e899731644367fe",
+					ID:      testrepoMarks[30].String(),
 					Refspec: "refs/heads/release-1.0",
 				},
 			},
@@ -216,7 +216,7 @@ func TestRepository_ShowRef(t *testing.T) {
 			},
 			expRefs: []*Reference{
 				{
-					ID:      "0eedd79eba4394bbef888c804e899731644367fe",
+					ID:      testrepoMarks[30].String(),
 					Refspec: "refs/tags/v1.0.0",
 				},
 			},

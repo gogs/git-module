@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 	"testing"
 
@@ -21,14 +22,14 @@ func TestRepository_Diff(t *testing.T) {
 		expDiff      *Diff
 	}{
 		{
-			rev: "978fb7f6388b49b532fbef8b856681cfa6fcaa0a",
+			rev: testrepoMarks[27].String(),
 			expDiff: &Diff{
 				Files: []*DiffFile{
 					{
 						Name:         "fix.txt",
 						Type:         DiffFileDelete,
-						Index:        "0000000000000000000000000000000000000000",
-						OldIndex:     "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+						Index:        testEmptyShaID,
+						OldIndex:     testrepoMarks[54].String(),
 						Sections:     nil,
 						numAdditions: 0,
 						numDeletions: 0,
@@ -46,14 +47,14 @@ func TestRepository_Diff(t *testing.T) {
 			},
 		},
 		{
-			rev: "755fd577edcfd9209d0ac072eed3b022cbe4d39b",
+			rev: testrepoMarks[1].String(),
 			expDiff: &Diff{
 				Files: []*DiffFile{
 					{
 						Name:     "README.txt",
 						Type:     DiffFileAdd,
-						Index:    "1e24b564bf2298965d8037af42d3ae15ad7d225a",
-						OldIndex: "0000000000000000000000000000000000000000",
+						Index:    testrepoMarks[51].String(),
+						OldIndex: testEmptyShaID,
 						Sections: []*DiffSection{
 							{
 								Lines: []*DiffLine{
@@ -143,8 +144,8 @@ func TestRepository_Diff(t *testing.T) {
 					{
 						Name:     "resources/labels.properties",
 						Type:     DiffFileAdd,
-						Index:    "fbdcfef007c0c09061199e687087b18c3cf8e083",
-						OldIndex: "0000000000000000000000000000000000000000",
+						Index:    testrepoMarks[52].String(),
+						OldIndex: testEmptyShaID,
 						Sections: []*DiffSection{
 							{
 								Lines: []*DiffLine{
@@ -192,8 +193,8 @@ func TestRepository_Diff(t *testing.T) {
 					{
 						Name:     "src/Main.groovy",
 						Type:     DiffFileAdd,
-						Index:    "51680791956b43effdb2f16bccd2b4752d66078f",
-						OldIndex: "0000000000000000000000000000000000000000",
+						Index:    testrepoMarks[53].String(),
+						OldIndex: testEmptyShaID,
 						Sections: []*DiffSection{
 							{
 								Lines: []*DiffLine{
@@ -257,17 +258,17 @@ func TestRepository_Diff(t *testing.T) {
 			},
 		},
 		{
-			rev: "978fb7f6388b49b532fbef8b856681cfa6fcaa0a",
+			rev: testrepoMarks[27].String(),
 			opt: DiffOptions{
-				Base: "ef7bebf8bdb1919d947afe46ab4b2fb4278039b3",
+				Base: testrepoMarks[26].String(),
 			},
 			expDiff: &Diff{
 				Files: []*DiffFile{
 					{
 						Name:         "fix.txt",
 						Type:         DiffFileDelete,
-						Index:        "0000000000000000000000000000000000000000",
-						OldIndex:     "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+						Index:        testEmptyShaID,
+						OldIndex:     testrepoMarks[54].String(),
 						Sections:     nil,
 						numAdditions: 0,
 						numDeletions: 0,
@@ -306,7 +307,7 @@ func TestRepository_RawDiff(t *testing.T) {
 	})
 
 	t.Run("invalid diffType", func(t *testing.T) {
-		err := testrepo.RawDiff(ctx, "978fb7f6388b49b532fbef8b856681cfa6fcaa0a", "bad_diff_type", nil)
+		err := testrepo.RawDiff(ctx, testrepoMarks[27].String(), "bad_diff_type", nil)
 		assert.Equal(t, errors.New("invalid diffType: bad_diff_type"), err)
 	})
 
@@ -317,17 +318,17 @@ func TestRepository_RawDiff(t *testing.T) {
 		expOutput string
 	}{
 		{
-			rev:      "978fb7f6388b49b532fbef8b856681cfa6fcaa0a",
+			rev:      testrepoMarks[27].String(),
 			diffType: RawDiffNormal,
-			expOutput: `diff --git a/fix.txt b/fix.txt
+			expOutput: fmt.Sprintf(`diff --git a/fix.txt b/fix.txt
 deleted file mode 100644
-index e69de29bb2d1d6434b8b29ae775ad8c2e48c5391..0000000000000000000000000000000000000000
-`,
+index %s..%s
+`, testrepoMarks[54].String(), testEmptyShaID),
 		},
 		{
-			rev:      "978fb7f6388b49b532fbef8b856681cfa6fcaa0a",
+			rev:      testrepoMarks[27].String(),
 			diffType: RawDiffPatch,
-			expOutput: `Date: Sun, 9 Feb 2020 17:22:24 +0800
+			expOutput: fmt.Sprintf(`Date: Sun, 9 Feb 2020 17:22:24 +0800
 Subject: [PATCH] Delete fix.txt
 
 ---
@@ -337,13 +338,13 @@ Subject: [PATCH] Delete fix.txt
 
 diff --git a/fix.txt b/fix.txt
 deleted file mode 100644
-index e69de29bb2d1d6434b8b29ae775ad8c2e48c5391..0000000000000000000000000000000000000000
-`,
+index %s..%s
+`, testrepoMarks[54].String(), testEmptyShaID),
 		},
 		{
-			rev:      "755fd577edcfd9209d0ac072eed3b022cbe4d39b",
+			rev:      testrepoMarks[1].String(),
 			diffType: RawDiffNormal,
-			expOutput: `commit 755fd577edcfd9209d0ac072eed3b022cbe4d39b
+			expOutput: fmt.Sprintf(`commit %[1]s
 Author: Matthew McCullough <matthewm@ambientideas.com>
 Date:   Mon Nov 24 21:22:01 2008 -0700
 
@@ -355,7 +356,7 @@ Date:   Mon Nov 24 21:22:01 2008 -0700
 
 diff --git a/README.txt b/README.txt
 new file mode 100644
-index 0000000000000000000000000000000000000000..1e24b564bf2298965d8037af42d3ae15ad7d225a
+index %[2]s..%[3]s
 --- /dev/null
 +++ b/README.txt
 @@ -0,0 +1,11 @@
@@ -373,7 +374,7 @@ index 0000000000000000000000000000000000000000..1e24b564bf2298965d8037af42d3ae15
 \ No newline at end of file
 diff --git a/resources/labels.properties b/resources/labels.properties
 new file mode 100644
-index 0000000000000000000000000000000000000000..fbdcfef007c0c09061199e687087b18c3cf8e083
+index %[2]s..%[4]s
 --- /dev/null
 +++ b/resources/labels.properties
 @@ -0,0 +1,4 @@
@@ -383,7 +384,7 @@ index 0000000000000000000000000000000000000000..fbdcfef007c0c09061199e687087b18c
 +cli.usage=This application doesn't use a command line interface
 diff --git a/src/Main.groovy b/src/Main.groovy
 new file mode 100644
-index 0000000000000000000000000000000000000000..51680791956b43effdb2f16bccd2b4752d66078f
+index %[2]s..%[5]s
 --- /dev/null
 +++ b/src/Main.groovy
 @@ -0,0 +1,6 @@
@@ -394,12 +395,12 @@ index 0000000000000000000000000000000000000000..51680791956b43effdb2f16bccd2b475
 +int programmingPoints = 10
 +println "${name} has at least ${programmingPoints} programming points."
 \ No newline at end of file
-`,
+`, testrepoMarks[1].String(), testEmptyShaID, testrepoMarks[51].String(), testrepoMarks[52].String(), testrepoMarks[53].String()),
 		},
 		{
-			rev:      "755fd577edcfd9209d0ac072eed3b022cbe4d39b",
+			rev:      testrepoMarks[1].String(),
 			diffType: RawDiffPatch,
-			expOutput: `Date: Mon, 24 Nov 2008 21:22:01 -0700
+			expOutput: fmt.Sprintf(`Date: Mon, 24 Nov 2008 21:22:01 -0700
 Subject: [PATCH] Addition of the README and basic Groovy source samples.
 
 - Addition of the README.txt file explaining what this repository is all about.
@@ -416,7 +417,7 @@ Subject: [PATCH] Addition of the README and basic Groovy source samples.
 
 diff --git a/README.txt b/README.txt
 new file mode 100644
-index 0000000000000000000000000000000000000000..1e24b564bf2298965d8037af42d3ae15ad7d225a
+index %[2]s..%[3]s
 --- /dev/null
 +++ b/README.txt
 @@ -0,0 +1,11 @@
@@ -434,7 +435,7 @@ index 0000000000000000000000000000000000000000..1e24b564bf2298965d8037af42d3ae15
 \ No newline at end of file
 diff --git a/resources/labels.properties b/resources/labels.properties
 new file mode 100644
-index 0000000000000000000000000000000000000000..fbdcfef007c0c09061199e687087b18c3cf8e083
+index %[2]s..%[4]s
 --- /dev/null
 +++ b/resources/labels.properties
 @@ -0,0 +1,4 @@
@@ -444,7 +445,7 @@ index 0000000000000000000000000000000000000000..fbdcfef007c0c09061199e687087b18c
 +cli.usage=This application doesn't use a command line interface
 diff --git a/src/Main.groovy b/src/Main.groovy
 new file mode 100644
-index 0000000000000000000000000000000000000000..51680791956b43effdb2f16bccd2b4752d66078f
+index %[2]s..%[5]s
 --- /dev/null
 +++ b/src/Main.groovy
 @@ -0,0 +1,6 @@
@@ -455,7 +456,7 @@ index 0000000000000000000000000000000000000000..51680791956b43effdb2f16bccd2b475
 +int programmingPoints = 10
 +println "${name} has at least ${programmingPoints} programming points."
 \ No newline at end of file
-`,
+`, testrepoMarks[1].String(), testEmptyShaID, testrepoMarks[51].String(), testrepoMarks[52].String(), testrepoMarks[53].String()),
 		},
 	}
 	for _, test := range tests {
@@ -487,11 +488,11 @@ func TestRepository_DiffBinary(t *testing.T) {
 		expOutput string
 	}{
 		{
-			base: "4eaa8d4b05e731e950e2eaf9e8b92f522303ab41",
-			head: "4e59b72440188e7c2578299fc28ea425fbe9aece",
-			expOutput: `diff --git a/.gitmodules b/.gitmodules
+			base: testrepoMarks[28].String(),
+			head: testrepoMarks[29].String(),
+			expOutput: fmt.Sprintf(`diff --git a/.gitmodules b/.gitmodules
 new file mode 100644
-index 0000000000000000000000000000000000000000..6abde17f49a6d43df40366e57d8964fee0dfda11
+index %[1]s..%[2]s
 --- /dev/null
 +++ b/.gitmodules
 @@ -0,0 +1,3 @@
@@ -500,12 +501,12 @@ index 0000000000000000000000000000000000000000..6abde17f49a6d43df40366e57d8964fe
 +	url = https://github.com/gogs/docs-api.git
 diff --git a/gogs/docs-api b/gogs/docs-api
 new file mode 160000
-index 0000000000000000000000000000000000000000..6b08f76a5313fa3d26859515b30aa17a5faa2807
+index %[1]s..%[3]s
 --- /dev/null
 +++ b/gogs/docs-api
 @@ -0,0 +1 @@
-+Subproject commit 6b08f76a5313fa3d26859515b30aa17a5faa2807
-`,
++Subproject commit %[3]s
+`, testEmptyShaID, testrepoMarks[37].String(), submoduleSHA.String()),
 		},
 	}
 	for _, test := range tests {

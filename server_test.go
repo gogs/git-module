@@ -2,6 +2,7 @@ package git
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -23,8 +24,11 @@ func TestReceivePack(t *testing.T) {
 	ctx := context.Background()
 	got, err := ReceivePack(ctx, repoPath, ReceivePackOptions{HTTPBackendInfoRefs: true})
 	require.NoError(t, err)
-	const contains = "report-status report-status-v2 delete-refs side-band-64k quiet atomic ofs-delta object-format=sha1 agent=git/"
-	assert.Contains(t, string(got), contains)
+	var regPattern = fmt.Sprintf(
+		"report-status report-status-v2 delete-refs side-band-64k quiet atomic ofs-delta (push-options |)object-format=%s agent=git/",
+		testrepoObjectFormat,
+	)
+	assert.Regexp(t, regPattern, string(got))
 }
 
 func TestUploadPack(t *testing.T) {
@@ -37,6 +41,6 @@ func TestUploadPack(t *testing.T) {
 		},
 	)
 	require.NoError(t, err)
-	const contains = "multi_ack thin-pack side-band side-band-64k ofs-delta shallow deepen-since deepen-not deepen-relative no-progress include-tag multi_ack_detailed no-done symref=HEAD:refs/heads/master object-format=sha1 agent=git/"
-	assert.Contains(t, string(got), contains)
+	var regPattern = fmt.Sprintf("multi_ack thin-pack side-band side-band-64k ofs-delta shallow deepen-since deepen-not deepen-relative no-progress include-tag multi_ack_detailed (allow-tip-sha1-in-want |)(allow-reachable-sha1-in-want |)no-done symref=HEAD:refs/heads/master (filter |)object-format=%s agent=git/", testrepoObjectFormat)
+	assert.Regexp(t, regPattern, string(got))
 }

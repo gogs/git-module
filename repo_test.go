@@ -276,7 +276,7 @@ func TestRepository_Reset(t *testing.T) {
 		opt ResetOptions
 	}{
 		{
-			rev: "978fb7f6388b49b532fbef8b856681cfa6fcaa0a",
+			rev: testrepoMarks[27].String(),
 			opt: ResetOptions{
 				Hard: true,
 			},
@@ -444,28 +444,28 @@ func TestRepository_RevParse(t *testing.T) {
 		expErr error
 	}{
 		{
-			rev:    "4e59b72",
-			expID:  "4e59b72440188e7c2578299fc28ea425fbe9aece",
+			rev:    testrepoMarks[29].String()[:7],
+			expID:  testrepoMarks[29].String(),
 			expErr: nil,
 		},
 		{
 			rev:    "release-1.0",
-			expID:  "0eedd79eba4394bbef888c804e899731644367fe",
+			expID:  testrepoMarks[30].String(),
 			expErr: nil,
 		},
 		{
 			rev:    "RELEASE_1.0",
-			expID:  "2a52e96389d02209b451ae1ddf45d645b42d744c",
+			expID:  testrepoMarks[12].String(),
 			expErr: nil,
 		},
 		{
 			rev:    "refs/heads/release-1.0",
-			expID:  "0eedd79eba4394bbef888c804e899731644367fe",
+			expID:  testrepoMarks[30].String(),
 			expErr: nil,
 		},
 		{
 			rev:    "refs/tags/RELEASE_1.0",
-			expID:  "2a52e96389d02209b451ae1ddf45d645b42d744c",
+			expID:  testrepoMarks[12].String(),
 			expErr: nil,
 		},
 
@@ -513,4 +513,13 @@ func TestRepository_Fsck(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+}
+
+func TestRepository_ObjectFormat(t *testing.T) {
+	ctx := context.Background()
+	obf, err := testrepo.ObjectFormat(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	assert.Equal(t, obf, testrepoObjectFormat)
 }

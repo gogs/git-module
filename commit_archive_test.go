@@ -22,7 +22,7 @@ func TestCommit_Archive(t *testing.T) {
 		ArchiveTarGz,
 	} {
 		t.Run(string(format), func(t *testing.T) {
-			c, err := testrepo.CatFileCommit(ctx, "755fd577edcfd9209d0ac072eed3b022cbe4d39b")
+			c, err := testrepo.CatFileCommit(ctx, testrepoMarks[1].String())
 			if err != nil {
 				t.Fatal(err)
 			}

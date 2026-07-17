@@ -3,6 +3,7 @@ package git
 import (
 	"context"
 	"errors"
+	"fmt"
 	"testing"
 	"time"
 
@@ -43,12 +44,12 @@ func TestRepository_CatFileCommit(t *testing.T) {
 		assert.Nil(t, c)
 	})
 
-	c, err := testrepo.CatFileCommit(ctx, "d58e3ef9f123eea6857161c79275ee22b228f659")
+	c, err := testrepo.CatFileCommit(ctx, testrepoMarks[31].String())
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	assert.Equal(t, "d58e3ef9f123eea6857161c79275ee22b228f659", c.ID.String())
+	assert.Equal(t, testrepoMarks[31].String(), c.ID.String())
 	assert.Equal(t, "Add a symlink\n", c.Message)
 }
 
@@ -66,7 +67,7 @@ func TestRepository_BranchCommit(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	assert.Equal(t, "0eedd79eba4394bbef888c804e899731644367fe", c.ID.String())
+	assert.Equal(t, testrepoMarks[30].String(), c.ID.String())
 	assert.Equal(t, "Rename shell script\n", c.Message)
 }
 
@@ -84,7 +85,7 @@ func TestRepository_TagCommit(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	assert.Equal(t, "0eedd79eba4394bbef888c804e899731644367fe", c.ID.String())
+	assert.Equal(t, testrepoMarks[30].String(), c.ID.String())
 	assert.Equal(t, "Rename shell script\n", c.Message)
 }
 
@@ -96,17 +97,17 @@ func TestRepository_Log(t *testing.T) {
 		expCommitIDs []string
 	}{
 		{
-			rev: "0eedd79eba4394bbef888c804e899731644367fe",
+			rev: testrepoMarks[30].String(),
 			opt: LogOptions{
 				Since: time.Unix(1581250680, 0),
 			},
 			expCommitIDs: []string{
-				"0eedd79eba4394bbef888c804e899731644367fe",
-				"4e59b72440188e7c2578299fc28ea425fbe9aece",
+				testrepoMarks[30].String(),
+				testrepoMarks[29].String(),
 			},
 		},
 		{
-			rev: "0eedd79eba4394bbef888c804e899731644367fe",
+			rev: testrepoMarks[30].String(),
 			opt: LogOptions{
 				Since: time.Now().AddDate(100, 0, 0),
 			},
@@ -140,8 +141,8 @@ func TestRepository_CommitByRevision(t *testing.T) {
 		expID string
 	}{
 		{
-			rev:   "4e59b72",
-			expID: "4e59b72440188e7c2578299fc28ea425fbe9aece",
+			rev:   testrepoMarks[29].String()[:7],
+			expID: testrepoMarks[29].String(),
 		},
 	}
 	for _, test := range tests {
@@ -165,15 +166,15 @@ func TestRepository_CommitsSince(t *testing.T) {
 		expCommitIDs []string
 	}{
 		{
-			rev:   "0eedd79eba4394bbef888c804e899731644367fe",
+			rev:   testrepoMarks[30].String(),
 			since: time.Unix(1581250680, 0),
 			expCommitIDs: []string{
-				"0eedd79eba4394bbef888c804e899731644367fe",
-				"4e59b72440188e7c2578299fc28ea425fbe9aece",
+				testrepoMarks[30].String(),
+				testrepoMarks[29].String(),
 			},
 		},
 		{
-			rev:          "0eedd79eba4394bbef888c804e899731644367fe",
+			rev:          testrepoMarks[30].String(),
 			since:        time.Now().AddDate(100, 0, 0),
 			expCommitIDs: []string{},
 		},
@@ -199,13 +200,13 @@ func TestRepository_DiffNameOnly(t *testing.T) {
 		expFiles []string
 	}{
 		{
-			base:     "ef7bebf8bdb1919d947afe46ab4b2fb4278039b3",
-			head:     "978fb7f6388b49b532fbef8b856681cfa6fcaa0a",
+			base:     testrepoMarks[26].String(),
+			head:     testrepoMarks[27].String(),
 			expFiles: []string{"fix.txt"},
 		},
 		{
-			base: "45a30ea9afa413e226ca8614179c011d545ca883",
-			head: "978fb7f6388b49b532fbef8b856681cfa6fcaa0a",
+			base: testrepoMarks[24].String(),
+			head: testrepoMarks[27].String(),
 			opt: DiffNameOnlyOptions{
 				NeedsMergeBase: true,
 			},
@@ -213,16 +214,16 @@ func TestRepository_DiffNameOnly(t *testing.T) {
 		},
 
 		{
-			base: "45a30ea9afa413e226ca8614179c011d545ca883",
-			head: "978fb7f6388b49b532fbef8b856681cfa6fcaa0a",
+			base: testrepoMarks[24].String(),
+			head: testrepoMarks[27].String(),
 			opt: DiffNameOnlyOptions{
 				Path: "src",
 			},
 			expFiles: []string{"src/test/java/com/github/AppTest.java"},
 		},
 		{
-			base: "45a30ea9afa413e226ca8614179c011d545ca883",
-			head: "978fb7f6388b49b532fbef8b856681cfa6fcaa0a",
+			base: testrepoMarks[24].String(),
+			head: testrepoMarks[27].String(),
 			opt: DiffNameOnlyOptions{
 				Path: "resources",
 			},
@@ -256,27 +257,27 @@ func TestRepository_RevListCount(t *testing.T) {
 		expCount int64
 	}{
 		{
-			refspecs: []string{"755fd577edcfd9209d0ac072eed3b022cbe4d39b"},
+			refspecs: []string{testrepoMarks[1].String()},
 			expCount: 1,
 		},
 		{
-			refspecs: []string{"f5ed01959cffa4758ca0a49bf4c34b138d7eab0a"},
+			refspecs: []string{testrepoMarks[5].String()},
 			expCount: 5,
 		},
 		{
-			refspecs: []string{"978fb7f6388b49b532fbef8b856681cfa6fcaa0a"},
+			refspecs: []string{testrepoMarks[27].String()},
 			expCount: 27,
 		},
 
 		{
-			refspecs: []string{"7c5ee6478d137417ae602140c615e33aed91887c"},
+			refspecs: []string{testrepoMarks[21].String()},
 			opt: RevListCountOptions{
 				Path: "README.txt",
 			},
 			expCount: 3,
 		},
 		{
-			refspecs: []string{"7c5ee6478d137417ae602140c615e33aed91887c"},
+			refspecs: []string{testrepoMarks[21].String()},
 			opt: RevListCountOptions{
 				Path: "resources",
 			},
@@ -310,20 +311,20 @@ func TestRepository_RevList(t *testing.T) {
 		expCommitIDs []string
 	}{
 		{
-			refspecs: []string{"45a30ea9afa413e226ca8614179c011d545ca883...978fb7f6388b49b532fbef8b856681cfa6fcaa0a"},
+			refspecs: []string{fmt.Sprintf("%s...%s", testrepoMarks[24].String(), testrepoMarks[27].String())},
 			expCommitIDs: []string{
-				"978fb7f6388b49b532fbef8b856681cfa6fcaa0a",
-				"ef7bebf8bdb1919d947afe46ab4b2fb4278039b3",
-				"ebbbf773431ba07510251bb03f9525c7bab2b13a",
+				testrepoMarks[27].String(),
+				testrepoMarks[26].String(),
+				testrepoMarks[25].String(),
 			},
 		},
 		{
-			refspecs: []string{"45a30ea9afa413e226ca8614179c011d545ca883...978fb7f6388b49b532fbef8b856681cfa6fcaa0a"},
+			refspecs: []string{fmt.Sprintf("%s...%s", testrepoMarks[24].String(), testrepoMarks[27].String())},
 			opt: RevListOptions{
 				Path: "src",
 			},
 			expCommitIDs: []string{
-				"ebbbf773431ba07510251bb03f9525c7bab2b13a",
+				testrepoMarks[25].String(),
 			},
 		},
 	}

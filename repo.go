@@ -13,13 +13,26 @@ import (
 	"strings"
 )
 
+// ObjectFormat represent the hash algorithm of a Git repository
+type ObjectFormat string
+
+const (
+	ObjectFormatSHA1   ObjectFormat = "sha1"
+	ObjectFormatSHA256 ObjectFormat = "sha256"
+)
+
+func (obf *ObjectFormat) String() string {
+	return string(*obf)
+}
+
 // Repository contains information of a Git repository.
 type Repository struct {
 	path string
 
-	cachedCommits *objectCache
-	cachedTags    *objectCache
-	cachedTrees   *objectCache
+	cachedCommits      *objectCache
+	cachedTags         *objectCache
+	cachedTrees        *objectCache
+	cachedObjectFomart ObjectFormat
 }
 
 // Path returns the path of the repository.
@@ -53,7 +66,9 @@ func (r *Repository) parsePrettyFormatLogToList(ctx context.Context, logs []byte
 // Docs: https://git-scm.com/docs/git-init
 type InitOptions struct {
 	// Indicates whether the repository should be initialized in bare format.
-	Bare bool
+	Bare         bool
+	ObjectFormat ObjectFormat
+
 	CommandOptions
 }
 
@@ -72,6 +87,9 @@ func Init(ctx context.Context, path string, opts ...InitOptions) error {
 	args := []string{"init"}
 	if opt.Bare {
 		args = append(args, "--bare")
+	}
+	if opt.ObjectFormat != "" {
+		args = append(args, "--object-format", opt.ObjectFormat.String())
 	}
 	args = append(args, "--end-of-options")
 	_, err = exec(ctx, path, args, opt.Envs)
@@ -443,7 +461,7 @@ type RevParseOptions struct {
 	CommandOptions
 }
 
-// RevParse returns full length (40) commit ID by given revision in the
+// RevParse returns full length (40 or 64) commit ID by given revision in the
 // repository.
 func (r *Repository) RevParse(ctx context.Context, rev string, opts ...RevParseOptions) (string, error) {
 	var opt RevParseOptions
@@ -553,4 +571,31 @@ func (r *Repository) Fsck(ctx context.Context, opts ...FsckOptions) error {
 	args := []string{"fsck", "--end-of-options"}
 	_, err := exec(ctx, r.path, args, opt.Envs)
 	return err
+
+}
+
+// ObjectFomat returns hash algorithm (sha1 or sha256) of the repository
+func (r *Repository) ObjectFormat(ctx context.Context) (ObjectFormat, error) {
+	if r.cachedObjectFomart != "" {
+		return r.cachedObjectFomart, nil
+	}
+
+	id, err := exec(ctx, r.path, []string{"hash-object", "--stdin"}, nil)
+	if err != nil {
+		return "", fmt.Errorf("hash object: %v", err)
+	}
+	oid, err := NewIDFromString(strings.TrimSpace(string(id)))
+	if err != nil {
+		return "", fmt.Errorf("parse oid: %v", err)
+	}
+	switch oid.(type) {
+	case *SHA1:
+		r.cachedObjectFomart = ObjectFormatSHA1
+		return ObjectFormatSHA1, nil
+	case *SHA256:
+		r.cachedObjectFomart = ObjectFormatSHA256
+		return ObjectFormatSHA256, nil
+	default:
+		return "", fmt.Errorf("unknown object format")
+	}
 }

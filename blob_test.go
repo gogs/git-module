@@ -31,7 +31,7 @@ This demo also includes an image with changes on a branch for examination of ima
 		TreeEntry: &TreeEntry{
 			mode: EntryBlob,
 			typ:  ObjectBlob,
-			id:   MustIDFromString("adfd6da3c0a3fb038393144becbf37f14f780087"), // Blob ID of "README.txt" file
+			id:   testrepoMarks[39], // Blob ID of "README.txt" file
 			parent: &Tree{
 				repo: testrepo,
 			},

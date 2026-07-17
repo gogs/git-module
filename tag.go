@@ -5,8 +5,8 @@ import "context"
 // Tag contains information of a Git tag.
 type Tag struct {
 	typ      ObjectType
-	id       *SHA1
-	commitID *SHA1 // The ID of the underlying commit
+	id       Oid
+	commitID Oid // The ID of the underlying commit
 	refspec  string
 	tagger   *Signature
 	message  string
@@ -20,12 +20,12 @@ func (t *Tag) Type() ObjectType {
 }
 
 // ID returns the SHA-1 hash of the tag.
-func (t *Tag) ID() *SHA1 {
+func (t *Tag) ID() Oid {
 	return t.id
 }
 
 // CommitID returns the commit ID of the tag.
-func (t *Tag) CommitID() *SHA1 {
+func (t *Tag) CommitID() Oid {
 	return t.commitID
 }
 
