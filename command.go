@@ -11,8 +11,11 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"slices"
 	"strings"
 	"time"
+
+	goversion "github.com/mcuadros/go-version"
 )
 
 // Command contains the name, arguments and environment variables of a command.
@@ -206,7 +209,19 @@ func (c *Command) RunInDirWithOptions(dir string, opts ...RunInDirOptions) (err 
 		}()
 	}
 
-	cmd := exec.CommandContext(ctx, c.name, c.args...)
+	args := c.args
+	if i := slices.Index(args, endOfOptions); i >= 0 {
+		version, err := BinVersion()
+		if err != nil {
+			return fmt.Errorf("get Git version: %v", err)
+		}
+		args, err = argsForVersion(args, i, version)
+		if err != nil {
+			return err
+		}
+	}
+
+	cmd := exec.CommandContext(ctx, c.name, args...)
 	if len(c.envs) > 0 {
 		cmd.Env = append(os.Environ(), c.envs...)
 	}
@@ -307,4 +322,30 @@ func (c *Command) Run() ([]byte, error) {
 		return nil, err
 	}
 	return stdout, nil
+}
+
+// endOfOptions makes Git treat every following argument as a positional
+// argument, even when it starts with a dash.
+const endOfOptions = "--end-of-options"
+
+// argsForVersion returns the arguments to run with the given Git version, where
+// args[i] is endOfOptions. Git 2.24 introduced endOfOptions, but some commands,
+// e.g., checkout, reset and grep, only accept it since Git 2.43.1. For older
+// versions it drops endOfOptions and refuses positional arguments that Git would
+// take as options, i.e., those starting with a dash before any "--".
+func argsForVersion(args []string, i int, version string) ([]string, error) {
+	if goversion.Compare(version, "2.43.1", ">=") {
+		return args, nil
+	}
+
+	positional := args[i+1:]
+	for _, arg := range positional {
+		if arg == "--" {
+			break
+		}
+		if strings.HasPrefix(arg, "-") {
+			return nil, fmt.Errorf("argument %q starts with a dash, which Git %s would take as an option", arg, version)
+		}
+	}
+	return append(append(make([]string, 0, len(args)-1), args[:i]...), positional...), nil
 }
