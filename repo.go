@@ -384,7 +384,7 @@ func Move(repoPath, src, dst string, opts ...MoveOptions) error {
 		opt = opts[0]
 	}
 
-	_, err := NewCommand("mv").AddOptions(opt.CommandOptions).AddArgs("--end-of-options", src, dst).RunInDirWithTimeout(opt.Timeout, repoPath)
+	_, err := NewCommand("mv").AddOptions(opt.CommandOptions).AddArgs("--", src, dst).RunInDirWithTimeout(opt.Timeout, repoPath)
 	return err
 }
 
@@ -475,7 +475,9 @@ func CreateCommit(repoPath string, committer *Signature, message string, opts ..
 		opt.Author = committer
 	}
 	cmd = cmd.AddArgs(fmt.Sprintf("--author='%s <%s>'", opt.Author.Name, opt.Author.Email)).
-		AddArgs("-m", message).
+		// Attach the message to its option, so that a message equal to
+		// "--end-of-options" is not taken for the separator itself.
+		AddArgs("--message=" + message).
 		AddOptions(opt.CommandOptions).
 		AddArgs("--end-of-options")
 

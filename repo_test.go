@@ -333,6 +333,16 @@ func TestRepository_Move(t *testing.T) {
 			dst: "runme.sh",
 			opt: MoveOptions{},
 		},
+		{
+			src: "runme.sh",
+			dst: "-runme.sh",
+			opt: MoveOptions{},
+		},
+		{
+			src: "-runme.sh",
+			dst: "runme.sh",
+			opt: MoveOptions{},
+		},
 	}
 	for _, test := range tests {
 		t.Run("", func(t *testing.T) {
@@ -453,6 +463,20 @@ func TestRepository_Commit(t *testing.T) {
 		assert.Equal(t, committer.Email, c.Committer.Email)
 		assert.Equal(t, author.Name, c.Author.Name)
 		assert.Equal(t, author.Email, c.Author.Email)
+		assert.Equal(t, message+"\n", c.Message)
+	})
+
+	t.Run("message looks like an option", func(t *testing.T) {
+		fpath := filepath.Join(r.Path(), "MESSAGE_LOOKS_LIKE_OPTION")
+		err = ioutil.WriteFile(fpath, []byte("something"), 0600)
+		require.NoError(t, err)
+		require.NoError(t, r.Add(AddOptions{All: true}))
+
+		message := "--end-of-options"
+		require.NoError(t, r.Commit(committer, message))
+
+		c, err := r.CatFileCommit("master")
+		require.NoError(t, err)
 		assert.Equal(t, message+"\n", c.Message)
 	})
 }
