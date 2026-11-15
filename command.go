@@ -209,16 +209,9 @@ func (c *Command) RunInDirWithOptions(dir string, opts ...RunInDirOptions) (err 
 		}()
 	}
 
-	args := c.args
-	if i := slices.Index(args, endOfOptions); i >= 0 {
-		version, err := BinVersion()
-		if err != nil {
-			return fmt.Errorf("get Git version: %v", err)
-		}
-		args, err = argsForVersion(args, i, version)
-		if err != nil {
-			return err
-		}
+	args, err := ArgsForBinVersion(c.args)
+	if err != nil {
+		return err
 	}
 
 	cmd := exec.CommandContext(ctx, c.name, args...)
@@ -327,6 +320,21 @@ func (c *Command) Run() ([]byte, error) {
 // endOfOptions makes Git treat every following argument as a positional
 // argument, even when it starts with a dash.
 const endOfOptions = "--end-of-options"
+
+// ArgsForBinVersion returns the Git arguments to run with the Git binary in
+// use. See argsForVersion for how "--end-of-options" is handled. Callers that
+// run Git without this package should pass their arguments through it.
+func ArgsForBinVersion(args []string) ([]string, error) {
+	i := slices.Index(args, endOfOptions)
+	if i < 0 {
+		return args, nil
+	}
+	version, err := BinVersion()
+	if err != nil {
+		return nil, fmt.Errorf("get Git version: %v", err)
+	}
+	return argsForVersion(args, i, version)
+}
 
 // argsForVersion returns the arguments to run with the given Git version, where
 // args[i] is endOfOptions. Git 2.24 introduced endOfOptions, but some commands,
